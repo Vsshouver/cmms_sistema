@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle de Manutenção - Mineração</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Tela de Login -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Sistema de Manutenção</h1>
+                <p>Controle de Manutenção - Mineração</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn-login">Entrar</button>
+                <div id="login-error" class="error-message" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Interface Principal -->
+    <div id="main-app" class="main-app" style="display: none;">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Sistema<br>Manutenção</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="menu-item active" data-page="dashboard">
+                    <span class="menu-icon dashboard-icon">📊</span>
+                    <span class="menu-text">Dashboard</span>
+                </li>
+                <li class="menu-item" data-page="equipamentos">
+                    <span class="menu-icon equipamentos-icon">🚛</span>
+                    <span class="menu-text">Equipamentos</span>
+                </li>
+                <li class="menu-item" data-page="ordens-servico">
+                    <span class="menu-icon ordens-icon">🔧</span>
+                    <span class="menu-text">Ordens de Serviço</span>
+                </li>
+                <li class="menu-item" data-page="mecanicos">
+                    <span class="menu-icon mecanicos-icon">👷</span>
+                    <span class="menu-text">Mecânicos</span>
+                </li>
+                <li class="menu-item" data-page="estoque">
+                    <span class="menu-icon estoque-icon">📦</span>
+                    <span class="menu-text">Estoque</span>
+                </li>
+                <li class="menu-item" data-page="pneus">
+                    <span class="menu-icon pneus-icon">🛞</span>
+                    <span class="menu-text">Controle de Pneus</span>
+                </li>
+                <li class="menu-item" data-page="usuarios">
+                    <span class="menu-icon usuarios-icon">👥</span>
+                    <span class="menu-text">Usuários</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="user-info">
+                    <span id="user-name">Usuário: Admin</span>
+                    <button id="logout-btn" class="btn-logout">Sair</button>
+                </div>
+            </header>
+
+            <!-- Conteúdo das Páginas -->
+            <div class="content">
+                <!-- Dashboard -->
+                <div id="dashboard-page" class="page active">
+                    <div class="kpi-cards">
+                        <div class="kpi-card">
+                            <div class="kpi-icon">📋</div>
+                            <div class="kpi-content">
+                                <h3 id="total-os">0</h3>
+                                <p>Total OS</p>
+                                <span id="os-abertas" class="kpi-subtitle">0 abertas</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon">🚛</div>
+                            <div class="kpi-content">
+                                <h3 id="total-equipamentos">0</h3>
+                                <p>Equipamentos</p>
+                                <span id="equipamentos-manutencao" class="kpi-subtitle">0 em manutenção</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon">📦</div>
+                            <div class="kpi-content">
+                                <h3 id="total-pecas">0</h3>
+                                <p>Estoque</p>
+                                <span id="pecas-baixo-estoque" class="kpi-subtitle">0 peças em falta</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon">💰</div>
+                            <div class="kpi-content">
+                                <h3 id="custo-mensal">R$ 0</h3>
+                                <p>Custo Mensal</p>
+                                <span class="kpi-subtitle">Últimos 30 dias</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Evolução Mensal de OS</h3>
+                            <canvas id="evolucao-chart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>OS por Status</h3>
+                            <canvas id="status-chart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Equipamentos com Mais OS</h3>
+                            <div id="equipamentos-ranking"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Distribuição por Tipo</h3>
+                            <canvas id="tipo-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equipamentos -->
+                <div id="equipamentos-page" class="page">
+                    <div class="page-header">
+                        <div class="page-info">
+                            <h2>Equipamentos</h2>
+                            <p>Gerencie todos os equipamentos da mineração</p>
+                        </div>
+                        <button class="btn-primary" onclick="showModal('equipamento-modal')">
+                            + Novo Equipamento
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <input type="text" id="equipamentos-search" placeholder="Buscar por nome, tipo ou fabricante..." class="search-input">
+                        <select id="equipamentos-status-filter" class="filter-select">
+                            <option value="">Todos os Status</option>
+                            <option value="ativo">Ativo</option>
+                            <option value="manutencao">Manutenção</option>
+                            <option value="inativo">Inativo</option>
+                        </select>
+                    </div>
+
+                    <div class="status-cards">
+                        <div class="status-card">
+                            <h3 id="equipamentos-total">0</h3>
+                            <p>Total de Equipamentos</p>
+                        </div>
+                        <div class="status-card">
+                            <h3 id="equipamentos-ativos">0</h3>
+                            <p>Ativos</p>
+                        </div>
+                        <div class="status-card">
+                            <h3 id="equipamentos-em-manutencao">0</h3>
+                            <p>Em Manutenção</p>
+                        </div>
+                        <div class="status-card">
+                            <h3 id="equipamentos-inativos">0</h3>
+                            <p>Inativos</p>
+                        </div>
+                    </div>
+
+                    <div id="equipamentos-list" class="items-grid"></div>
+                </div>
+
+                <!-- Ordens de Serviço -->
+                <div id="ordens-servico-page" class="page">
+                    <div class="page-header">
+                        <div class="page-info">
+                            <h2>Ordens de Serviço</h2>
+                            <p>Gerencie todas as ordens de serviço de manutenção</p>
+                        </div>
+                        <button class="btn-primary" onclick="showModal('os-modal')">
+                            + Nova OS
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <input type="text" id="os-search" placeholder="Buscar por número, equipamento ou descrição..." class="search-input">
+                        <select id="os-status-filter" class="filter-select">
+                            <option value="">Todos os Status</option>
+                            <option value="aberta">Aberta</option>
+                            <option value="em_execucao">Em Execução</option>
+                            <option value="aguardando_pecas">Aguardando Peças</option>
+                            <option value="concluida">Concluída</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                        <select id="os-tipo-filter" class="filter-select">
+                            <option value="">Todos os Tipos</option>
+                            <option value="preventiva">Preventiva</option>
+                            <option value="corretiva">Corretiva</option>
+                        </select>
+                        <select id="os-prioridade-filter" class="filter-select">
+                            <option value="">Todas as Prioridades</option>
+                            <option value="baixa">Baixa</option>
+                            <option value="media">Média</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica</option>
+                        </select>
+                    </div>
+
+                    <div class="status-cards">
+                        <div class="status-card">
+                            <h3 id="os-abertas-count">0</h3>
+                            <p>Abertas</p>
+                        </div>
+                        <div class="status-card">
+                            <h3 id="os-execucao-count">0</h3>
+                            <p>Em Execução</p>
+                        </div>
+                        <div class="status-card">
+                            <h3 id="os-aguardando-count">0</h3>
+                            <p>Aguardando</p>
+                        </div>
+                        <div class="status-card">
+                            <h3 id="os-concluidas-count">0</h3>
+                            <p>Concluídas</p>
+                        </div>
+                        <div class="status-card">
+                            <h3 id="os-canceladas-count">0</h3>
+                            <p>Canceladas</p>
+                        </div>
+                    </div>
+
+                    <div id="ordens-servico-list" class="items-grid"></div>
+                </div>
+
+                <!-- Mecânicos -->
+                <div id="mecanicos-page" class="page">
+                    <div class="page-header">
+                        <div class="page-info">
+                            <h2>Mecânicos</h2>
+                            <p>Gerencie a equipe de mecânicos</p>
+                        </div>
+                        <button class="btn-primary" onclick="showModal('mecanico-modal')">
+                            + Novo Mecânico
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <input type="text" id="mecanicos-search" placeholder="Buscar por nome, CPF ou especialidade..." class="search-input">
+                        <select id="mecanicos-status-filter" class="filter-select">
+                            <option value="">Todos os Status</option>
+                            <option value="ativo">Ativo</option>
+                            <option value="inativo">Inativo</option>
+                            <option value="ferias">Férias</option>
+                        </select>
+                    </div>
+
+                    <div id="mecanicos-list" class="items-grid"></div>
+                </div>
+
+                <!-- Estoque -->
+                <div id="estoque-page" class="page">
+                    <div class="page-header">
+                        <div class="page-info">
+                            <h2>Estoque</h2>
+                            <p>Controle de peças e materiais</p>
+                        </div>
+                        <button class="btn-primary" onclick="showModal('peca-modal')">
+                            + Nova Peça
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <input type="text" id="estoque-search" placeholder="Buscar por código, nome ou fornecedor..." class="search-input">
+                        <select id="estoque-categoria-filter" class="filter-select">
+                            <option value="">Todas as Categorias</option>
+                        </select>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="baixo-estoque-filter">
+                            Apenas baixo estoque
+                        </label>
+                    </div>
+
+                    <div id="estoque-list" class="items-grid"></div>
+                </div>
+
+                <!-- Controle de Pneus -->
+                <div id="pneus-page" class="page">
+                    <div class="page-header">
+                        <div class="page-info">
+                            <h2>Controle de Pneus</h2>
+                            <p>Sistema de gestão de pneus tipo Gestran</p>
+                        </div>
+                        <button class="btn-primary" onclick="showModal('pneu-modal')">
+                            + Novo Pneu
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <input type="text" id="pneus-search" placeholder="Buscar por número de série, marca ou modelo..." class="search-input">
+                        <select id="pneus-status-filter" class="filter-select">
+                            <option value="">Todos os Status</option>
+                            <option value="estoque">Estoque</option>
+                            <option value="em_uso">Em Uso</option>
+                            <option value="descarte">Descarte</option>
+                            <option value="recapagem">Recapagem</option>
+                        </select>
+                    </div>
+
+                    <div id="pneus-list" class="items-grid"></div>
+                </div>
+
+                <!-- Usuários -->
+                <div id="usuarios-page" class="page">
+                    <div class="page-header">
+                        <div class="page-info">
+                            <h2>Usuários</h2>
+                            <p>Gerenciamento de usuários e níveis de acesso</p>
+                        </div>
+                        <button class="btn-primary" onclick="showModal('usuario-modal')">
+                            + Novo Usuário
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <input type="text" id="usuarios-search" placeholder="Buscar por nome, username ou email..." class="search-input">
+                        <select id="usuarios-nivel-filter" class="filter-select">
+                            <option value="">Todos os Níveis</option>
+                            <option value="ADM">Administrador</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="PCM">PCM</option>
+                            <option value="Almoxarife">Almoxarife</option>
+                            <option value="Mecanico">Mecânico</option>
+                        </select>
+                    </div>
+
+                    <div id="usuarios-list" class="items-grid"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modais -->
+    <div id="equipamento-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Equipamento</h3>
+                <button class="modal-close" onclick="hideModal('equipamento-modal')">&times;</button>
+            </div>
+            <form id="equipamento-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Código Interno</label>
+                        <input type="text" name="codigo_interno" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" name="nome" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <input type="text" name="tipo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Modelo</label>
+                        <input type="text" name="modelo" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fabricante</label>
+                        <input type="text" name="fabricante" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Série</label>
+                        <input type="text" name="numero_serie" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Localização</label>
+                        <input type="text" name="localizacao" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Data de Aquisição</label>
+                        <input type="date" name="data_aquisicao" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Horímetro Atual</label>
+                        <input type="number" name="horimetro_atual" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Valor de Aquisição</label>
+                        <input type="number" name="valor_aquisicao" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Observações</label>
+                    <textarea name="observacoes" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="hideModal('equipamento-modal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
+
+    <!-- Modal Ordem de Serviço -->
+    <div id="os-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nova Ordem de Serviço</h3>
+                <button class="modal-close" onclick="hideModal('os-modal')">&times;</button>
+            </div>
+            <form id="os-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Número OS</label>
+                        <input type="text" name="numero_os" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipamento</label>
+                        <select name="equipamento_id" required>
+                            <option value="">Selecione um equipamento</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select name="tipo" required>
+                            <option value="">Selecione o tipo</option>
+                            <option value="preventiva">Preventiva</option>
+                            <option value="corretiva">Corretiva</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridade</label>
+                        <select name="prioridade" required>
+                            <option value="">Selecione a prioridade</option>
+                            <option value="baixa">Baixa</option>
+                            <option value="media">Média</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Mecânico</label>
+                        <select name="mecanico_id">
+                            <option value="">Selecione um mecânico</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Prevista</label>
+                        <input type="date" name="data_prevista">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descrição do Problema</label>
+                    <textarea name="descricao_problema" rows="4" required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="hideModal('os-modal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Mecânico -->
+    <div id="mecanico-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Mecânico</h3>
+                <button class="modal-close" onclick="hideModal('mecanico-modal')">&times;</button>
+            </div>
+            <form id="mecanico-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" name="nome_completo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>CPF</label>
+                        <input type="text" name="cpf" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Telefone</label>
+                        <input type="text" name="telefone">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Especialidade</label>
+                        <input type="text" name="especialidade" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nível de Experiência</label>
+                        <select name="nivel_experiencia" required>
+                            <option value="">Selecione o nível</option>
+                            <option value="junior">Júnior</option>
+                            <option value="pleno">Pleno</option>
+                            <option value="senior">Sênior</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Salário</label>
+                        <input type="number" name="salario" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Data de Admissão</label>
+                        <input type="date" name="data_admissao" required>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="hideModal('mecanico-modal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Peça -->
+    <div id="peca-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nova Peça</h3>
+                <button class="modal-close" onclick="hideModal('peca-modal')">&times;</button>
+            </div>
+            <form id="peca-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Código</label>
+                        <input type="text" name="codigo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" name="nome" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <input type="text" name="categoria" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unidade</label>
+                        <input type="text" name="unidade" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Quantidade</label>
+                        <input type="number" name="quantidade" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Preço Unitário</label>
+                        <input type="number" name="preco_unitario" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Estoque Mínimo</label>
+                        <input type="number" name="min_estoque" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Estoque Máximo</label>
+                        <input type="number" name="max_estoque" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Localização</label>
+                        <input type="text" name="localizacao">
+                    </div>
+                    <div class="form-group">
+                        <label>Fornecedor</label>
+                        <input type="text" name="fornecedor">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea name="descricao" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="hideModal('peca-modal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Pneu -->
+    <div id="pneu-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Pneu</h3>
+                <button class="modal-close" onclick="hideModal('pneu-modal')">&times;</button>
+            </div>
+            <form id="pneu-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Número de Série</label>
+                        <input type="text" name="numero_serie" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Marca</label>
+                        <input type="text" name="marca" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Modelo</label>
+                        <input type="text" name="modelo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Medida</label>
+                        <input type="text" name="medida" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select name="tipo" required>
+                            <option value="">Selecione o tipo</option>
+                            <option value="novo">Novo</option>
+                            <option value="recapado">Recapado</option>
+                            <option value="usado">Usado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status" required>
+                            <option value="">Selecione o status</option>
+                            <option value="estoque">Estoque</option>
+                            <option value="em_uso">Em Uso</option>
+                            <option value="descarte">Descarte</option>
+                            <option value="recapagem">Recapagem</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data de Compra</label>
+                        <input type="date" name="data_compra" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor de Compra</label>
+                        <input type="number" name="valor_compra" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Pressão Recomendada (PSI)</label>
+                        <input type="number" name="pressao_recomendada" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Vida Útil Estimada (km)</label>
+                        <input type="number" name="vida_util_estimada" step="0.1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Fornecedor</label>
+                    <input type="text" name="fornecedor">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="hideModal('pneu-modal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Usuário -->
+    <div id="usuario-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Usuário</h3>
+                <button class="modal-close" onclick="hideModal('usuario-modal')">&times;</button>
+            </div>
+            <form id="usuario-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" name="nome_completo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" name="username" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Cargo</label>
+                        <input type="text" name="cargo" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nível de Acesso</label>
+                        <select name="nivel_acesso" required>
+                            <option value="">Selecione o nível</option>
+                            <option value="ADM">Administrador</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="PCM">PCM</option>
+                            <option value="Almoxarife">Almoxarife</option>
+                            <option value="Mecanico">Mecânico</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Senha</label>
+                        <input type="password" name="senha" required>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="hideModal('usuario-modal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
