@@ -27,6 +27,7 @@ from src.models.os_peca import OS_Peca
 from src.models.analise_oleo import AnaliseOleo
 
 from datetime import datetime, date, timedelta
+from sqlalchemy import text, inspect
 
 def create_app():
     """Criar aplicação Flask para inicialização."""
@@ -64,8 +65,46 @@ def create_app():
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
-    
+
     return app
+
+def ensure_schema():
+    """Garantir que as colunas necessárias existam no banco."""
+    engine = db.engine
+    inspector = inspect(engine)
+
+    # Verificar coluna tipo_equipamento_id em equipamentos
+    cols = [c['name'] for c in inspector.get_columns('equipamentos')]
+    if 'tipo_equipamento_id' not in cols:
+        print("⚙️  Adicionando coluna 'tipo_equipamento_id' em equipamentos...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE equipamentos ADD COLUMN tipo_equipamento_id INTEGER'))
+            conn.commit()
+
+    # Verificar coluna tipo_manutencao_id em ordens_servico
+    cols = [c['name'] for c in inspector.get_columns('ordens_servico')]
+    if 'tipo_manutencao_id' not in cols:
+        print("⚙️  Adicionando coluna 'tipo_manutencao_id' em ordens_servico...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE ordens_servico ADD COLUMN tipo_manutencao_id INTEGER'))
+            conn.commit()
+
+    # Verificar colunas grupo_item_id e estoque_local_id em pecas
+    cols = [c['name'] for c in inspector.get_columns('pecas')]
+    if 'grupo_item_id' not in cols:
+        print("⚙️  Adicionando coluna 'grupo_item_id' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN grupo_item_id INTEGER'))
+            conn.commit()
+    if 'estoque_local_id' not in cols:
+        print("⚙️  Adicionando coluna 'estoque_local_id' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN estoque_local_id INTEGER'))
+            conn.commit()
 
 def criar_dados_exemplo():
     """Função para criar dados de exemplo no banco"""
@@ -394,7 +433,8 @@ def main():
         with app.app_context():
             print("🔧 Criando/verificando estrutura do banco de dados...")
             db.create_all()
-            
+            ensure_schema()
+
             print("📊 Populando com dados de exemplo...")
             criar_dados_exemplo()
             
