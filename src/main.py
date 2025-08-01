@@ -30,7 +30,10 @@ from src.routes.importacao import importacao_bp
 from src.routes.impressao import impressao_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
-app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
+
+# Chave secreta configurável via variável de ambiente
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key')
+app.config['SECRET_KEY'] = SECRET_KEY
 
 # Configurar CORS para permitir credenciais de qualquer origem
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '')

@@ -31,7 +31,10 @@ from datetime import datetime, date, timedelta
 def create_app():
     """Criar aplicação Flask para inicialização."""
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
+
+    # Chave secreta configurável via variável de ambiente
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key')
+    app.config['SECRET_KEY'] = SECRET_KEY
     
     # Configurar banco de dados PostgreSQL
     database_url = os.environ.get('DATABASE_URL')

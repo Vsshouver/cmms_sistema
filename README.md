@@ -45,7 +45,7 @@ Sistema completo de gerenciamento de manutenção (CMMS) desenvolvido especifica
 1. **Clone o repositório:**
 ```bash
 git clone <repository-url>
-cd cmms_sistema_melhorado
+cd cmms_sistema
 ```
 
 2. **Crie um ambiente virtual:**

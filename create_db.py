@@ -29,7 +29,10 @@ def create_database():
     
     # Criar aplicação Flask
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'dev-key'
+
+    # Chave secreta configurável via variável de ambiente
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key')
+    app.config['SECRET_KEY'] = SECRET_KEY
     
     # Configurar SQLite
     db_path = os.path.join(current_dir, 'cmms.db')
