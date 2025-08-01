@@ -18,6 +18,13 @@ from src.models.mecanico import Mecanico
 from src.models.ordem_servico import OrdemServico
 from src.models.peca import Peca
 from src.models.pneu import Pneu
+from src.models.tipo_equipamento import TipoEquipamento
+from src.models.tipo_manutencao import TipoManutencao
+from src.models.grupo_item import GrupoItem
+from src.models.estoque_local import EstoqueLocal
+from src.models.movimentacao_estoque import MovimentacaoEstoque
+from src.models.os_peca import OS_Peca
+from src.models.analise_oleo import AnaliseOleo
 
 from datetime import datetime, date, timedelta
 
@@ -410,4 +417,210 @@ def main():
 if __name__ == '__main__':
     success = main()
     sys.exit(0 if success else 1)
+
+
+def criar_tipos_equipamento():
+    """Criar tipos de equipamento padrão"""
+    if TipoEquipamento.query.count() == 0:
+        print("🏗️ Criando tipos de equipamento...")
+        tipos = [
+            {'nome': 'Escavadeira', 'descricao': 'Equipamentos de escavação hidráulica'},
+            {'nome': 'Caminhão', 'descricao': 'Veículos de transporte de carga'},
+            {'nome': 'Trator', 'descricao': 'Tratores e equipamentos de terraplanagem'},
+            {'nome': 'Carregadeira', 'descricao': 'Equipamentos de carregamento'},
+            {'nome': 'Perfuratriz', 'descricao': 'Equipamentos de perfuração'},
+            {'nome': 'Britador', 'descricao': 'Equipamentos de britagem'},
+            {'nome': 'Compressor', 'descricao': 'Compressores de ar'},
+            {'nome': 'Gerador', 'descricao': 'Geradores de energia elétrica'}
+        ]
+        
+        for tipo_data in tipos:
+            tipo = TipoEquipamento(
+                nome=tipo_data['nome'],
+                descricao=tipo_data['descricao']
+            )
+            db.session.add(tipo)
+
+def criar_tipos_manutencao():
+    """Criar tipos de manutenção padrão"""
+    if TipoManutencao.query.count() == 0:
+        print("🔧 Criando tipos de manutenção...")
+        tipos = [
+            {'nome': 'Preventiva', 'codigo': 'PREV', 'descricao': 'Manutenção preventiva programada', 'cor_identificacao': '#10b981'},
+            {'nome': 'Corretiva Mecânica', 'codigo': 'CORR_MEC', 'descricao': 'Correção de problemas mecânicos', 'cor_identificacao': '#ef4444'},
+            {'nome': 'Corretiva Elétrica', 'codigo': 'CORR_ELE', 'descricao': 'Correção de problemas elétricos', 'cor_identificacao': '#f59e0b'},
+            {'nome': 'Caldeiraria', 'codigo': 'CALD', 'descricao': 'Serviços de soldagem e caldeiraria', 'cor_identificacao': '#8b5cf6'},
+            {'nome': 'Inspeção', 'codigo': 'INSP', 'descricao': 'Inspeções técnicas e de segurança', 'cor_identificacao': '#3b82f6'}
+        ]
+        
+        for tipo_data in tipos:
+            tipo = TipoManutencao(
+                nome=tipo_data['nome'],
+                codigo=tipo_data['codigo'],
+                descricao=tipo_data['descricao'],
+                cor_identificacao=tipo_data['cor_identificacao']
+            )
+            db.session.add(tipo)
+
+def criar_grupos_item():
+    """Criar grupos de item padrão"""
+    if GrupoItem.query.count() == 0:
+        print("📦 Criando grupos de item...")
+        grupos = [
+            {'nome': 'Filtros', 'codigo': 'FIL', 'descricao': 'Filtros de óleo, ar, combustível'},
+            {'nome': 'Óleos e Lubrificantes', 'codigo': 'OLE', 'descricao': 'Óleos hidráulicos, motor, transmissão'},
+            {'nome': 'Peças de Motor', 'codigo': 'MOT', 'descricao': 'Componentes do motor'},
+            {'nome': 'Sistema Hidráulico', 'codigo': 'HID', 'descricao': 'Componentes do sistema hidráulico'},
+            {'nome': 'Pneus e Rodas', 'codigo': 'PNE', 'descricao': 'Pneus, câmaras e componentes de rodas'},
+            {'nome': 'Peças Elétricas', 'codigo': 'ELE', 'descricao': 'Componentes elétricos e eletrônicos'},
+            {'nome': 'Ferramentas', 'codigo': 'FER', 'descricao': 'Ferramentas e equipamentos'},
+            {'nome': 'Consumíveis', 'codigo': 'CON', 'descricao': 'Materiais de consumo geral'}
+        ]
+        
+        for grupo_data in grupos:
+            grupo = GrupoItem(
+                nome=grupo_data['nome'],
+                codigo=grupo_data['codigo'],
+                descricao=grupo_data['descricao']
+            )
+            db.session.add(grupo)
+
+def criar_estoques_locais():
+    """Criar estoques locais padrão"""
+    if EstoqueLocal.query.count() == 0:
+        print("🏪 Criando estoques locais...")
+        estoques = [
+            {
+                'nome': 'Almoxarifado Central',
+                'codigo': 'ALM_CENTRAL',
+                'localizacao': 'Prédio Administrativo - Térreo',
+                'prateleira': 'A-Z',
+                'coluna': '1-50',
+                'setor': 'Manutenção',
+                'responsavel': 'Carlos Oliveira'
+            },
+            {
+                'nome': 'Estoque de Campo',
+                'codigo': 'EST_CAMPO',
+                'localizacao': 'Oficina de Campo',
+                'prateleira': 'A-J',
+                'coluna': '1-20',
+                'setor': 'Operações',
+                'responsavel': 'João Silva'
+            },
+            {
+                'nome': 'Estoque de Pneus',
+                'codigo': 'EST_PNEUS',
+                'localizacao': 'Galpão de Pneus',
+                'setor': 'Manutenção',
+                'responsavel': 'Pedro Santos'
+            }
+        ]
+        
+        for estoque_data in estoques:
+            estoque = EstoqueLocal(
+                nome=estoque_data['nome'],
+                codigo=estoque_data['codigo'],
+                localizacao=estoque_data['localizacao'],
+                prateleira=estoque_data.get('prateleira'),
+                coluna=estoque_data.get('coluna'),
+                setor=estoque_data['setor'],
+                responsavel=estoque_data['responsavel']
+            )
+            db.session.add(estoque)
+
+def atualizar_dados_existentes():
+    """Atualizar dados existentes com os novos campos"""
+    print("🔄 Atualizando dados existentes...")
+    
+    # Atualizar equipamentos com tipo_equipamento_id
+    equipamentos = Equipamento.query.filter(Equipamento.tipo_equipamento_id.is_(None)).all()
+    if equipamentos:
+        print(f"📝 Atualizando {len(equipamentos)} equipamentos...")
+        for equipamento in equipamentos:
+            # Mapear tipo antigo para novo
+            tipo_map = {
+                'Escavadeira': 'Escavadeira',
+                'Caminhão': 'Caminhão',
+                'Trator': 'Trator',
+                'Carregadeira': 'Carregadeira'
+            }
+            
+            tipo_nome = tipo_map.get(equipamento.tipo, 'Escavadeira')
+            tipo_equipamento = TipoEquipamento.query.filter_by(nome=tipo_nome).first()
+            if tipo_equipamento:
+                equipamento.tipo_equipamento_id = tipo_equipamento.id
+    
+    # Atualizar ordens de serviço com tipo_manutencao_id
+    ordens = OrdemServico.query.filter(OrdemServico.tipo_manutencao_id.is_(None)).all()
+    if ordens:
+        print(f"📝 Atualizando {len(ordens)} ordens de serviço...")
+        for ordem in ordens:
+            # Mapear tipo antigo para novo
+            tipo_map = {
+                'preventiva': 'Preventiva',
+                'corretiva': 'Corretiva Mecânica'
+            }
+            
+            tipo_nome = tipo_map.get(ordem.tipo, 'Corretiva Mecânica')
+            tipo_manutencao = TipoManutencao.query.filter_by(nome=tipo_nome).first()
+            if tipo_manutencao:
+                ordem.tipo_manutencao_id = tipo_manutencao.id
+    
+    # Atualizar peças com grupo_item_id
+    pecas = Peca.query.filter(Peca.grupo_item_id.is_(None)).all()
+    if pecas:
+        print(f"📝 Atualizando {len(pecas)} peças...")
+        almoxarifado_central = EstoqueLocal.query.filter_by(codigo='ALM_CENTRAL').first()
+        
+        for peca in pecas:
+            # Mapear categoria antiga para grupo
+            categoria_map = {
+                'Filtros': 'Filtros',
+                'Óleos': 'Óleos e Lubrificantes',
+                'Peças': 'Peças de Motor',
+                'Ferramentas': 'Ferramentas'
+            }
+            
+            grupo_nome = categoria_map.get(peca.categoria, 'Consumíveis')
+            grupo_item = GrupoItem.query.filter_by(nome=grupo_nome).first()
+            if grupo_item:
+                peca.grupo_item_id = grupo_item.id
+            
+            # Definir estoque local padrão
+            if not peca.estoque_local_id and almoxarifado_central:
+                peca.estoque_local_id = almoxarifado_central.id
+
+# Atualizar a função principal
+def criar_dados_exemplo_completos():
+    """Função principal para criar todos os dados de exemplo"""
+    print("🔄 Iniciando criação completa de dados de exemplo...")
+    
+    try:
+        # Criar tipos primeiro (dependências)
+        criar_tipos_equipamento()
+        criar_tipos_manutencao()
+        criar_grupos_item()
+        criar_estoques_locais()
+        
+        # Commit das dependências
+        db.session.commit()
+        
+        # Atualizar dados existentes
+        atualizar_dados_existentes()
+        
+        # Commit final
+        db.session.commit()
+        
+        print("✅ Dados de exemplo criados/atualizados com sucesso!")
+        
+    except Exception as e:
+        print(f"❌ Erro ao criar dados de exemplo: {str(e)}")
+        db.session.rollback()
+        raise
+
+# Manter compatibilidade com a função original
+def criar_dados_exemplo():
+    """Função de compatibilidade - chama a função completa"""
+    return criar_dados_exemplo_completos()
 

@@ -7,7 +7,8 @@ class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo_interno = db.Column(db.String(50), unique=True, nullable=False)
     nome = db.Column(db.String(100), nullable=False)
-    tipo = db.Column(db.String(50), nullable=False)  # Escavadeira, Caminhão, Trator, etc.
+    tipo_equipamento_id = db.Column(db.Integer, db.ForeignKey('tipos_equipamento.id'), nullable=False)
+    tipo = db.Column(db.String(50), nullable=True)  # Manter para compatibilidade, será removido após migração
     modelo = db.Column(db.String(50), nullable=False)
     fabricante = db.Column(db.String(50), nullable=False)
     numero_serie = db.Column(db.String(100), unique=True, nullable=False)
@@ -28,7 +29,9 @@ class Equipamento(db.Model):
             'id': self.id,
             'codigo_interno': self.codigo_interno,
             'nome': self.nome,
+            'tipo_equipamento_id': self.tipo_equipamento_id,
             'tipo': self.tipo,
+            'tipo_equipamento': self.tipo_equipamento_obj.nome if self.tipo_equipamento_obj else None,
             'modelo': self.modelo,
             'fabricante': self.fabricante,
             'numero_serie': self.numero_serie,

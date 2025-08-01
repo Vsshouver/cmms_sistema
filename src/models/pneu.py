@@ -6,9 +6,11 @@ class Pneu(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     numero_serie = db.Column(db.String(50), unique=True, nullable=False)
+    numero_fogo = db.Column(db.String(50), nullable=True)  # Novo campo
     marca = db.Column(db.String(50), nullable=False)
     modelo = db.Column(db.String(50), nullable=False)
     medida = db.Column(db.String(30), nullable=False)  # Ex: 385/65R22.5
+    medida_sulco_mm = db.Column(db.Float, nullable=True)  # Medida atual do sulco em mm
     tipo = db.Column(db.String(20), nullable=False)  # novo, recapado
     status = db.Column(db.String(20), nullable=False, default='estoque')  # estoque, em_uso, descarte, recapagem
     equipamento_id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), nullable=True)
@@ -21,6 +23,10 @@ class Pneu(db.Model):
     pressao_recomendada = db.Column(db.Float, nullable=True)  # PSI
     vida_util_estimada = db.Column(db.Float, nullable=True)  # KM
     fornecedor = db.Column(db.String(100), nullable=True)
+    fornecedor_recapagem = db.Column(db.String(100), nullable=True)  # Para tratativas de recapagem
+    data_recapagem = db.Column(db.Date, nullable=True)
+    data_descarte = db.Column(db.Date, nullable=True)
+    motivo_descarte = db.Column(db.String(200), nullable=True)
     observacoes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -37,9 +43,11 @@ class Pneu(db.Model):
         return {
             'id': self.id,
             'numero_serie': self.numero_serie,
+            'numero_fogo': self.numero_fogo,
             'marca': self.marca,
             'modelo': self.modelo,
             'medida': self.medida,
+            'medida_sulco_mm': self.medida_sulco_mm,
             'tipo': self.tipo,
             'status': self.status,
             'equipamento_id': self.equipamento_id,
@@ -54,6 +62,10 @@ class Pneu(db.Model):
             'pressao_recomendada': self.pressao_recomendada,
             'vida_util_estimada': self.vida_util_estimada,
             'fornecedor': self.fornecedor,
+            'fornecedor_recapagem': self.fornecedor_recapagem,
+            'data_recapagem': self.data_recapagem.isoformat() if self.data_recapagem else None,
+            'data_descarte': self.data_descarte.isoformat() if self.data_descarte else None,
+            'motivo_descarte': self.motivo_descarte,
             'observacoes': self.observacoes,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

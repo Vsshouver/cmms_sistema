@@ -1,273 +1,215 @@
-# Sistema CMMS - Controle de Manutenção para Mineração
+# CMMS - Sistema de Manutenção para Mineração
 
-Sistema completo de gerenciamento de manutenção (CMMS) desenvolvido especificamente para operações de mineração, com interface moderna em HTML/CSS vanilla e backend robusto em Flask.
+Sistema completo de gerenciamento de manutenção (CMMS) desenvolvido especificamente para operações de mineração, com funcionalidades avançadas para controle de equipamentos, ordens de serviço, estoque de peças e gestão de pneus.
 
-## 🚀 Características Principais
+## 🚀 Funcionalidades Principais
 
-### ✅ Sistema de Autenticação Completo
-- Login seguro com JWT
-- 5 níveis de acesso hierárquicos:
-  - **ADM**: Acesso total ao sistema
-  - **Supervisor**: Gerenciamento de equipamentos e equipe
-  - **PCM**: Planejamento e controle de manutenção
-  - **Almoxarife**: Controle de estoque e materiais
-  - **Mecânico**: Execução de ordens de serviço
+### ✅ Funcionalidades Implementadas
 
-### 📊 Dashboard Inteligente
-- KPIs em tempo real
-- Gráficos interativos com Chart.js
-- Evolução mensal de ordens de serviço
-- Distribuição por status e tipo
-- Ranking de equipamentos
+- **Dashboard Interativo**: Estatísticas em tempo real, alertas e atividades recentes
+- **Gestão de Equipamentos**: Cadastro completo com tipos, modelos e histórico
+- **Ordens de Serviço**: Criação, acompanhamento e conclusão com alocação de peças
+- **Controle de Estoque**: Gestão completa de peças com movimentações e inventário
+- **Gestão de Pneus**: Controle específico com tratativas e medição de sulcos
+- **Sistema de Usuários**: Controle de acesso por níveis (ADM, Supervisor, PCM, etc.)
+- **Importação de Dados**: Upload de peças via CSV/Excel
+- **Relatórios em PDF**: Impressão de ordens de serviço
+- **Análise de Óleo**: Controle de análises laboratoriais
+- **Sistema de Alertas**: Notificações para mecânicos e supervisores
 
-### 🚛 Gestão de Equipamentos
-- Cadastro completo com horímetro
-- Controle de status (ativo, manutenção, inativo)
-- Histórico de manutenções
-- Localização e dados técnicos
+### 🔧 Tecnologias Utilizadas
 
-### 🔧 Ordens de Serviço
-- Criação e acompanhamento de OS
-- Tipos: Preventiva e Corretiva
-- Níveis de prioridade
-- Controle de custos (mão de obra + peças)
-- Atribuição de mecânicos
+**Backend:**
+- Python 3.11
+- Flask (Framework web)
+- SQLAlchemy (ORM)
+- PostgreSQL (Produção) / SQLite (Desenvolvimento)
+- JWT (Autenticação)
+- Pandas (Importação de dados)
+- ReportLab (Geração de PDFs)
 
-### 👷 Gestão de Mecânicos
-- Cadastro completo da equipe
-- Especialidades e níveis de experiência
-- Controle de disponibilidade
-- Histórico de serviços
+**Frontend:**
+- HTML5, CSS3, JavaScript (Vanilla)
+- Design responsivo
+- Componentes reutilizáveis
+- Sistema de navegação SPA
 
-### 📦 Controle de Estoque
-- Gestão completa de peças e materiais
-- Alertas de baixo estoque
-- Controle de fornecedores
-- Movimentações de entrada/saída
+## 📋 Pré-requisitos
 
-### 🛞 Sistema de Pneus (Tipo Gestran)
-- Controle específico para pneus
-- Rastreamento por equipamento e posição
-- Controle de vida útil e quilometragem
-- Status: estoque, em uso, recapagem, descarte
+- Python 3.11+
+- PostgreSQL (para produção)
+- Git
 
-### 👥 Gerenciamento de Usuários
-- Criação e edição de usuários
-- Controle de permissões por nível
-- Histórico de acessos
+## 🛠️ Instalação Local
 
-## 🛠️ Tecnologias Utilizadas
-
-### Backend
-- **Flask**: Framework web Python
-- **SQLAlchemy**: ORM para banco de dados
-- **PostgreSQL**: Banco de dados principal (Railway)
-- **SQLite**: Fallback para desenvolvimento local
-- **JWT**: Autenticação segura
-- **Flask-CORS**: Suporte a requisições cross-origin
-
-### Frontend
-- **HTML5**: Estrutura semântica
-- **CSS3**: Design moderno e responsivo
-- **JavaScript Vanilla**: Funcionalidades interativas
-- **Chart.js**: Gráficos e visualizações
-- **Google Fonts**: Tipografia (Inter)
-
-## 📁 Estrutura do Projeto
-
-```
-cmms_sistema/
-├── src/
-│   ├── static/                 # Frontend
-│   │   ├── index.html         # Interface principal
-│   │   ├── styles.css         # Estilos CSS
-│   │   └── app.js             # JavaScript
-│   ├── models/                # Modelos de dados
-│   │   ├── usuario.py
-│   │   ├── equipamento.py
-│   │   ├── ordem_servico.py
-│   │   ├── mecanico.py
-│   │   ├── peca.py
-│   │   └── pneu.py
-│   ├── routes/                # Rotas da API
-│   │   ├── auth.py
-│   │   ├── dashboard.py
-│   │   ├── equipamentos.py
-│   │   ├── ordens_servico.py
-│   │   ├── mecanicos.py
-│   │   ├── estoque.py
-│   │   ├── pneus.py
-│   │   └── usuarios.py
-│   ├── utils/                 # Utilitários
-│   │   └── auth.py           # Decoradores de autenticação
-│   └── main.py               # Aplicação principal
-├── init_db.py                # Script de inicialização
-├── requirements.txt          # Dependências Python
-└── README.md                # Esta documentação
-```
-
-## 🚀 Instalação e Configuração
-
-### 1. Preparação do Ambiente
-
+1. **Clone o repositório:**
 ```bash
-# Clone ou extraia o projeto
-cd cmms_sistema
+git clone <repository-url>
+cd cmms_sistema_melhorado
+```
 
-# Crie e ative o ambiente virtual
+2. **Crie um ambiente virtual:**
+```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 # ou
 venv\Scripts\activate     # Windows
+```
 
-# Instale as dependências
+3. **Instale as dependências:**
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configuração do Banco de Dados
-
-#### Para PostgreSQL (Produção - Railway)
+4. **Configure as variáveis de ambiente:**
 ```bash
-# Configure a variável de ambiente
-export DATABASE_URL="postgresql://usuario:senha@host:porta/database"
+cp .env.example .env
+# Edite o arquivo .env com suas configurações
 ```
 
-#### Para SQLite (Desenvolvimento Local)
+5. **Inicialize o banco de dados:**
 ```bash
-# Não é necessária configuração adicional
-# O sistema criará automaticamente o banco SQLite
+python create_db.py
 ```
 
-### 3. Inicialização do Sistema
-
+6. **Execute a aplicação:**
 ```bash
-# Execute o script de inicialização
-python init_db.py
-```
-
-Este script irá:
-- Criar todas as tabelas necessárias
-- Popular o banco com dados de exemplo
-- Criar usuários padrão para teste
-
-### 4. Execução da Aplicação
-
-```bash
-# Inicie o servidor
 python src/main.py
 ```
 
-O sistema estará disponível em: `http://localhost:5000`
+A aplicação estará disponível em `http://localhost:5000`
 
-## 👤 Usuários Padrão
+## 🚂 Deploy no Railway
 
-O sistema vem com usuários pré-configurados para teste:
+### Configuração Automática
 
-| Nível | Email | Senha | Descrição |
-|-------|-------|-------|-----------|
-| ADM | admin@mineracao.com | admin123 | Administrador completo |
-| Supervisor | supervisor@mineracao.com | super123 | Supervisor de manutenção |
-| PCM | pcm@mineracao.com | pcm123 | Planejador de manutenção |
-| Almoxarife | almoxarife@mineracao.com | almox123 | Controle de estoque |
-| Mecânico | mecanico@mineracao.com | mec123 | Execução de serviços |
+1. **Conecte seu repositório ao Railway**
+2. **Configure as variáveis de ambiente no Railway:**
+   - `DATABASE_URL`: String de conexão PostgreSQL (fornecida automaticamente)
+   - `SECRET_KEY`: Chave secreta para sessões
+   - `FLASK_ENV`: `production`
 
-## 🌐 Deploy no Railway
+3. **Deploy automático**: O Railway detectará automaticamente a configuração
 
-### 1. Configuração do Backend
+### Configuração Manual
 
-1. Conecte seu repositório ao Railway
-2. Configure as variáveis de ambiente:
-   - `DATABASE_URL`: URL do PostgreSQL
-   - `JWT_SECRET_KEY`: Chave secreta para JWT
-   - `PORT`: Porta da aplicação (padrão: 5000)
+Se necessário, você pode configurar manualmente:
 
-### 2. Configuração do Frontend
-
-O frontend está integrado ao backend e será servido automaticamente.
-
-### 3. Inicialização
-
-Após o deploy, execute uma vez:
 ```bash
-python init_db.py
+# Instalar Railway CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Criar novo projeto
+railway new
+
+# Adicionar PostgreSQL
+railway add postgresql
+
+# Deploy
+railway up
 ```
 
-## 📱 Interface Responsiva
+## 👥 Usuários Padrão
 
-O sistema foi desenvolvido com design responsivo, funcionando perfeitamente em:
-- 💻 Desktop (1024px+)
-- 📱 Tablet (768px - 1024px)
-- 📱 Mobile (até 768px)
+O sistema cria automaticamente os seguintes usuários para teste:
 
-## 🔒 Segurança
+| Usuário | Senha | Nível |
+|---------|-------|-------|
+| admin | admin123 | Administrador |
+| supervisor | super123 | Supervisor |
+| pcm | pcm123 | PCM |
+| almoxarife | almox123 | Almoxarife |
+| mecanico | mec123 | Mecânico |
 
-- **Autenticação JWT**: Tokens seguros com expiração
-- **Controle de Acesso**: Permissões baseadas em níveis
-- **Validação de Dados**: Sanitização de entradas
-- **CORS Configurado**: Suporte a requisições cross-origin
-- **Senhas Criptografadas**: Hash seguro com Werkzeug
+## 📊 Estrutura do Banco de Dados
 
-## 📊 Funcionalidades por Nível de Acesso
+### Tabelas Principais:
+- `usuarios` - Controle de acesso
+- `equipamentos` - Cadastro de equipamentos
+- `tipos_equipamento` - Categorização de equipamentos
+- `ordens_servico` - Ordens de manutenção
+- `tipos_manutencao` - Tipos de manutenção
+- `pecas` - Estoque de peças
+- `grupos_item` - Categorização de peças
+- `movimentacoes_estoque` - Histórico de movimentações
+- `pneus` - Gestão específica de pneus
+- `mecanicos` - Cadastro de mecânicos
+- `analises_oleo` - Análises laboratoriais
+- `os_pecas` - Peças utilizadas em OS
 
-### ADM (Administrador)
-- ✅ Acesso total a todos os módulos
-- ✅ Gerenciamento de usuários
-- ✅ Configurações do sistema
-- ✅ Relatórios completos
+## 🔐 Níveis de Acesso
 
-### Supervisor
-- ✅ Gestão de equipamentos
-- ✅ Gestão de mecânicos
-- ✅ Aprovação de ordens de serviço
-- ✅ Relatórios operacionais
+- **ADM**: Acesso total ao sistema
+- **Supervisor**: Gestão de equipes e aprovações
+- **PCM**: Planejamento e controle de manutenção
+- **Almoxarife**: Gestão de estoque
+- **Mecânico**: Execução de ordens de serviço
 
-### PCM (Planejamento e Controle de Manutenção)
-- ✅ Criação de ordens de serviço
-- ✅ Planejamento de manutenções
-- ✅ Acompanhamento de execução
-- ✅ Relatórios de manutenção
+## 📱 Recursos Mobile
 
-### Almoxarife
-- ✅ Controle total do estoque
-- ✅ Gestão de pneus
-- ✅ Movimentações de materiais
-- ✅ Relatórios de estoque
+- Interface totalmente responsiva
+- Navegação otimizada para tablets
+- Formulários adaptados para touch
 
-### Mecânico
-- ✅ Visualização de ordens atribuídas
-- ✅ Atualização de status de execução
-- ✅ Consulta de equipamentos
-- ✅ Registro de atividades
+## 🔄 API REST
 
-## 🔧 Manutenção e Suporte
+O sistema expõe uma API REST completa em `/api/` com endpoints para:
 
-### Logs do Sistema
-Os logs são exibidos no console durante a execução. Para produção, configure um sistema de logging adequado.
+- Autenticação (`/api/auth/`)
+- Dashboard (`/api/dashboard/`)
+- Equipamentos (`/api/equipamentos/`)
+- Ordens de Serviço (`/api/ordens-servico/`)
+- Estoque (`/api/estoque/`)
+- Pneus (`/api/pneus/`)
+- E muito mais...
 
-### Backup do Banco de Dados
-- **PostgreSQL**: Use ferramentas como `pg_dump`
-- **SQLite**: Copie o arquivo `app.db`
+## 📈 Monitoramento
 
-### Atualizações
-1. Faça backup do banco de dados
-2. Atualize o código
-3. Execute migrações se necessário
-4. Reinicie a aplicação
+- Health check endpoint: `/api/health`
+- Logs estruturados
+- Métricas de performance
+
+## 🛡️ Segurança
+
+- Autenticação JWT
+- Controle de acesso por níveis
+- Validação de dados
+- Proteção CORS configurável
+
+## 🔧 Manutenção
+
+### Backup do Banco
+```bash
+# PostgreSQL
+pg_dump $DATABASE_URL > backup.sql
+
+# SQLite (desenvolvimento)
+cp cmms.db backup_cmms.db
+```
+
+### Logs
+```bash
+# Ver logs no Railway
+railway logs
+
+# Logs locais
+tail -f logs/app.log
+```
 
 ## 📞 Suporte
 
-Para suporte técnico ou dúvidas sobre o sistema:
-- 📧 Email: suporte@mineracao.com
-- 📱 Telefone: (11) 99999-9999
-- 🌐 Portal: https://suporte.mineracao.com
+Para suporte técnico ou dúvidas sobre funcionalidades, consulte a documentação interna ou entre em contato com a equipe de desenvolvimento.
 
 ## 📄 Licença
 
-Este sistema foi desenvolvido especificamente para operações de mineração.
-Todos os direitos reservados.
+Sistema proprietário desenvolvido para operações de mineração.
 
 ---
 
-**Sistema CMMS - Mineração v1.0**  
-*Desenvolvido com ❤️ para otimizar suas operações de manutenção*
+**Versão:** 4.0  
+**Última atualização:** Janeiro 2025  
+**Desenvolvido para:** Operações de Mineração
 

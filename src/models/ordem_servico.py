@@ -8,7 +8,8 @@ class OrdemServico(db.Model):
     numero_os = db.Column(db.String(50), unique=True, nullable=False)
     equipamento_id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), nullable=False)
     mecanico_id = db.Column(db.Integer, db.ForeignKey('mecanicos.id'), nullable=True)
-    tipo = db.Column(db.String(20), nullable=False)  # preventiva, corretiva
+    tipo_manutencao_id = db.Column(db.Integer, db.ForeignKey('tipos_manutencao.id'), nullable=False)
+    tipo = db.Column(db.String(20), nullable=True)  # Manter para compatibilidade, será removido após migração
     prioridade = db.Column(db.String(20), nullable=False)  # baixa, media, alta, critica
     status = db.Column(db.String(30), nullable=False, default='aberta')  # aberta, em_execucao, aguardando_pecas, concluida, cancelada
     descricao_problema = db.Column(db.Text, nullable=False)
@@ -22,6 +23,7 @@ class OrdemServico(db.Model):
     custo_pecas = db.Column(db.Float, default=0.0)
     custo_total = db.Column(db.Float, default=0.0)
     observacoes = db.Column(db.Text, nullable=True)
+    assinatura_responsavel = db.Column(db.Text, nullable=True)  # Base64 da assinatura digital
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -31,7 +33,9 @@ class OrdemServico(db.Model):
             'numero_os': self.numero_os,
             'equipamento_id': self.equipamento_id,
             'mecanico_id': self.mecanico_id,
+            'tipo_manutencao_id': self.tipo_manutencao_id,
             'tipo': self.tipo,
+            'tipo_manutencao': self.tipo_manutencao_obj.nome if self.tipo_manutencao_obj else None,
             'prioridade': self.prioridade,
             'status': self.status,
             'descricao_problema': self.descricao_problema,
@@ -45,6 +49,7 @@ class OrdemServico(db.Model):
             'custo_pecas': self.custo_pecas,
             'custo_total': self.custo_total,
             'observacoes': self.observacoes,
+            'assinatura_responsavel': self.assinatura_responsavel,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

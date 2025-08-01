@@ -307,3 +307,281 @@ def get_pneus_equipamento(current_user, equipamento_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@pneus_bp.route('/pneus/<int:pneu_id>/tratativa', methods=['PUT'])
+@token_required
+@supervisor_or_admin_required
+def aplicar_tratativa_pneu(current_user, pneu_id):
+    """Aplicar tratativa ao pneu (recapagem, descarte, devolução)"""
+    try:
+        pneu = Pneu.query.get_or_404(pneu_id)
+        data = request.get_json()
+        
+        tratativa = data.get('tratativa')  # recapagem, descarte, devolucao_estoque
+        
+        if not tratativa:
+            return jsonify({'error': 'Tipo de tratativa é obrigatório'}), 400
+        
+        if tratativa == 'recapagem':
+            if not data.get('fornecedor_recapagem'):
+                return jsonify({'error': 'Fornecedor de recapagem é obrigatório'}), 400
+            
+            pneu.status = 'recapagem'
+            pneu.fornecedor_recapagem = data['fornecedor_recapagem']
+            pneu.data_recapagem = datetime.utcnow().date()
+            pneu.equipamento_id = None  # Remove do equipamento
+            pneu.posicao = None
+            
+        elif tratativa == 'descarte':
+            if not data.get('motivo_descarte'):
+                return jsonify({'error': 'Motivo do descarte é obrigatório'}), 400
+            
+            pneu.status = 'descarte'
+            pneu.data_descarte = datetime.utcnow().date()
+            pneu.motivo_descarte = data['motivo_descarte']
+            pneu.equipamento_id = None  # Remove do equipamento
+            pneu.posicao = None
+            
+        elif tratativa == 'devolucao_estoque':
+            pneu.status = 'estoque'
+            pneu.equipamento_id = None  # Remove do equipamento
+            pneu.posicao = None
+            
+        else:
+            return jsonify({'error': 'Tratativa inválida'}), 400
+        
+        # Atualizar observações se fornecidas
+        if data.get('observacoes'):
+            observacao_atual = pneu.observacoes or ''
+            nova_observacao = f"{datetime.utcnow().strftime('%d/%m/%Y')}: {tratativa.upper()} - {data['observacoes']}"
+            pneu.observacoes = f"{observacao_atual}\n{nova_observacao}" if observacao_atual else nova_observacao
+        
+        pneu.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Tratativa {tratativa} aplicada com sucesso',
+            'pneu': pneu.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@pneus_bp.route('/pneus/<int:pneu_id>/retorno-recapagem', methods=['PUT'])
+@token_required
+@supervisor_or_admin_required
+def retorno_recapagem(current_user, pneu_id):
+    """Registrar retorno de pneu da recapagem"""
+    try:
+        pneu = Pneu.query.get_or_404(pneu_id)
+        data = request.get_json()
+        
+        if pneu.status != 'recapagem':
+            return jsonify({'error': 'Pneu não está em recapagem'}), 400
+        
+        # Atualizar status e dados
+        pneu.status = 'estoque'
+        pneu.tipo = 'recapado'  # Marcar como recapado
+        pneu.km_instalacao = None  # Resetar KM de instalação
+        pneu.km_atual = None
+        
+        # Atualizar medida de sulco se fornecida
+        if data.get('medida_sulco_mm'):
+            pneu.medida_sulco_mm = float(data['medida_sulco_mm'])
+        
+        # Registrar observação
+        if data.get('observacoes'):
+            observacao_atual = pneu.observacoes or ''
+            nova_observacao = f"{datetime.utcnow().strftime('%d/%m/%Y')}: RETORNO RECAPAGEM - {data['observacoes']}"
+            pneu.observacoes = f"{observacao_atual}\n{nova_observacao}" if observacao_atual else nova_observacao
+        
+        pneu.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Retorno de recapagem registrado com sucesso',
+            'pneu': pneu.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@pneus_bp.route('/pneus/<int:pneu_id>/atualizar-sulco', methods=['PUT'])
+@token_required
+def atualizar_medida_sulco(current_user, pneu_id):
+    """Atualizar medida do sulco do pneu"""
+    try:
+        pneu = Pneu.query.get_or_404(pneu_id)
+        data = request.get_json()
+        
+        if not data.get('medida_sulco_mm'):
+            return jsonify({'error': 'Medida do sulco é obrigatória'}), 400
+        
+        medida_anterior = pneu.medida_sulco_mm
+        pneu.medida_sulco_mm = float(data['medida_sulco_mm'])
+        
+        # Registrar observação da medição
+        observacao_medicao = f"Medição de sulco: {medida_anterior}mm → {pneu.medida_sulco_mm}mm"
+        if data.get('observacoes'):
+            observacao_medicao += f" - {data['observacoes']}"
+        
+        observacao_atual = pneu.observacoes or ''
+        nova_observacao = f"{datetime.utcnow().strftime('%d/%m/%Y')}: {observacao_medicao}"
+        pneu.observacoes = f"{observacao_atual}\n{nova_observacao}" if observacao_atual else nova_observacao
+        
+        pneu.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Medida do sulco atualizada com sucesso',
+            'pneu': pneu.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@pneus_bp.route('/pneus/relatorio-performance', methods=['GET'])
+@token_required
+def get_relatorio_performance_pneus(current_user):
+    """Gerar relatório de performance de pneus"""
+    try:
+        # Filtros opcionais
+        marca = request.args.get('marca')
+        fornecedor = request.args.get('fornecedor')
+        equipamento_id = request.args.get('equipamento_id')
+        
+        query = Pneu.query
+        
+        if marca:
+            query = query.filter_by(marca=marca)
+        if fornecedor:
+            query = query.filter_by(fornecedor=fornecedor)
+        if equipamento_id:
+            query = query.filter_by(equipamento_id=equipamento_id)
+        
+        pneus = query.all()
+        
+        # Estatísticas gerais
+        total_pneus = len(pneus)
+        pneus_em_uso = len([p for p in pneus if p.status == 'em_uso'])
+        pneus_estoque = len([p for p in pneus if p.status == 'estoque'])
+        pneus_descarte = len([p for p in pneus if p.status == 'descarte'])
+        pneus_recapagem = len([p for p in pneus if p.status == 'recapagem'])
+        
+        # Performance por marca
+        marcas_performance = {}
+        for pneu in pneus:
+            if pneu.marca not in marcas_performance:
+                marcas_performance[pneu.marca] = {
+                    'total': 0,
+                    'km_total': 0,
+                    'valor_total': 0,
+                    'descartados': 0,
+                    'recapados': 0
+                }
+            
+            marcas_performance[pneu.marca]['total'] += 1
+            marcas_performance[pneu.marca]['valor_total'] += pneu.valor_compra or 0
+            
+            if pneu.km_atual and pneu.km_instalacao:
+                marcas_performance[pneu.marca]['km_total'] += (pneu.km_atual - pneu.km_instalacao)
+            
+            if pneu.status == 'descarte':
+                marcas_performance[pneu.marca]['descartados'] += 1
+            elif pneu.tipo == 'recapado':
+                marcas_performance[pneu.marca]['recapados'] += 1
+        
+        # Calcular médias
+        for marca in marcas_performance:
+            data = marcas_performance[marca]
+            if data['total'] > 0:
+                data['km_medio'] = data['km_total'] / data['total']
+                data['valor_medio'] = data['valor_total'] / data['total']
+                data['taxa_descarte'] = (data['descartados'] / data['total']) * 100
+                data['taxa_recapagem'] = (data['recapados'] / data['total']) * 100
+        
+        # Top 5 pneus com mais KM
+        pneus_mais_km = sorted(
+            [p for p in pneus if p.km_atual and p.km_instalacao],
+            key=lambda x: x.km_atual - x.km_instalacao,
+            reverse=True
+        )[:5]
+        
+        return jsonify({
+            'relatorio': {
+                'data_geracao': datetime.utcnow().isoformat(),
+                'estatisticas_gerais': {
+                    'total_pneus': total_pneus,
+                    'pneus_em_uso': pneus_em_uso,
+                    'pneus_estoque': pneus_estoque,
+                    'pneus_descarte': pneus_descarte,
+                    'pneus_recapagem': pneus_recapagem
+                },
+                'performance_por_marca': marcas_performance,
+                'top_pneus_km': [
+                    {
+                        'numero_serie': p.numero_serie,
+                        'numero_fogo': p.numero_fogo,
+                        'marca': p.marca,
+                        'modelo': p.modelo,
+                        'km_rodados': p.km_atual - p.km_instalacao,
+                        'equipamento': p.equipamento.nome if p.equipamento else None
+                    } for p in pneus_mais_km
+                ]
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@pneus_bp.route('/pneus/alertas', methods=['GET'])
+@token_required
+def get_alertas_pneus(current_user):
+    """Obter alertas relacionados a pneus"""
+    try:
+        pneus = Pneu.query.filter_by(status='em_uso').all()
+        alertas = []
+        
+        for pneu in pneus:
+            # Alerta por sulco baixo (menos de 3mm)
+            if pneu.medida_sulco_mm and pneu.medida_sulco_mm < 3.0:
+                alertas.append({
+                    'tipo': 'sulco_baixo',
+                    'pneu_id': pneu.id,
+                    'numero_serie': pneu.numero_serie,
+                    'numero_fogo': pneu.numero_fogo,
+                    'equipamento': pneu.equipamento.nome if pneu.equipamento else None,
+                    'medida_sulco': pneu.medida_sulco_mm,
+                    'severidade': 'critica' if pneu.medida_sulco_mm < 1.5 else 'alta',
+                    'mensagem': f'Sulco baixo: {pneu.medida_sulco_mm}mm'
+                })
+            
+            # Alerta por vida útil próxima do fim
+            if pneu.vida_util_estimada and pneu.km_atual and pneu.km_instalacao:
+                km_rodados = pneu.km_atual - pneu.km_instalacao
+                percentual_uso = (km_rodados / pneu.vida_util_estimada) * 100
+                
+                if percentual_uso >= 90:
+                    alertas.append({
+                        'tipo': 'vida_util_fim',
+                        'pneu_id': pneu.id,
+                        'numero_serie': pneu.numero_serie,
+                        'numero_fogo': pneu.numero_fogo,
+                        'equipamento': pneu.equipamento.nome if pneu.equipamento else None,
+                        'percentual_uso': round(percentual_uso, 1),
+                        'km_rodados': km_rodados,
+                        'severidade': 'critica' if percentual_uso >= 95 else 'alta',
+                        'mensagem': f'Vida útil: {percentual_uso:.1f}% ({km_rodados:.0f}km)'
+                    })
+        
+        return jsonify({
+            'alertas': alertas,
+            'total_alertas': len(alertas)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
