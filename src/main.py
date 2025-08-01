@@ -92,10 +92,13 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"🌐 Servidor CMMS rodando na porta {port}")
     
-    # Criar tabelas se não existirem
+    # Criar tabelas se não existirem e popular dados de exemplo
     with app.app_context():
         db.create_all()
         print("✅ Tabelas do banco de dados criadas/verificadas")
+        
+        # Importar e chamar a função de criação de dados de exemplo
+        from init_db import criar_dados_exemplo
+        criar_dados_exemplo()
     
     app.run(host='0.0.0.0', port=port, debug=False)
-

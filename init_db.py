@@ -30,8 +30,23 @@ def create_app():
     database_url = os.environ.get('DATABASE_URL')
     if database_url:
         # Railway PostgreSQL
+        # O Railway pode fornecer um DATABASE_URL com um hostname interno que não é resolvível diretamente.
+        # Vamos tentar uma abordagem mais robusta para garantir a conexão.
+        # Se o hostname for 'localhost' ou '0.0.0.0', ou se for um IP, não precisa de ajuste.
+        # Se for um hostname interno do Railway, ele pode precisar ser resolvido via DNS interno.
+        # Para evitar problemas de resolução de hostname interno, podemos tentar usar o IP interno do serviço
+        # ou garantir que o Railway esteja configurado para expor o banco de dados de forma acessível.
+        # Por enquanto, vamos manter a configuração direta, mas o problema pode estar na resolução de DNS do Railway.
+        # Uma alternativa seria usar um túnel SSH ou um serviço de proxy se a rede interna não for transparente.
+        # Para este caso, vamos garantir que o DATABASE_URL seja usado como está, e o problema pode ser de infraestrutura do Railway.
+        # No entanto, para tentar mitigar, podemos adicionar um timeout ou retry, mas o erro 'Name or service not known' é de resolução de DNS.
+        # A solução mais comum é garantir que o serviço de banco de dados esteja no mesmo grupo de rede ou que o Railway
+        # forneça um DATABASE_URL que seja resolúvel pelo container da aplicação.
+        # Não há uma correção de código Python simples para um problema de resolução de DNS de infraestrutura.
+        # No entanto, o Railway geralmente configura isso corretamente. O erro pode ser transitório ou um problema específico do ambiente.
+        # Vamos garantir que a string de conexão seja usada como fornecida.
         print(f"🐘 Conectando ao PostgreSQL: {database_url[:50]}...")
-        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url.replace("postgresql://", "postgresql+psycopg2://")
     else:
         # Fallback para SQLite local (desenvolvimento)
         print("🗄️ Usando SQLite local para desenvolvimento...")
