@@ -73,6 +73,15 @@ def ensure_schema():
                 'ALTER TABLE ordens_servico ADD COLUMN tipo_manutencao_id INTEGER'))
             conn.commit()
 
+    # Verificar coluna assinatura_responsavel em ordens_servico
+    cols = [c['name'] for c in inspector.get_columns('ordens_servico')]
+    if 'assinatura_responsavel' not in cols:
+        print("⚙️  Adicionando coluna 'assinatura_responsavel' em ordens_servico...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE ordens_servico ADD COLUMN assinatura_responsavel TEXT'))
+            conn.commit()
+
     # Verificar colunas grupo_item_id e estoque_local_id em pecas
     cols = [c['name'] for c in inspector.get_columns('pecas')]
     if 'grupo_item_id' not in cols:
@@ -86,6 +95,18 @@ def ensure_schema():
         with engine.connect() as conn:
             conn.execute(text(
                 'ALTER TABLE pecas ADD COLUMN estoque_local_id INTEGER'))
+            conn.commit()
+    if 'ultimo_preco_avaliacao' not in cols:
+        print("⚙️  Adicionando coluna 'ultimo_preco_avaliacao' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN ultimo_preco_avaliacao FLOAT'))
+            conn.commit()
+    if 'ultimo_preco_compra' not in cols:
+        print("⚙️  Adicionando coluna 'ultimo_preco_compra' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN ultimo_preco_compra FLOAT'))
             conn.commit()
 
 def criar_dados_exemplo():
