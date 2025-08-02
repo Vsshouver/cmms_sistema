@@ -1,0 +1,646 @@
+// Página de Ordens de Serviço
+class WorkOrdersPage {
+    constructor() {
+        this.data = [];
+        this.filteredData = [];
+        this.currentFilters = {};
+        this.currentSort = { field: 'data_abertura', direction: 'desc' };
+        this.currentPage = 1;
+        this.itemsPerPage = 10;
+    }
+
+    async render(container) {
+        try {
+            // Mostrar loading
+            container.innerHTML = this.getLoadingHTML();
+
+            // Carregar dados
+            await this.loadData();
+
+            // Renderizar conteúdo
+            container.innerHTML = this.getHTML();
+
+            // Configurar eventos
+            this.setupEvents(container);
+
+            // Aplicar filtros iniciais
+            this.applyFilters();
+
+        } catch (error) {
+            console.error('Erro ao carregar ordens de serviço:', error);
+            container.innerHTML = this.getErrorHTML(error.message);
+        }
+    }
+
+    async loadData() {
+        try {
+            const response = await API.workOrders.getAll();
+            this.data = Array.isArray(response) ? response : (response.data || []);
+            this.filteredData = [...this.data];
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+            this.data = [];
+            this.filteredData = [];
+            throw error;
+        }
+    }
+
+    getLoadingHTML() {
+        return `
+            <div class="page-loading">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Carregando ordens de serviço...</p>
+            </div>
+        `;
+    }
+
+    getErrorHTML(message) {
+        return `
+            <div class="page-error">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>Erro ao carregar ordens de serviço</h3>
+                <p>${message}</p>
+                <button class="btn btn-primary" onclick="navigation.navigateTo('ordens-servico')">
+                    <i class="fas fa-refresh"></i>
+                    Tentar novamente
+                </button>
+            </div>
+        `;
+    }
+
+    getHTML() {
+        return `
+            <div class="work-orders-page">
+                <!-- Header -->
+                <div class="page-header">
+                    <div class="page-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        <div>
+                            <h1>Ordens de Serviço</h1>
+                            <p>Gerencie as ordens de serviço de manutenção</p>
+                        </div>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline" id="refresh-data">
+                            <i class="fas fa-sync-alt"></i>
+                            Atualizar
+                        </button>
+                        <button class="btn btn-primary" id="create-work-order" ${!auth.hasPermission('pcm') ? 'style="display: none;"' : ''}>
+                            <i class="fas fa-plus"></i>
+                            Nova OS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Status</label>
+                            <select id="filter-status" class="filter-select">
+                                <option value="">Todos</option>
+                                <option value="aberta">Aberta</option>
+                                <option value="em_execucao">Em Execução</option>
+                                <option value="aguardando_pecas">Aguardando Peças</option>
+                                <option value="concluida">Concluída</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Prioridade</label>
+                            <select id="filter-prioridade" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="baixa">Baixa</option>
+                                <option value="media">Média</option>
+                                <option value="alta">Alta</option>
+                                <option value="critica">Crítica</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Buscar</label>
+                            <div class="search-input">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="search-input" placeholder="Número OS, equipamento, descrição...">
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <button class="btn btn-outline btn-sm" id="clear-filters">
+                                <i class="fas fa-times"></i>
+                                Limpar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas rápidas -->
+                <div class="quick-stats">
+                    <div class="stat-card stat-card-warning">
+                        <div class="stat-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-abertas">0</div>
+                            <div class="stat-label">Abertas</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-info">
+                        <div class="stat-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-execucao">0</div>
+                            <div class="stat-label">Em Execução</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-danger">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-criticas">0</div>
+                            <div class="stat-label">Críticas</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-success">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-concluidas">0</div>
+                            <div class="stat-label">Concluídas (Mês)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela -->
+                <div class="data-table-container">
+                    <div class="data-table-header">
+                        <div class="data-table-info">
+                            <span id="table-info">Mostrando 0 de 0 registros</span>
+                        </div>
+                        <div class="data-table-controls">
+                            <select id="items-per-page" class="form-select form-select-sm">
+                                <option value="10">10 por página</option>
+                                <option value="25">25 por página</option>
+                                <option value="50">50 por página</option>
+                                <option value="100">100 por página</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-sort="numero_os">
+                                        Número OS
+                                        <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th data-sort="equipamento_nome">
+                                        Equipamento
+                                        <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th data-sort="tipo_manutencao">
+                                        Tipo
+                                        <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th data-sort="prioridade">
+                                        Prioridade
+                                        <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th data-sort="status">
+                                        Status
+                                        <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th data-sort="data_abertura">
+                                        Data Abertura
+                                        <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th data-sort="mecanico_nome">
+                                        Mecânico
+                                        <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Dados serão inseridos aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginação -->
+                    <div class="pagination-container">
+                        <div class="pagination" id="pagination">
+                            <!-- Botões de paginação serão inseridos aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    setupEvents(container) {
+        // Botão de refresh
+        const refreshBtn = container.querySelector('#refresh-data');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refresh());
+        }
+
+        // Botão de nova OS
+        const createBtn = container.querySelector('#create-work-order');
+        if (createBtn) {
+            createBtn.addEventListener('click', () => this.showCreateModal());
+        }
+
+        // Filtros
+        const statusFilter = container.querySelector('#filter-status');
+        const prioridadeFilter = container.querySelector('#filter-prioridade');
+        const searchInput = container.querySelector('#search-input');
+        const clearFiltersBtn = container.querySelector('#clear-filters');
+
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => this.applyFilters());
+        }
+        if (prioridadeFilter) {
+            prioridadeFilter.addEventListener('change', () => this.applyFilters());
+        }
+        if (searchInput) {
+            searchInput.addEventListener('input', Utils.debounce(() => this.applyFilters(), 300));
+        }
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => this.clearFilters());
+        }
+
+        // Ordenação
+        const sortHeaders = container.querySelectorAll('th[data-sort]');
+        sortHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const field = header.dataset.sort;
+                this.toggleSort(field);
+            });
+        });
+
+        // Items per page
+        const itemsPerPageSelect = container.querySelector('#items-per-page');
+        if (itemsPerPageSelect) {
+            itemsPerPageSelect.addEventListener('change', (e) => {
+                this.itemsPerPage = parseInt(e.target.value);
+                this.currentPage = 1;
+                this.updateTable();
+            });
+        }
+    }
+
+    applyFilters() {
+        const statusFilter = document.querySelector('#filter-status')?.value || '';
+        const prioridadeFilter = document.querySelector('#filter-prioridade')?.value || '';
+        const searchTerm = document.querySelector('#search-input')?.value.toLowerCase() || '';
+
+        this.currentFilters = {
+            status: statusFilter,
+            prioridade: prioridadeFilter,
+            search: searchTerm
+        };
+
+        this.filteredData = this.data.filter(item => {
+            // Filtro de status
+            if (statusFilter && item.status !== statusFilter) {
+                return false;
+            }
+
+            // Filtro de prioridade
+            if (prioridadeFilter && item.prioridade !== prioridadeFilter) {
+                return false;
+            }
+
+            // Filtro de busca
+            if (searchTerm) {
+                const searchFields = [
+                    item.numero_os,
+                    item.equipamento_nome,
+                    item.descricao_problema,
+                    item.mecanico_nome
+                ].filter(field => field).join(' ').toLowerCase();
+
+                if (!searchFields.includes(searchTerm)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        this.currentPage = 1;
+        this.updateTable();
+        this.updateStats();
+    }
+
+    clearFilters() {
+        document.querySelector('#filter-status').value = '';
+        document.querySelector('#filter-prioridade').value = '';
+        document.querySelector('#search-input').value = '';
+        
+        this.currentFilters = {};
+        this.filteredData = [...this.data];
+        this.currentPage = 1;
+        this.updateTable();
+        this.updateStats();
+    }
+
+    toggleSort(field) {
+        if (this.currentSort.field === field) {
+            this.currentSort.direction = this.currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.currentSort.field = field;
+            this.currentSort.direction = 'asc';
+        }
+
+        this.sortData();
+        this.updateTable();
+        this.updateSortIcons();
+    }
+
+    sortData() {
+        this.filteredData.sort((a, b) => {
+            const field = this.currentSort.field;
+            const direction = this.currentSort.direction;
+            
+            let aValue = a[field];
+            let bValue = b[field];
+
+            // Tratamento especial para datas
+            if (field.includes('data_')) {
+                aValue = new Date(aValue || 0);
+                bValue = new Date(bValue || 0);
+            }
+
+            // Tratamento para valores nulos
+            if (aValue === null || aValue === undefined) aValue = '';
+            if (bValue === null || bValue === undefined) bValue = '';
+
+            if (direction === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+    }
+
+    updateSortIcons() {
+        // Remover todas as classes de ordenação
+        document.querySelectorAll('th[data-sort] i').forEach(icon => {
+            icon.className = 'fas fa-sort';
+        });
+
+        // Adicionar classe para o campo atual
+        const currentHeader = document.querySelector(`th[data-sort="${this.currentSort.field}"] i`);
+        if (currentHeader) {
+            currentHeader.className = `fas fa-sort-${this.currentSort.direction === 'asc' ? 'up' : 'down'}`;
+        }
+    }
+
+    updateTable() {
+        const tbody = document.querySelector('#table-body');
+        if (!tbody) return;
+
+        // Calcular paginação
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const pageData = this.filteredData.slice(startIndex, endIndex);
+
+        // Renderizar linhas
+        tbody.innerHTML = pageData.length === 0 ? `
+            <tr>
+                <td colspan="8" class="text-center py-8">
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list text-gray-400 text-4xl mb-4"></i>
+                        <p class="text-gray-600">Nenhuma ordem de serviço encontrada</p>
+                    </div>
+                </td>
+            </tr>
+        ` : pageData.map(item => this.getTableRowHTML(item)).join('');
+
+        // Atualizar informações da tabela
+        this.updateTableInfo();
+        this.updatePagination();
+    }
+
+    getTableRowHTML(item) {
+        return `
+            <tr>
+                <td>
+                    <span class="font-mono font-semibold">${item.numero_os}</span>
+                </td>
+                <td>
+                    <div class="equipment-info">
+                        <span class="font-medium">${item.equipamento_nome || 'N/A'}</span>
+                        <small class="text-gray-500 block">${item.equipamento_modelo || ''}</small>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge badge-outline">${item.tipo_manutencao || item.tipo || 'N/A'}</span>
+                </td>
+                <td>
+                    <span class="priority-badge priority-${item.prioridade}">
+                        ${Utils.formatPriority(item.prioridade)}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge status-${item.status}">
+                        ${Utils.formatStatus(item.status)}
+                    </span>
+                </td>
+                <td>
+                    <div class="date-info">
+                        <span>${Utils.formatDate(item.data_abertura)}</span>
+                        <small class="text-gray-500 block">${Utils.formatTime(item.data_abertura)}</small>
+                    </div>
+                </td>
+                <td>
+                    ${item.mecanico_nome ? `
+                        <div class="mechanic-info">
+                            <i class="fas fa-user-hard-hat text-blue-500"></i>
+                            <span>${item.mecanico_nome}</span>
+                        </div>
+                    ` : '<span class="text-gray-400">Não atribuído</span>'}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-icon btn-icon-primary" onclick="workOrdersPage.viewDetails(${item.id})" title="Ver detalhes">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        ${auth.hasPermission('pcm') ? `
+                            <button class="btn-icon btn-icon-secondary" onclick="workOrdersPage.editWorkOrder(${item.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        ` : ''}
+                        ${item.status === 'concluida' ? `
+                            <button class="btn-icon btn-icon-success" onclick="workOrdersPage.printWorkOrder(${item.id})" title="Imprimir">
+                                <i class="fas fa-print"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    updateTableInfo() {
+        const tableInfo = document.querySelector('#table-info');
+        if (tableInfo) {
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
+            const endIndex = Math.min(startIndex + this.itemsPerPage - 1, this.filteredData.length);
+            
+            tableInfo.textContent = this.filteredData.length === 0 
+                ? 'Nenhum registro encontrado'
+                : `Mostrando ${startIndex} a ${endIndex} de ${this.filteredData.length} registros`;
+        }
+    }
+
+    updatePagination() {
+        const paginationContainer = document.querySelector('#pagination');
+        if (!paginationContainer) return;
+
+        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
+        
+        if (totalPages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let paginationHTML = '';
+
+        // Botão anterior
+        paginationHTML += `
+            <button class="pagination-btn ${this.currentPage === 1 ? 'disabled' : ''}" 
+                    onclick="workOrdersPage.goToPage(${this.currentPage - 1})" 
+                    ${this.currentPage === 1 ? 'disabled' : ''}>
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        `;
+
+        // Botões de página
+        const startPage = Math.max(1, this.currentPage - 2);
+        const endPage = Math.min(totalPages, this.currentPage + 2);
+
+        if (startPage > 1) {
+            paginationHTML += `<button class="pagination-btn" onclick="workOrdersPage.goToPage(1)">1</button>`;
+            if (startPage > 2) {
+                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+                <button class="pagination-btn ${i === this.currentPage ? 'active' : ''}" 
+                        onclick="workOrdersPage.goToPage(${i})">
+                    ${i}
+                </button>
+            `;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+            }
+            paginationHTML += `<button class="pagination-btn" onclick="workOrdersPage.goToPage(${totalPages})">${totalPages}</button>`;
+        }
+
+        // Botão próximo
+        paginationHTML += `
+            <button class="pagination-btn ${this.currentPage === totalPages ? 'disabled' : ''}" 
+                    onclick="workOrdersPage.goToPage(${this.currentPage + 1})" 
+                    ${this.currentPage === totalPages ? 'disabled' : ''}>
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+
+        paginationContainer.innerHTML = paginationHTML;
+    }
+
+    updateStats() {
+        const stats = {
+            abertas: this.data.filter(item => item.status === 'aberta').length,
+            execucao: this.data.filter(item => item.status === 'em_execucao').length,
+            criticas: this.data.filter(item => item.prioridade === 'critica' && item.status !== 'concluida').length,
+            concluidas: this.data.filter(item => {
+                if (item.status !== 'concluida') return false;
+                const dataEncerramento = new Date(item.data_encerramento);
+                const agora = new Date();
+                const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+                return dataEncerramento >= inicioMes;
+            }).length
+        };
+
+        document.querySelector('#stat-abertas').textContent = stats.abertas;
+        document.querySelector('#stat-execucao').textContent = stats.execucao;
+        document.querySelector('#stat-criticas').textContent = stats.criticas;
+        document.querySelector('#stat-concluidas').textContent = stats.concluidas;
+    }
+
+    goToPage(page) {
+        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
+        if (page >= 1 && page <= totalPages) {
+            this.currentPage = page;
+            this.updateTable();
+        }
+    }
+
+    async refresh() {
+        try {
+            const refreshBtn = document.querySelector('#refresh-data');
+            if (refreshBtn) {
+                const icon = refreshBtn.querySelector('i');
+                icon.classList.add('fa-spin');
+                refreshBtn.disabled = true;
+            }
+
+            await this.loadData();
+            this.applyFilters();
+            Toast.success('Dados atualizados');
+
+        } catch (error) {
+            console.error('Erro ao atualizar dados:', error);
+            Toast.error('Erro ao atualizar dados');
+        } finally {
+            const refreshBtn = document.querySelector('#refresh-data');
+            if (refreshBtn) {
+                const icon = refreshBtn.querySelector('i');
+                icon.classList.remove('fa-spin');
+                refreshBtn.disabled = false;
+            }
+        }
+    }
+
+    showCreateModal() {
+        // TODO: Implementar modal de criação de OS
+        Toast.info('Modal de criação em desenvolvimento');
+    }
+
+    viewDetails(id) {
+        // TODO: Implementar visualização de detalhes
+        Toast.info('Visualização de detalhes em desenvolvimento');
+    }
+
+    editWorkOrder(id) {
+        // TODO: Implementar edição de OS
+        Toast.info('Edição de OS em desenvolvimento');
+    }
+
+    printWorkOrder(id) {
+        // TODO: Implementar impressão de OS
+        Toast.info('Impressão de OS em desenvolvimento');
+    }
+}
+
+// Instância global para uso nos event handlers
+const workOrdersPage = new WorkOrdersPage();
+
+// Exportar para uso global
+window.WorkOrdersPage = WorkOrdersPage;
+

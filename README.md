@@ -45,7 +45,7 @@ Sistema completo de gerenciamento de manutenção (CMMS) desenvolvido especifica
 1. **Clone o repositório:**
 ```bash
 git clone <repository-url>
-cd cmms_sistema_melhorado
+cd cmms_sistema
 ```
 
 2. **Crie um ambiente virtual:**
@@ -86,6 +86,7 @@ A aplicação estará disponível em `http://localhost:5000`
 1. **Conecte seu repositório ao Railway**
 2. **Configure as variáveis de ambiente no Railway:**
    - `DATABASE_URL`: String de conexão PostgreSQL (fornecida automaticamente)
+   - **Atenção**: a aplicação não inicia se `DATABASE_URL` não estiver definida. Configure com a URL do seu PostgreSQL.
    - `SECRET_KEY`: Chave secreta para sessões
    - `FLASK_ENV`: `production`
 
@@ -114,15 +115,15 @@ railway up
 
 ## 👥 Usuários Padrão
 
-O sistema cria automaticamente os seguintes usuários para teste:
+O sistema cria automaticamente os seguintes usuários para teste (utilize o e-mail para login):
 
-| Usuário | Senha | Nível |
-|---------|-------|-------|
-| admin | admin123 | Administrador |
-| supervisor | super123 | Supervisor |
-| pcm | pcm123 | PCM |
-| almoxarife | almox123 | Almoxarife |
-| mecanico | mec123 | Mecânico |
+| E-mail | Senha | Nível |
+|--------|-------|-------|
+| admin@mineracao.com | admin123 | Administrador |
+| supervisor@mineracao.com | super123 | Supervisor |
+| pcm@mineracao.com | pcm123 | PCM |
+| almoxarife@mineracao.com | almox123 | Almoxarife |
+| mecanico@mineracao.com | mec123 | Mecânico |
 
 ## 📊 Estrutura do Banco de Dados
 

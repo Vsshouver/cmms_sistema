@@ -3,7 +3,7 @@ import sys
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, send_from_directory
 from flask_cors import CORS
 from sqlalchemy import text
 from datetime import datetime
@@ -30,7 +30,10 @@ from src.routes.importacao import importacao_bp
 from src.routes.impressao import impressao_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
-app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
+
+# Chave secreta configurável via variável de ambiente
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key')
+app.config['SECRET_KEY'] = SECRET_KEY
 
 # Configurar CORS para permitir credenciais de qualquer origem
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
@@ -53,15 +56,11 @@ app.register_blueprint(importacao_bp, url_prefix='/api')
 app.register_blueprint(impressao_bp, url_prefix='/api')
 
 # Configurar banco de dados PostgreSQL
-database_url = os.environ.get('DATABASE_URL')
-if database_url:
-    # Railway PostgreSQL
-    print(f"🐘 Conectando ao PostgreSQL: {database_url[:50]}...")
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    # Fallback para SQLite local (desenvolvimento)
-    print("🗄️ Usando SQLite local para desenvolvimento...")
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    raise RuntimeError("DATABASE_URL não configurada. Defina a variável de ambiente com a URL do PostgreSQL.")
+print(f"🐘 Conectando ao PostgreSQL: {database_url[:50]}...")
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)

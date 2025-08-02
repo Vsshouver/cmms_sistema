@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+venv/
+cmms.db
+src/database/app.db

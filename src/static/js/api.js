@@ -122,6 +122,7 @@ const api = new ApiClient();
 const API = {
     // Autenticação
     auth: {
+        // Encaminha os campos exatamente como recebidos
         login: (credentials) => api.post('/auth/login', credentials),
         logout: () => api.post('/auth/logout'),
         me: () => api.get('/auth/me')
@@ -144,7 +145,7 @@ const API = {
 
     // Equipamentos
     equipments: {
-        list: (params) => api.get('/equipamentos', params),
+        getAll: (params) => api.get('/equipamentos', params),
         get: (id) => api.get(`/equipamentos/${id}`),
         create: (data) => api.post('/equipamentos', data),
         update: (id, data) => api.put(`/equipamentos/${id}`, data),
@@ -153,7 +154,7 @@ const API = {
 
     // Tipos de Equipamento
     equipmentTypes: {
-        list: (params) => api.get('/tipos-equipamento', params),
+        getAll: (params) => api.get('/tipos-equipamento', params),
         get: (id) => api.get(`/tipos-equipamento/${id}`),
         create: (data) => api.post('/tipos-equipamento', data),
         update: (id, data) => api.put(`/tipos-equipamento/${id}`, data),
@@ -162,7 +163,7 @@ const API = {
 
     // Ordens de Serviço
     workOrders: {
-        list: (params) => api.get('/ordens-servico', params),
+        getAll: (params) => api.get('/ordens-servico', params),
         get: (id) => api.get(`/ordens-servico/${id}`),
         create: (data) => api.post('/ordens-servico', data),
         update: (id, data) => api.put(`/ordens-servico/${id}`, data),
@@ -177,7 +178,7 @@ const API = {
 
     // Tipos de Manutenção
     maintenanceTypes: {
-        list: (params) => api.get('/tipos-manutencao', params),
+        getAll: (params) => api.get('/tipos-manutencao', params),
         get: (id) => api.get(`/tipos-manutencao/${id}`),
         create: (data) => api.post('/tipos-manutencao', data),
         update: (id, data) => api.put(`/tipos-manutencao/${id}`, data),
@@ -186,14 +187,14 @@ const API = {
 
     // Estoque
     inventory: {
-        listParts: (params) => api.get('/estoque/pecas', params),
-        getPart: (id) => api.get(`/estoque/pecas/${id}`),
-        createPart: (data) => api.post('/estoque/pecas', data),
-        updatePart: (id, data) => api.put(`/estoque/pecas/${id}`, data),
-        deletePart: (id) => api.delete(`/estoque/pecas/${id}`),
+        getAll: (params) => api.get('/estoque/pecas', params),
+        get: (id) => api.get(`/estoque/pecas/${id}`),
+        create: (data) => api.post('/estoque/pecas', data),
+        update: (id, data) => api.put(`/estoque/pecas/${id}`, data),
+        delete: (id) => api.delete(`/estoque/pecas/${id}`),
         
         // Movimentações
-        listMovements: (params) => api.get('/estoque/movimentacoes', params),
+        getMovements: (params) => api.get('/estoque/movimentacoes', params),
         createMovement: (data) => api.post('/estoque/movimentacao', data),
         
         // Inventário
@@ -207,11 +208,17 @@ const API = {
 
     // Grupos de Item
     itemGroups: {
-        list: (params) => api.get('/grupos-item', params),
+        getAll: (params) => api.get('/grupos-item', params),
         get: (id) => api.get(`/grupos-item/${id}`),
         create: (data) => api.post('/grupos-item', data),
         update: (id, data) => api.put(`/grupos-item/${id}`, data),
         delete: (id) => api.delete(`/grupos-item/${id}`)
+    },
+
+    // Locais de Estoque
+    stockLocations: {
+        getAll: () => api.get('/estoque/locais'),
+        create: (data) => api.post('/estoque/locais', data)
     },
 
     // Importação
@@ -223,7 +230,7 @@ const API = {
 
     // Pneus
     tires: {
-        list: (params) => api.get('/pneus', params),
+        getAll: (params) => api.get('/pneus', params),
         get: (id) => api.get(`/pneus/${id}`),
         create: (data) => api.post('/pneus', data),
         update: (id, data) => api.put(`/pneus/${id}`, data),
@@ -239,7 +246,7 @@ const API = {
 
     // Mecânicos
     mechanics: {
-        list: (params) => api.get('/mecanicos', params),
+        getAll: (params) => api.get('/mecanicos', params),
         get: (id) => api.get(`/mecanicos/${id}`),
         create: (data) => api.post('/mecanicos', data),
         update: (id, data) => api.put(`/mecanicos/${id}`, data),
@@ -248,7 +255,7 @@ const API = {
 
     // Análise de Óleo
     oilAnalysis: {
-        list: (params) => api.get('/analise-oleo', params),
+        getAll: (params) => api.get('/analise-oleo', params),
         get: (id) => api.get(`/analise-oleo/${id}`),
         create: (data) => api.post('/analise-oleo', data),
         update: (id, data) => api.put(`/analise-oleo/${id}`, data),

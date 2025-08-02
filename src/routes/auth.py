@@ -14,12 +14,16 @@ def login():
     try:
         data = request.get_json()
         email = data.get('email')
+        username = data.get('username')
         senha = data.get('senha')
 
-        if not email or not senha:
-            return jsonify({'error': 'Email e senha são obrigatórios'}), 400
+        if not senha or not (email or username):
+            return jsonify({'error': 'Email/usuário e senha são obrigatórios'}), 400
 
-        usuario = Usuario.query.filter_by(email=email).first()
+        if email:
+            usuario = Usuario.query.filter_by(email=email).first()
+        else:
+            usuario = Usuario.query.filter_by(username=username).first()
         if not usuario or not usuario.check_password(senha):
             return jsonify({'error': 'Credenciais inválidas'}), 401
 
@@ -61,6 +65,7 @@ def logout(current_user):
     return jsonify({'message': 'Logout realizado com sucesso'}), 200
 
 @auth_bp.route('/auth/profile', methods=['GET'])
+@auth_bp.route('/auth/me', methods=['GET'])
 @token_required
 def get_profile(current_user):
     """Obter perfil do usuário atual"""

@@ -27,42 +27,99 @@ from src.models.os_peca import OS_Peca
 from src.models.analise_oleo import AnaliseOleo
 
 from datetime import datetime, date, timedelta
+from sqlalchemy import text, inspect
 
 def create_app():
     """Criar aplicação Flask para inicialização."""
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
+
+    # Chave secreta configurável via variável de ambiente
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key')
+    app.config['SECRET_KEY'] = SECRET_KEY
     
     # Configurar banco de dados PostgreSQL
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url:
-        # Railway PostgreSQL
-        # O Railway pode fornecer um DATABASE_URL com um hostname interno que não é resolvível diretamente.
-        # Vamos tentar uma abordagem mais robusta para garantir a conexão.
-        # Se o hostname for 'localhost' ou '0.0.0.0', ou se for um IP, não precisa de ajuste.
-        # Se for um hostname interno do Railway, ele pode precisar ser resolvido via DNS interno.
-        # Para evitar problemas de resolução de hostname interno, podemos tentar usar o IP interno do serviço
-        # ou garantir que o Railway esteja configurado para expor o banco de dados de forma acessível.
-        # Por enquanto, vamos manter a configuração direta, mas o problema pode estar na resolução de DNS do Railway.
-        # Uma alternativa seria usar um túnel SSH ou um serviço de proxy se a rede interna não for transparente.
-        # Para este caso, vamos garantir que o DATABASE_URL seja usado como está, e o problema pode ser de infraestrutura do Railway.
-        # No entanto, para tentar mitigar, podemos adicionar um timeout ou retry, mas o erro 'Name or service not known' é de resolução de DNS.
-        # A solução mais comum é garantir que o serviço de banco de dados esteja no mesmo grupo de rede ou que o Railway
-        # forneça um DATABASE_URL que seja resolúvel pelo container da aplicação.
-        # Não há uma correção de código Python simples para um problema de resolução de DNS de infraestrutura.
-        # No entanto, o Railway geralmente configura isso corretamente. O erro pode ser transitório ou um problema específico do ambiente.
-        # Vamos garantir que a string de conexão seja usada como fornecida.
-        print(f"🐘 Conectando ao PostgreSQL: {database_url[:50]}...")
-        app.config["SQLALCHEMY_DATABASE_URI"] = database_url.replace("postgresql://", "postgresql+psycopg2://")
-    else:
-        # Fallback para SQLite local (desenvolvimento)
-        print("🗄️ Usando SQLite local para desenvolvimento...")
-        app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(current_dir, 'src', 'database', 'app.db')}"
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL não configurada. Defina a variável de ambiente com a URL do PostgreSQL.")
+
+    print(f"🐘 Conectando ao PostgreSQL: {database_url[:50]}...")
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url.replace("postgresql://", "postgresql+psycopg2://")
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
-    
+
     return app
+
+def ensure_schema():
+    """Garantir que as colunas necessárias existam no banco."""
+    engine = db.engine
+    inspector = inspect(engine)
+
+    # Verificar coluna tipo_equipamento_id em equipamentos
+    cols = [c['name'] for c in inspector.get_columns('equipamentos')]
+    if 'tipo_equipamento_id' not in cols:
+        print("⚙️  Adicionando coluna 'tipo_equipamento_id' em equipamentos...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE equipamentos ADD COLUMN tipo_equipamento_id INTEGER'))
+            conn.commit()
+
+    # Verificar coluna tipo_manutencao_id em ordens_servico
+    cols = [c['name'] for c in inspector.get_columns('ordens_servico')]
+    if 'tipo_manutencao_id' not in cols:
+        print("⚙️  Adicionando coluna 'tipo_manutencao_id' em ordens_servico...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE ordens_servico ADD COLUMN tipo_manutencao_id INTEGER'))
+            conn.commit()
+
+    # Verificar coluna assinatura_responsavel em ordens_servico
+    cols = [c['name'] for c in inspector.get_columns('ordens_servico')]
+    if 'assinatura_responsavel' not in cols:
+        print("⚙️  Adicionando coluna 'assinatura_responsavel' em ordens_servico...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE ordens_servico ADD COLUMN assinatura_responsavel TEXT'))
+            conn.commit()
+
+    # Verificar colunas grupo_item_id e estoque_local_id em pecas
+    cols = [c['name'] for c in inspector.get_columns('pecas')]
+    if 'grupo_item_id' not in cols:
+        print("⚙️  Adicionando coluna 'grupo_item_id' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN grupo_item_id INTEGER'))
+            conn.commit()
+    if 'estoque_local_id' not in cols:
+        print("⚙️  Adicionando coluna 'estoque_local_id' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN estoque_local_id INTEGER'))
+            conn.commit()
+    if 'ultimo_preco_avaliacao' not in cols:
+        print("⚙️  Adicionando coluna 'ultimo_preco_avaliacao' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN ultimo_preco_avaliacao FLOAT'))
+            conn.commit()
+    if 'ultimo_preco_compra' not in cols:
+        print("⚙️  Adicionando coluna 'ultimo_preco_compra' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN ultimo_preco_compra FLOAT'))
+            conn.commit()
+    if 'ultima_inventariacao_data' not in cols:
+        print("⚙️  Adicionando coluna 'ultima_inventariacao_data' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN ultima_inventariacao_data TIMESTAMP'))
+            conn.commit()
+    if 'ultima_inventariacao_usuario' not in cols:
+        print("⚙️  Adicionando coluna 'ultima_inventariacao_usuario' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE pecas ADD COLUMN ultima_inventariacao_usuario VARCHAR(100)"))
+            conn.commit()
 
 def criar_dados_exemplo():
     """Função para criar dados de exemplo no banco"""
@@ -391,9 +448,11 @@ def main():
         with app.app_context():
             print("🔧 Criando/verificando estrutura do banco de dados...")
             db.create_all()
-            
+            ensure_schema()
+
             print("📊 Populando com dados de exemplo...")
-            criar_dados_exemplo()
+            # Usar a função mais completa para garantir compatibilidade
+            criar_dados_exemplo_completos()
             
             print("\n" + "=" * 60)
             print("✅ SISTEMA INICIALIZADO COM SUCESSO!")
@@ -622,5 +681,7 @@ def criar_dados_exemplo_completos():
 # Manter compatibilidade com a função original
 def criar_dados_exemplo():
     """Função de compatibilidade - chama a função completa"""
+    # Garante que colunas novas existam mesmo quando chamado fora do main()
+    ensure_schema()
     return criar_dados_exemplo_completos()
 

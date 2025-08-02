@@ -21,17 +21,24 @@ class AuthManager {
     async login(credentials) {
         try {
             const response = await API.auth.login(credentials);
-            
-            if (response.token) {
-                this.token = response.token;
-                this.currentUser = response.user;
-                
-                // Salvar token
+
+            // Depuração da resposta recebida
+            console.log('login response', response);
+
+            // Alguns backends retornam dados aninhados em `data`
+            const token = response.token || response.data?.token;
+            const user = response.user || response.data?.user;
+
+            if (token) {
+                this.token = token;
+                this.currentUser = user;
+
+                // Salvar token localmente para persistência
                 api.setToken(this.token);
-                
-                // Executar callbacks de login
+
+                // Executar callbacks de login registrados
                 this.loginCallbacks.forEach(callback => callback(this.currentUser));
-                
+
                 return { success: true, user: this.currentUser };
             } else {
                 throw new Error('Token não recebido');
@@ -136,7 +143,7 @@ const auth = new AuthManager();
 class LoginForm {
     constructor() {
         this.form = null;
-        this.usernameInput = null;
+        this.emailInput = null;
         this.passwordInput = null;
         this.submitButton = null;
         this.errorDiv = null;
@@ -156,7 +163,7 @@ class LoginForm {
 
     setupForm() {
         this.form = document.getElementById('login-form');
-        this.usernameInput = document.getElementById('username');
+        this.emailInput = document.getElementById('email');
         this.passwordInput = document.getElementById('password');
         this.submitButton = this.form?.querySelector('button[type="submit"]');
         this.errorDiv = document.getElementById('login-error');
@@ -171,19 +178,19 @@ class LoginForm {
             this.togglePasswordButton.addEventListener('click', () => this.togglePassword());
         }
 
-        // Auto-focus no campo de usuário
-        if (this.usernameInput) {
-            this.usernameInput.focus();
+        // Auto-focus no campo de email
+        if (this.emailInput) {
+            this.emailInput.focus();
         }
     }
 
     async handleSubmit(e) {
         e.preventDefault();
-        
-        const username = this.usernameInput?.value.trim();
-        const password = this.passwordInput?.value;
 
-        if (!username || !password) {
+        const email = this.emailInput?.value.trim();
+        const senha = this.passwordInput?.value;
+
+        if (!email || !senha) {
             this.showError('Por favor, preencha todos os campos.');
             return;
         }
@@ -191,11 +198,16 @@ class LoginForm {
         this.setLoading(true);
         this.hideError();
 
-        const result = await auth.login({ username, password });
+        const result = await auth.login({ email, senha });
 
         if (result.success) {
             // Login bem-sucedido - a aplicação será carregada pelos callbacks
             this.showSuccess('Login realizado com sucesso!');
+
+            // Redirecionar/inicializar app após breve atraso
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
         } else {
             this.showError(result.error || 'Erro ao fazer login. Verifique suas credenciais.');
         }

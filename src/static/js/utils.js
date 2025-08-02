@@ -309,6 +309,43 @@ const Utils = {
         const max = Math.max(...values);
         
         return { min, max, avg, sum };
+    },
+
+    // Formatação específicas para o sistema
+    formatStatus(status) {
+        const statusMap = {
+            'aberta': 'Aberta',
+            'em_execucao': 'Em Execução',
+            'aguardando_pecas': 'Aguardando Peças',
+            'concluida': 'Concluída',
+            'cancelada': 'Cancelada',
+            'ativo': 'Ativo',
+            'inativo': 'Inativo',
+            'manutencao': 'Em Manutenção'
+        };
+        
+        return statusMap[status] || status;
+    },
+
+    formatPriority(priority) {
+        const priorityMap = {
+            'baixa': 'Baixa',
+            'media': 'Média',
+            'alta': 'Alta',
+            'critica': 'Crítica'
+        };
+        
+        return priorityMap[priority] || priority;
+    },
+
+    formatTime(dateString) {
+        if (!dateString) return '-';
+        
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     }
 };
 
