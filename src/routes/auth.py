@@ -65,6 +65,7 @@ def logout(current_user):
     return jsonify({'message': 'Logout realizado com sucesso'}), 200
 
 @auth_bp.route('/auth/profile', methods=['GET'])
+@auth_bp.route('/auth/me', methods=['GET'])
 @token_required
 def get_profile(current_user):
     """Obter perfil do usuário atual"""
