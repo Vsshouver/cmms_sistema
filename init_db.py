@@ -436,7 +436,8 @@ def main():
             ensure_schema()
 
             print("📊 Populando com dados de exemplo...")
-            criar_dados_exemplo()
+            # Usar a função mais completa para garantir compatibilidade
+            criar_dados_exemplo_completos()
             
             print("\n" + "=" * 60)
             print("✅ SISTEMA INICIALIZADO COM SUCESSO!")
@@ -665,5 +666,7 @@ def criar_dados_exemplo_completos():
 # Manter compatibilidade com a função original
 def criar_dados_exemplo():
     """Função de compatibilidade - chama a função completa"""
+    # Garante que colunas novas existam mesmo quando chamado fora do main()
+    ensure_schema()
     return criar_dados_exemplo_completos()
 
