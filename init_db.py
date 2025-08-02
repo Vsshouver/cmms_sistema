@@ -108,6 +108,18 @@ def ensure_schema():
             conn.execute(text(
                 'ALTER TABLE pecas ADD COLUMN ultimo_preco_compra FLOAT'))
             conn.commit()
+    if 'ultima_inventariacao_data' not in cols:
+        print("⚙️  Adicionando coluna 'ultima_inventariacao_data' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN ultima_inventariacao_data TIMESTAMP'))
+            conn.commit()
+    if 'ultima_inventariacao_usuario' not in cols:
+        print("⚙️  Adicionando coluna 'ultima_inventariacao_usuario' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE pecas ADD COLUMN ultima_inventariacao_usuario VARCHAR(100)"))
+            conn.commit()
 
 def criar_dados_exemplo():
     """Função para criar dados de exemplo no banco"""
