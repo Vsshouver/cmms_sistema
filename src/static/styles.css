@@ -115,12 +115,14 @@ body {
 }
 
 .login-container {
-    background: white;
+    background: rgba(255, 255, 255, 0.9);
     border-radius: var(--radius-xl);
     padding: 2rem;
     width: 100%;
     max-width: 400px;
     box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--gray-100);
 }
 
 .login-header {
@@ -210,10 +212,12 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    box-shadow: var(--shadow);
 }
 
 .login-btn:hover {
     background: var(--primary-dark);
+    box-shadow: var(--shadow-md);
 }
 
 .login-btn:disabled {
