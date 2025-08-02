@@ -8,7 +8,6 @@ class ApiClient {
         this.token = localStorage.getItem('token');
     }
 
-    // Configurar token de autenticação
     setToken(token) {
         this.token = token;
         if (token) {
@@ -18,7 +17,6 @@ class ApiClient {
         }
     }
 
-    // Obter headers padrão
     getHeaders(contentType = 'application/json') {
         const headers = {
             'Content-Type': contentType
@@ -31,25 +29,23 @@ class ApiClient {
         return headers;
     }
 
-    // Fazer requisição HTTP
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
         const config = {
+            method: options.method || 'GET',
             headers: this.getHeaders(options.contentType),
-            ...options
+            body: options.body
         };
 
         try {
             const response = await fetch(url, config);
-            
-            // Se não autorizado, redirecionar para login
+
             if (response.status === 401) {
                 this.setToken(null);
                 window.location.reload();
                 return;
             }
 
-            // Se resposta não é JSON (ex: PDF)
             if (options.responseType === 'blob') {
                 return response.blob();
             }
@@ -67,47 +63,39 @@ class ApiClient {
         }
     }
 
-    // Métodos HTTP
-    async get(endpoint, params = {}) {
+    get(endpoint, params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-        
-        return this.request(url, {
-            method: 'GET'
-        });
+        return this.request(url, { method: 'GET' });
     }
 
-    async post(endpoint, data = {}) {
+    post(endpoint, data = {}) {
         return this.request(endpoint, {
             method: 'POST',
             body: JSON.stringify(data)
         });
     }
 
-    async put(endpoint, data = {}) {
+    put(endpoint, data = {}) {
         return this.request(endpoint, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
     }
 
-    async delete(endpoint) {
-        return this.request(endpoint, {
-            method: 'DELETE'
-        });
+    delete(endpoint) {
+        return this.request(endpoint, { method: 'DELETE' });
     }
 
-    // Upload de arquivo
-    async upload(endpoint, formData) {
+    upload(endpoint, formData) {
         return this.request(endpoint, {
             method: 'POST',
             body: formData,
-            contentType: null // Para FormData, não definir Content-Type
+            contentType: null
         });
     }
 
-    // Download de arquivo
-    async download(endpoint, filename) {
+    download(endpoint, filename) {
         return this.request(endpoint, {
             method: 'GET',
             responseType: 'blob'
@@ -115,26 +103,20 @@ class ApiClient {
     }
 }
 
-// Instância global do cliente API
 const api = new ApiClient();
 
-// Serviços da API organizados por módulo
 const API = {
-    // Autenticação
     auth: {
-        // Encaminha os campos exatamente como recebidos
         login: (credentials) => api.post('/auth/login', credentials),
         logout: () => api.post('/auth/logout'),
         me: () => api.get('/auth/me')
     },
 
-    // Dashboard
     dashboard: {
         getStats: () => api.get('/dashboard'),
         getCharts: () => api.get('/dashboard/charts')
     },
 
-    // Usuários
     users: {
         getAll: (params) => api.get('/usuarios', params),
         get: (id) => api.get(`/usuarios/${id}`),
@@ -143,7 +125,6 @@ const API = {
         delete: (id) => api.delete(`/usuarios/${id}`)
     },
 
-    // Equipamentos
     equipments: {
         getAll: (params) => api.get('/equipamentos', params),
         get: (id) => api.get(`/equipamentos/${id}`),
@@ -152,7 +133,6 @@ const API = {
         delete: (id) => api.delete(`/equipamentos/${id}`)
     },
 
-    // Tipos de Equipamento
     equipmentTypes: {
         getAll: (params) => api.get('/tipos-equipamento', params),
         get: (id) => api.get(`/tipos-equipamento/${id}`),
@@ -161,7 +141,6 @@ const API = {
         delete: (id) => api.delete(`/tipos-equipamento/${id}`)
     },
 
-    // Ordens de Serviço
     workOrders: {
         getAll: (params) => api.get('/ordens-servico', params),
         get: (id) => api.get(`/ordens-servico/${id}`),
@@ -176,7 +155,6 @@ const API = {
         print: (id) => api.download(`/ordens-servico/${id}/imprimir`, `OS_${id}.pdf`)
     },
 
-    // Tipos de Manutenção
     maintenanceTypes: {
         getAll: (params) => api.get('/tipos-manutencao', params),
         get: (id) => api.get(`/tipos-manutencao/${id}`),
@@ -185,28 +163,23 @@ const API = {
         delete: (id) => api.delete(`/tipos-manutencao/${id}`)
     },
 
-    // Estoque
     inventory: {
         getAll: (params) => api.get('/estoque/pecas', params),
         get: (id) => api.get(`/estoque/pecas/${id}`),
         create: (data) => api.post('/estoque/pecas', data),
         update: (id, data) => api.put(`/estoque/pecas/${id}`, data),
         delete: (id) => api.delete(`/estoque/pecas/${id}`),
-        
-        // Movimentações
+
         getMovements: (params) => api.get('/estoque/movimentacoes', params),
         createMovement: (data) => api.post('/estoque/movimentacao', data),
-        
-        // Inventário
+
         doInventory: (data) => api.post('/estoque/inventario', data),
         getInventoryReport: (params) => api.get('/estoque/relatorio-inventario', params),
-        
-        // Estoques locais
+
         listLocations: () => api.get('/estoque/locais'),
         createLocation: (data) => api.post('/estoque/locais', data)
     },
 
-    // Grupos de Item
     itemGroups: {
         getAll: (params) => api.get('/grupos-item', params),
         get: (id) => api.get(`/grupos-item/${id}`),
@@ -215,20 +188,17 @@ const API = {
         delete: (id) => api.delete(`/grupos-item/${id}`)
     },
 
-    // Locais de Estoque
     stockLocations: {
         getAll: () => api.get('/estoque/locais'),
         create: (data) => api.post('/estoque/locais', data)
     },
 
-    // Importação
     import: {
         importParts: (formData) => api.upload('/importacao/pecas', formData),
         getTemplate: () => api.get('/importacao/template-pecas'),
         getAvailableGroups: () => api.get('/importacao/grupos-disponiveis')
     },
 
-    // Pneus
     tires: {
         getAll: (params) => api.get('/pneus', params),
         get: (id) => api.get(`/pneus/${id}`),
@@ -244,7 +214,6 @@ const API = {
         getAlerts: () => api.get('/pneus/alertas')
     },
 
-    // Mecânicos
     mechanics: {
         getAll: (params) => api.get('/mecanicos', params),
         get: (id) => api.get(`/mecanicos/${id}`),
@@ -253,40 +222,14 @@ const API = {
         delete: (id) => api.delete(`/mecanicos/${id}`)
     },
 
-    // Análise de Óleo
     oilAnalysis: {
         getAll: (params) => api.get('/analise-oleo', params),
         get: (id) => api.get(`/analise-oleo/${id}`),
         create: (data) => api.post('/analise-oleo', data),
         update: (id, data) => api.put(`/analise-oleo/${id}`, data),
         delete: (id) => api.delete(`/analise-oleo/${id}`)
-    }
-};
-
-// Exportar para uso global
-window.API = API;
-window.api = api;
-
-
-    // Tipos de Manutenção
-    maintenanceTypes: {
-        getAll: (params) => api.get('/tipos-manutencao', params),
-        get: (id) => api.get(`/tipos-manutencao/${id}`),
-        create: (data) => api.post('/tipos-manutencao', data),
-        update: (id, data) => api.put(`/tipos-manutencao/${id}`, data),
-        delete: (id) => api.delete(`/tipos-manutencao/${id}`)
     },
 
-    // Tipos de Equipamento
-    equipmentTypes: {
-        getAll: (params) => api.get('/tipos-equipamento', params),
-        get: (id) => api.get(`/tipos-equipamento/${id}`),
-        create: (data) => api.post('/tipos-equipamento', data),
-        update: (id, data) => api.put(`/tipos-equipamento/${id}`, data),
-        delete: (id) => api.delete(`/tipos-equipamento/${id}`)
-    },
-
-    // Movimentações
     movements: {
         getAll: (params) => api.get('/movimentacoes', params),
         get: (id) => api.get(`/movimentacoes/${id}`),
@@ -295,3 +238,6 @@ window.api = api;
     }
 };
 
+// Exportar para uso global
+window.API = API;
+window.api = api;
