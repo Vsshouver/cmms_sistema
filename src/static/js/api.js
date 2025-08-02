@@ -136,7 +136,7 @@ const API = {
 
     // Usuários
     users: {
-        list: (params) => api.get('/usuarios', params),
+        getAll: (params) => api.get('/usuarios', params),
         get: (id) => api.get(`/usuarios/${id}`),
         create: (data) => api.post('/usuarios', data),
         update: (id, data) => api.put(`/usuarios/${id}`, data),
@@ -266,4 +266,32 @@ const API = {
 // Exportar para uso global
 window.API = API;
 window.api = api;
+
+
+    // Tipos de Manutenção
+    maintenanceTypes: {
+        getAll: (params) => api.get('/tipos-manutencao', params),
+        get: (id) => api.get(`/tipos-manutencao/${id}`),
+        create: (data) => api.post('/tipos-manutencao', data),
+        update: (id, data) => api.put(`/tipos-manutencao/${id}`, data),
+        delete: (id) => api.delete(`/tipos-manutencao/${id}`)
+    },
+
+    // Tipos de Equipamento
+    equipmentTypes: {
+        getAll: (params) => api.get('/tipos-equipamento', params),
+        get: (id) => api.get(`/tipos-equipamento/${id}`),
+        create: (data) => api.post('/tipos-equipamento', data),
+        update: (id, data) => api.put(`/tipos-equipamento/${id}`, data),
+        delete: (id) => api.delete(`/tipos-equipamento/${id}`)
+    },
+
+    // Movimentações
+    movements: {
+        getAll: (params) => api.get('/movimentacoes', params),
+        get: (id) => api.get(`/movimentacoes/${id}`),
+        create: (data) => api.post('/movimentacoes', data),
+        reverse: (id) => api.put(`/movimentacoes/${id}/estornar`)
+    }
+};
 
