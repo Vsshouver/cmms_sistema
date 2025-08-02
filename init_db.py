@@ -96,6 +96,18 @@ def ensure_schema():
             conn.execute(text(
                 'ALTER TABLE pecas ADD COLUMN estoque_local_id INTEGER'))
             conn.commit()
+    if 'ultimo_preco_avaliacao' not in cols:
+        print("⚙️  Adicionando coluna 'ultimo_preco_avaliacao' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN ultimo_preco_avaliacao FLOAT'))
+            conn.commit()
+    if 'ultimo_preco_compra' not in cols:
+        print("⚙️  Adicionando coluna 'ultimo_preco_compra' em pecas...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                'ALTER TABLE pecas ADD COLUMN ultimo_preco_compra FLOAT'))
+            conn.commit()
 
 def criar_dados_exemplo():
     """Função para criar dados de exemplo no banco"""
