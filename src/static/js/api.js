@@ -122,6 +122,7 @@ const api = new ApiClient();
 const API = {
     // Autenticação
     auth: {
+        // Encaminha os campos exatamente como recebidos
         login: (credentials) => api.post('/auth/login', credentials),
         logout: () => api.post('/auth/logout'),
         me: () => api.get('/auth/me')

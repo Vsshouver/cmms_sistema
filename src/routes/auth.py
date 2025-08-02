@@ -14,12 +14,16 @@ def login():
     try:
         data = request.get_json()
         email = data.get('email')
+        username = data.get('username')
         senha = data.get('senha')
 
-        if not email or not senha:
-            return jsonify({'error': 'Email e senha são obrigatórios'}), 400
+        if not senha or not (email or username):
+            return jsonify({'error': 'Email/usuário e senha são obrigatórios'}), 400
 
-        usuario = Usuario.query.filter_by(email=email).first()
+        if email:
+            usuario = Usuario.query.filter_by(email=email).first()
+        else:
+            usuario = Usuario.query.filter_by(username=username).first()
         if not usuario or not usuario.check_password(senha):
             return jsonify({'error': 'Credenciais inválidas'}), 401
 
