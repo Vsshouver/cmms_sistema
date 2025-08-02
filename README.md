@@ -86,6 +86,7 @@ A aplicação estará disponível em `http://localhost:5000`
 1. **Conecte seu repositório ao Railway**
 2. **Configure as variáveis de ambiente no Railway:**
    - `DATABASE_URL`: String de conexão PostgreSQL (fornecida automaticamente)
+   - **Atenção**: a aplicação não inicia se `DATABASE_URL` não estiver definida. Configure com a URL do seu PostgreSQL.
    - `SECRET_KEY`: Chave secreta para sessões
    - `FLASK_ENV`: `production`
 
