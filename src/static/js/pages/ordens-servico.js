@@ -9,3 +9,5 @@ class WorkOrdersPage {
         `;
     }
 }
+
+window.WorkOrdersPage = WorkOrdersPage;

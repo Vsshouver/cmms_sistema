@@ -9,3 +9,5 @@ class MaintenanceTypesPage {
         `;
     }
 }
+
+window.MaintenanceTypesPage = MaintenanceTypesPage;

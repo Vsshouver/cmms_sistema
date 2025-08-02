@@ -9,3 +9,5 @@ class UsersPage {
         `;
     }
 }
+
+window.UsersPage = UsersPage;

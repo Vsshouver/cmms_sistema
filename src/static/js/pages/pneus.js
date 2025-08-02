@@ -9,3 +9,5 @@ class TiresPage {
         `;
     }
 }
+
+window.TiresPage = TiresPage;

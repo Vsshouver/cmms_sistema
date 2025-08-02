@@ -9,3 +9,5 @@ class OilAnalysisPage {
         `;
     }
 }
+
+window.OilAnalysisPage = OilAnalysisPage;
