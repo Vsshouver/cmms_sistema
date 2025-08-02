@@ -21,17 +21,24 @@ class AuthManager {
     async login(credentials) {
         try {
             const response = await API.auth.login(credentials);
-            
-            if (response.token) {
-                this.token = response.token;
-                this.currentUser = response.user;
-                
-                // Salvar token
+
+            // Depuração da resposta recebida
+            console.log('login response', response);
+
+            // Alguns backends retornam dados aninhados em `data`
+            const token = response.token || response.data?.token;
+            const user = response.user || response.data?.user;
+
+            if (token) {
+                this.token = token;
+                this.currentUser = user;
+
+                // Salvar token localmente para persistência
                 api.setToken(this.token);
-                
-                // Executar callbacks de login
+
+                // Executar callbacks de login registrados
                 this.loginCallbacks.forEach(callback => callback(this.currentUser));
-                
+
                 return { success: true, user: this.currentUser };
             } else {
                 throw new Error('Token não recebido');
@@ -196,6 +203,11 @@ class LoginForm {
         if (result.success) {
             // Login bem-sucedido - a aplicação será carregada pelos callbacks
             this.showSuccess('Login realizado com sucesso!');
+
+            // Redirecionar/inicializar app após breve atraso
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
         } else {
             this.showError(result.error || 'Erro ao fazer login. Verifique suas credenciais.');
         }
