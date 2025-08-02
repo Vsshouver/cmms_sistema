@@ -9,3 +9,5 @@ class ItemGroupsPage {
         `;
     }
 }
+
+window.ItemGroupsPage = ItemGroupsPage;

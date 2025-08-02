@@ -9,3 +9,5 @@ class InventoryPage {
         `;
     }
 }
+
+window.InventoryPage = InventoryPage;

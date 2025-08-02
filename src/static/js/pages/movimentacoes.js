@@ -9,3 +9,5 @@ class MovementsPage {
         `;
     }
 }
+
+window.MovementsPage = MovementsPage;

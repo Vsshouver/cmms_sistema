@@ -9,3 +9,5 @@ class EquipmentsPage {
         `;
     }
 }
+
+window.EquipmentsPage = EquipmentsPage;

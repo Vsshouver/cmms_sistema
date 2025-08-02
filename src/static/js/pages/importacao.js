@@ -9,3 +9,5 @@ class ImportPage {
         `;
     }
 }
+
+window.ImportPage = ImportPage;
