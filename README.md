@@ -115,15 +115,15 @@ railway up
 
 ## 👥 Usuários Padrão
 
-O sistema cria automaticamente os seguintes usuários para teste:
+O sistema cria automaticamente os seguintes usuários para teste (utilize o e-mail para login):
 
-| Usuário | Senha | Nível |
-|---------|-------|-------|
-| admin | admin123 | Administrador |
-| supervisor | super123 | Supervisor |
-| pcm | pcm123 | PCM |
-| almoxarife | almox123 | Almoxarife |
-| mecanico | mec123 | Mecânico |
+| E-mail | Senha | Nível |
+|--------|-------|-------|
+| admin@mineracao.com | admin123 | Administrador |
+| supervisor@mineracao.com | super123 | Supervisor |
+| pcm@mineracao.com | pcm123 | PCM |
+| almoxarife@mineracao.com | almox123 | Almoxarife |
+| mecanico@mineracao.com | mec123 | Mecânico |
 
 ## 📊 Estrutura do Banco de Dados
 

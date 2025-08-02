@@ -136,7 +136,7 @@ const auth = new AuthManager();
 class LoginForm {
     constructor() {
         this.form = null;
-        this.usernameInput = null;
+        this.emailInput = null;
         this.passwordInput = null;
         this.submitButton = null;
         this.errorDiv = null;
@@ -156,7 +156,7 @@ class LoginForm {
 
     setupForm() {
         this.form = document.getElementById('login-form');
-        this.usernameInput = document.getElementById('username');
+        this.emailInput = document.getElementById('email');
         this.passwordInput = document.getElementById('password');
         this.submitButton = this.form?.querySelector('button[type="submit"]');
         this.errorDiv = document.getElementById('login-error');
@@ -171,19 +171,19 @@ class LoginForm {
             this.togglePasswordButton.addEventListener('click', () => this.togglePassword());
         }
 
-        // Auto-focus no campo de usuário
-        if (this.usernameInput) {
-            this.usernameInput.focus();
+        // Auto-focus no campo de email
+        if (this.emailInput) {
+            this.emailInput.focus();
         }
     }
 
     async handleSubmit(e) {
         e.preventDefault();
-        
-        const username = this.usernameInput?.value.trim();
-        const password = this.passwordInput?.value;
 
-        if (!username || !password) {
+        const email = this.emailInput?.value.trim();
+        const senha = this.passwordInput?.value;
+
+        if (!email || !senha) {
             this.showError('Por favor, preencha todos os campos.');
             return;
         }
@@ -191,7 +191,7 @@ class LoginForm {
         this.setLoading(true);
         this.hideError();
 
-        const result = await auth.login({ username, password });
+        const result = await auth.login({ email, senha });
 
         if (result.success) {
             // Login bem-sucedido - a aplicação será carregada pelos callbacks
