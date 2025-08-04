@@ -38,7 +38,7 @@ class WorkOrdersPage {
     async loadData() {
         try {
             const response = await API.workOrders.getAll();
-            this.data = Array.isArray(response) ? response : (response.data || []);
+            this.data = Array.isArray(response) ? response : (response.ordens_servico || []);
             this.filteredData = [...this.data];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
