@@ -8,7 +8,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 from flask import Flask
-from src.models.usuario import db
+from src.db import db
 
 # Importar todos os modelos para que sejam registrados
 from src.models.equipamento import Equipamento
@@ -23,6 +23,9 @@ from src.models.estoque_local import EstoqueLocal
 from src.models.movimentacao_estoque import MovimentacaoEstoque
 from src.models.os_peca import OS_Peca
 from src.models.analise_oleo import AnaliseOleo
+from src.models.usuario import Usuario
+from src.models.plano_preventiva import PlanoPreventiva
+from src.models.backlog_item import BacklogItem
 
 def create_database():
     """Criar banco de dados com todas as tabelas."""

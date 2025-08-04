@@ -1,4 +1,4 @@
-from src.models.usuario import db
+from src.db import db
 from datetime import datetime, date
 
 class Equipamento(db.Model):
@@ -7,7 +7,7 @@ class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo_interno = db.Column(db.String(50), unique=True, nullable=False)
     nome = db.Column(db.String(100), nullable=False)
-    tipo_equipamento_id = db.Column(db.Integer, db.ForeignKey('tipos_equipamento.id'), nullable=False)
+    tipo_equipamento_id = db.Column(db.Integer, db.ForeignKey('tipos_equipamento.id'), nullable=True)
     tipo = db.Column(db.String(50), nullable=True)  # Manter para compatibilidade, será removido após migração
     modelo = db.Column(db.String(50), nullable=False)
     fabricante = db.Column(db.String(50), nullable=False)

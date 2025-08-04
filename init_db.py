@@ -12,7 +12,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 from flask import Flask
-from src.models.usuario import db, Usuario
+from src.db import db
+from src.models.usuario import Usuario
 from src.models.equipamento import Equipamento
 from src.models.mecanico import Mecanico
 from src.models.ordem_servico import OrdemServico
@@ -186,11 +187,17 @@ def criar_dados_exemplo():
                 db.session.add(user)
             
             print("🔧 Criando equipamentos...")
+            # Buscar tipos de equipamento criados
+            tipo_escavadeira = TipoEquipamento.query.filter_by(nome='Escavadeira').first()
+            tipo_caminhao = TipoEquipamento.query.filter_by(nome='Caminhão').first()
+            tipo_trator = TipoEquipamento.query.filter_by(nome='Trator').first()
+            
             # Criar equipamentos
             equipamentos = [
                 Equipamento(
                     codigo_interno='ESC-001',
                     nome='Escavadeira Hidráulica CAT 320',
+                    tipo_equipamento_id=tipo_escavadeira.id if tipo_escavadeira else None,
                     tipo='Escavadeira',
                     modelo='320D',
                     fabricante='Caterpillar',
@@ -204,6 +211,7 @@ def criar_dados_exemplo():
                 Equipamento(
                     codigo_interno='CAM-001',
                     nome='Caminhão Basculante Volvo FH',
+                    tipo_equipamento_id=tipo_caminhao.id if tipo_caminhao else None,
                     tipo='Caminhão',
                     modelo='FH 540',
                     fabricante='Volvo',
@@ -217,6 +225,7 @@ def criar_dados_exemplo():
                 Equipamento(
                     codigo_interno='TRA-001',
                     nome='Trator de Esteiras Komatsu D85',
+                    tipo_equipamento_id=tipo_trator.id if tipo_trator else None,
                     tipo='Trator',
                     modelo='D85ESS-2A',
                     fabricante='Komatsu',
@@ -274,11 +283,17 @@ def criar_dados_exemplo():
                 db.session.add(mec)
             
             print("📦 Criando peças...")
+            # Buscar grupos de item criados
+            grupo_filtros = GrupoItem.query.filter_by(nome='Filtros').first()
+            grupo_consumiveis = GrupoItem.query.filter_by(nome='Consumíveis').first()
+            grupo_oleos = GrupoItem.query.filter_by(nome='Óleos e Lubrificantes').first()
+            
             # Criar peças
             pecas = [
                 Peca(
                     codigo='FO-CAT-320',
                     nome='Filtro de Óleo Motor CAT 320',
+                    grupo_item_id=grupo_filtros.id if grupo_filtros else None,
                     categoria='Filtros',
                     descricao='Filtro de óleo para motor Caterpillar 320D',
                     unidade='unidades',
@@ -292,6 +307,7 @@ def criar_dados_exemplo():
                 Peca(
                     codigo='PF-VOL-FH',
                     nome='Pastilha de Freio Volvo FH',
+                    grupo_item_id=grupo_consumiveis.id if grupo_consumiveis else None,
                     categoria='Freios',
                     descricao='Jogo de pastilhas de freio dianteiro Volvo FH',
                     unidade='jogos',
@@ -305,6 +321,7 @@ def criar_dados_exemplo():
                 Peca(
                     codigo='OH-KOM-D85',
                     nome='Óleo Hidráulico Komatsu D85',
+                    grupo_item_id=grupo_oleos.id if grupo_oleos else None,
                     categoria='Fluidos',
                     descricao='Óleo hidráulico específico para Komatsu D85',
                     unidade='litros',
@@ -452,7 +469,7 @@ def main():
 
             print("📊 Populando com dados de exemplo...")
             # Usar a função mais completa para garantir compatibilidade
-            criar_dados_exemplo_completos()
+            criar_dados_exemplo()
             
             print("\n" + "=" * 60)
             print("✅ SISTEMA INICIALIZADO COM SUCESSO!")

@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from src.models.usuario import db
+from src.db import db
 from src.models.equipamento import Equipamento
 from src.models.ordem_servico import OrdemServico
 from src.models.peca import Peca

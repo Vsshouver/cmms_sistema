@@ -1,4 +1,4 @@
-from src.models.usuario import db
+from src.db import db
 from datetime import datetime
 
 class OrdemServico(db.Model):
@@ -8,7 +8,7 @@ class OrdemServico(db.Model):
     numero_os = db.Column(db.String(50), unique=True, nullable=False)
     equipamento_id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), nullable=False)
     mecanico_id = db.Column(db.Integer, db.ForeignKey('mecanicos.id'), nullable=True)
-    tipo_manutencao_id = db.Column(db.Integer, db.ForeignKey('tipos_manutencao.id'), nullable=False)
+    tipo_manutencao_id = db.Column(db.Integer, db.ForeignKey('tipos_manutencao.id'), nullable=True)
     tipo = db.Column(db.String(20), nullable=True)  # Manter para compatibilidade, será removido após migração
     prioridade = db.Column(db.String(20), nullable=False)  # baixa, media, alta, critica
     status = db.Column(db.String(30), nullable=False, default='aberta')  # aberta, em_execucao, aguardando_pecas, concluida, cancelada

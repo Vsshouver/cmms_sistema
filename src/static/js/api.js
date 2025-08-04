@@ -247,6 +247,28 @@ const API = {
         delete: (id) => api.delete(`/mecanicos/${id}`)
     },
 
+    preventivePlans: {
+        getAll: (params) => api.get('/planos-preventiva', params),
+        get: (id) => api.get(`/planos-preventiva/${id}`),
+        create: (data) => api.post('/planos-preventiva', data),
+        update: (id, data) => api.put(`/planos-preventiva/${id}`, data),
+        delete: (id) => api.delete(`/planos-preventiva/${id}`),
+        execute: (id, data) => api.post(`/planos-preventiva/${id}/executar`, data),
+        generatePendingOS: () => api.post('/planos-preventiva/gerar-os-pendentes')
+    },
+
+    backlog: {
+        getAll: (params) => api.get('/backlog', params),
+        get: (id) => api.get(`/backlog/${id}`),
+        create: (data) => api.post('/backlog', data),
+        update: (id, data) => api.put(`/backlog/${id}`, data),
+        delete: (id) => api.delete(`/backlog/${id}`),
+        getStats: () => api.get('/backlog/stats'),
+        recalcPriority: () => api.post('/backlog/priorizar'),
+        start: (id) => api.post(`/backlog/${id}/iniciar`),
+        complete: (id, data) => api.post(`/backlog/${id}/concluir`, data)
+    },
+
     oilAnalysis: {
         getAll: (params) => api.get('/analise-oleo', params),
         get: (id) => api.get(`/analise-oleo/${id}`),

@@ -1,4 +1,4 @@
-from src.models.usuario import db
+from src.db import db
 from datetime import datetime
 
 class Peca(db.Model):
@@ -7,7 +7,7 @@ class Peca(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(50), unique=True, nullable=False)  # numero_item da importação
     nome = db.Column(db.String(100), nullable=False)
-    grupo_item_id = db.Column(db.Integer, db.ForeignKey('grupos_item.id'), nullable=False)
+    grupo_item_id = db.Column(db.Integer, db.ForeignKey('grupos_item.id'), nullable=True)
     categoria = db.Column(db.String(50), nullable=True)  # Manter para compatibilidade
     descricao = db.Column(db.Text, nullable=True)
     unidade = db.Column(db.String(20), nullable=False)  # unidades, metros, litros, etc.

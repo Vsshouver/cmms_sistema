@@ -11,7 +11,7 @@ import os
 import sys
 
 # Importar modelos
-from src.models.usuario import db
+from src.db import db
 
 # Importar blueprints
 from src.routes.auth import auth_bp
@@ -28,6 +28,8 @@ from src.routes.grupos_item import grupos_item_bp
 from src.routes.analise_oleo import analise_oleo_bp
 from src.routes.importacao import importacao_bp
 from src.routes.impressao import impressao_bp
+from src.routes.planos_preventiva import planos_preventiva_bp
+from src.routes.backlog import backlog_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 
@@ -54,6 +56,8 @@ app.register_blueprint(grupos_item_bp, url_prefix='/api')
 app.register_blueprint(analise_oleo_bp, url_prefix='/api')
 app.register_blueprint(importacao_bp, url_prefix='/api')
 app.register_blueprint(impressao_bp, url_prefix='/api')
+app.register_blueprint(planos_preventiva_bp, url_prefix='/api')
+app.register_blueprint(backlog_bp, url_prefix='/api')
 
 # Configurar banco de dados PostgreSQL
 database_url = os.environ.get("DATABASE_URL")

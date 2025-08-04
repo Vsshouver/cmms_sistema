@@ -30,7 +30,7 @@
                     <label for="email">E-mail</label>
                     <div class="input-group">
                         <i class="fas fa-user"></i>
-                        <input type="email" id="email" name="email" required>
+                        <input type="email" id="email" name="email" autocomplete="username" required class="form-input">
                     </div>
                 </div>
                 
@@ -38,7 +38,7 @@
                     <label for="password">Senha</label>
                     <div class="input-group">
                         <i class="fas fa-lock"></i>
-                        <input type="password" id="password" name="password" required>
+                        <input type="password" id="password" name="password" autocomplete="current-password" required class="form-input">
                         <button type="button" class="toggle-password">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -50,7 +50,7 @@
                     Entrar
                 </button>
                 
-                <div id="login-error" class="error-message" style="display: none;"></div>
+                <small id="login-error" class="form-error" style="display: none;"></small>
             </form>
         </div>
     </div>
@@ -72,7 +72,7 @@
             <div class="header-center">
                 <div class="search-bar">
                     <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Buscar equipamentos, OS, peças...">
+                    <input type="text" class="form-input" placeholder="Buscar equipamentos, OS, peças...">
                 </div>
             </div>
             
@@ -121,6 +121,14 @@
                             <li><a href="#" data-page="ordens-servico" class="nav-link">
                                 <i class="fas fa-clipboard-list"></i>
                                 <span>Ordens de Serviço</span>
+                            </a></li>
+                            <li><a href="preventivas.html" class="nav-link">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Preventivas</span>
+                            </a></li>
+                            <li><a href="backlog.html" class="nav-link">
+                                <i class="fas fa-tasks"></i>
+                                <span>Backlog</span>
                             </a></li>
                             <li><a href="#" data-page="tipos-manutencao" class="nav-link">
                                 <i class="fas fa-tags"></i>

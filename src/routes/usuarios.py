@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from src.models.usuario import Usuario, db
+from src.db import db
+from src.models.usuario import Usuario
 from src.utils.auth import token_required, admin_required
 from datetime import datetime
 

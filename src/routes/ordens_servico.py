@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.models.usuario import db
+from src.db import db
 from src.models.ordem_servico import OrdemServico
 from src.models.equipamento import Equipamento
 from src.models.mecanico import Mecanico
@@ -261,6 +261,8 @@ def update_ordem_servico(current_user, os_id):
         data = request.get_json()
         
         # Atualizar campos permitidos
+        if 'equipamento_id' in data:
+            os.equipamento_id = data['equipamento_id']
         if 'mecanico_id' in data:
             os.mecanico_id = data['mecanico_id']
         if 'tipo' in data:

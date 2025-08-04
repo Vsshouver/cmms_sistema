@@ -711,28 +711,362 @@ class InventoryPage {
     }
 
     exportData() {
-        // TODO: Implementar exportação de dados
-        Toast.info('Exportação em desenvolvimento');
+        if (!this.filteredData.length) {
+            Toast.info('Nenhum dado para exportar');
+            return;
+        }
+        const headers = ['Código', 'Nome', 'Grupo', 'Quantidade', 'Unidade', 'Preço Unitário', 'Valor Total', 'Local', 'Status'];
+        const rows = this.filteredData.map(item => {
+            const valorTotal = (item.quantidade_atual || 0) * (item.preco_unitario || 0);
+            return [
+                item.codigo,
+                item.nome,
+                item.grupo_nome || '',
+                Utils.formatNumber(item.quantidade_atual || 0),
+                item.unidade_medida || item.unidade || '',
+                Utils.formatNumber(item.preco_unitario || 0, 2),
+                Utils.formatNumber(valorTotal, 2),
+                item.local_nome || '',
+                this.formatItemStatus(this.getItemStatus(item))
+            ];
+        });
+        const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+        Utils.downloadFile(csv, `estoque_${Date.now()}.csv`, 'text/csv');
+        Toast.success('Exportação concluída');
     }
 
-    showCreateModal() {
-        // TODO: Implementar modal de criação de item
-        Toast.info('Modal de criação em desenvolvimento');
+    async showCreateModal() {
+        try {
+            const [groupsResp, locationsResp] = await Promise.all([
+                API.itemGroups.getAll(),
+                API.stockLocations.getAll()
+            ]);
+            const grupos = groupsResp.grupos_item || groupsResp.data || groupsResp || [];
+            const locais = locationsResp.estoques_local || locationsResp.data || locationsResp || [];
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Nova Peça</h2>
+                <form id="newItemForm">
+                    <label for="new-item-codigo">Código*</label>
+                    <input type="text" id="new-item-codigo" name="codigo" required />
+
+                    <label for="new-item-nome">Nome*</label>
+                    <input type="text" id="new-item-nome" name="nome" required />
+
+                    <label for="new-item-grupo_item_id">Grupo*</label>
+                    <select id="new-item-grupo_item_id" name="grupo_item_id" required>
+                        <option value="">Selecione...</option>
+                        ${grupos.map(g => `<option value="${g.id}">${g.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="new-item-descricao">Descrição</label>
+                    <input type="text" id="new-item-descricao" name="descricao" />
+
+                    <label for="new-item-unidade">Unidade*</label>
+                    <input type="text" id="new-item-unidade" name="unidade" required />
+
+                    <label for="new-item-quantidade">Quantidade Inicial</label>
+                    <input type="number" id="new-item-quantidade" name="quantidade" step="0.01" />
+
+                    <label for="new-item-min_estoque">Estoque Mínimo</label>
+                    <input type="number" id="new-item-min_estoque" name="min_estoque" />
+
+                    <label for="new-item-preco_unitario">Preço Unitário</label>
+                    <input type="number" id="new-item-preco_unitario" name="preco_unitario" step="0.01" />
+
+                    <label for="new-item-estoque_local_id">Local</label>
+                    <select id="new-item-estoque_local_id" name="estoque_local_id">
+                        <option value="">Selecione...</option>
+                        ${locais.map(l => `<option value="${l.id}">${l.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="new-item-fornecedor">Fornecedor</label>
+                    <input type="text" id="new-item-fornecedor" name="fornecedor" />
+
+                    <label for="new-item-observacoes">Observações</label>
+                    <textarea id="new-item-observacoes" name="observacoes" rows="2"></textarea>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelNewItem" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </form>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            if (!document.getElementById('inventory-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'inventory-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                    .custom-modal form{display:flex;flex-direction:column;gap:10px;}
+                `;
+                document.head.appendChild(style);
+            }
+
+            modal.querySelector('#cancelNewItem').addEventListener('click', () => overlay.remove());
+
+            modal.querySelector('#newItemForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const payload = {
+                    codigo: formData.get('codigo'),
+                    nome: formData.get('nome'),
+                    grupo_item_id: parseInt(formData.get('grupo_item_id')),
+                    descricao: formData.get('descricao') || null,
+                    unidade: formData.get('unidade'),
+                    quantidade: parseFloat(formData.get('quantidade') || 0),
+                    min_estoque: parseInt(formData.get('min_estoque') || 0),
+                    preco_unitario: parseFloat(formData.get('preco_unitario') || 0),
+                    estoque_local_id: formData.get('estoque_local_id') ? parseInt(formData.get('estoque_local_id')) : null,
+                    fornecedor: formData.get('fornecedor') || null,
+                    observacoes: formData.get('observacoes') || null
+                };
+                try {
+                    await API.inventory.create(payload);
+                    Toast.success('Item criado com sucesso');
+                    overlay.remove();
+                    await this.refresh();
+                } catch (err) {
+                    Toast.error(err.message || 'Erro ao criar item');
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao exibir modal de criação:', error);
+            Toast.error('Erro ao preparar modal');
+        }
     }
 
-    viewDetails(id) {
-        // TODO: Implementar visualização de detalhes
-        Toast.info('Visualização de detalhes em desenvolvimento');
+    async viewDetails(id) {
+        try {
+            const data = await API.inventory.get(id);
+            const item = data.peca || data;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Detalhes da Peça</h2>
+                <div class="item-details-modal">
+                    <p><strong>Código:</strong> ${item.codigo}</p>
+                    <p><strong>Nome:</strong> ${item.nome}</p>
+                    <p><strong>Grupo:</strong> ${item.grupo_nome || item.grupo_item}</p>
+                    <p><strong>Unidade:</strong> ${item.unidade}</p>
+                    <p><strong>Quantidade:</strong> ${Utils.formatNumber(item.quantidade_atual || item.quantidade || 0)}</p>
+                    <p><strong>Estoque Mínimo:</strong> ${Utils.formatNumber(item.estoque_minimo || item.min_estoque || 0)}</p>
+                    <p><strong>Preço Unitário:</strong> R$ ${Utils.formatCurrency(item.preco_unitario || 0)}</p>
+                    <p><strong>Local:</strong> ${item.local_nome || item.estoque_local}</p>
+                    ${item.fornecedor ? `<p><strong>Fornecedor:</strong> ${item.fornecedor}</p>` : ''}
+                    ${item.observacoes ? `<p><strong>Observações:</strong> ${item.observacoes}</p>` : ''}
+                </div>
+                <div class="form-actions"><button id="closeItemDetails" class="btn btn-secondary">Fechar</button></div>
+            `;
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+            modal.querySelector('#closeItemDetails').addEventListener('click', () => overlay.remove());
+
+            if (!document.getElementById('inventory-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'inventory-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                `;
+                document.head.appendChild(style);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar detalhes do item:', error);
+            Toast.error('Erro ao carregar detalhes');
+        }
     }
 
-    editItem(id) {
-        // TODO: Implementar edição de item
-        Toast.info('Edição de item em desenvolvimento');
+    async editItem(id) {
+        try {
+            const [itemResp, groupsResp, locationsResp] = await Promise.all([
+                API.inventory.get(id),
+                API.itemGroups.getAll(),
+                API.stockLocations.getAll()
+            ]);
+
+            const item = itemResp.peca || itemResp;
+            const grupos = groupsResp.data || groupsResp || [];
+            const locais = locationsResp.data || locationsResp || [];
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Editar Item</h2>
+                <form id="editItemForm">
+                    <label for="edit-item-codigo">Código</label>
+                    <input type="text" id="edit-item-codigo" value="${item.codigo}" disabled />
+
+                    <label for="edit-item-nome">Nome*</label>
+                    <input type="text" id="edit-item-nome" name="nome" value="${item.nome}" required />
+
+                    <label for="edit-item-grupo_item_id">Grupo*</label>
+                    <select id="edit-item-grupo_item_id" name="grupo_item_id" required>
+                        ${grupos.map(g => `<option value="${g.id}" ${g.id === item.grupo_item_id ? 'selected' : ''}>${g.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="edit-item-descricao">Descrição</label>
+                    <input type="text" id="edit-item-descricao" name="descricao" value="${item.descricao || ''}" />
+
+                    <label for="edit-item-unidade">Unidade*</label>
+                    <input type="text" id="edit-item-unidade" name="unidade" value="${item.unidade}" required />
+
+                    <label for="edit-item-quantidade">Quantidade</label>
+                    <input type="number" id="edit-item-quantidade" name="quantidade" step="0.01" value="${item.quantidade_atual || item.quantidade || 0}" />
+
+                    <label for="edit-item-min_estoque">Estoque Mínimo</label>
+                    <input type="number" id="edit-item-min_estoque" name="min_estoque" value="${item.estoque_minimo || item.min_estoque || 0}" />
+
+                    <label for="edit-item-preco_unitario">Preço Unitário</label>
+                    <input type="number" id="edit-item-preco_unitario" name="preco_unitario" step="0.01" value="${item.preco_unitario || 0}" />
+
+                    <label for="edit-item-estoque_local_id">Local</label>
+                    <select id="edit-item-estoque_local_id" name="estoque_local_id">
+                        <option value="">Selecione...</option>
+                        ${locais.map(l => `<option value="${l.id}" ${l.id === item.estoque_local_id ? 'selected' : ''}>${l.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="edit-item-fornecedor">Fornecedor</label>
+                    <input type="text" id="edit-item-fornecedor" name="fornecedor" value="${item.fornecedor || ''}" />
+
+                    <label for="edit-item-observacoes">Observações</label>
+                    <textarea id="edit-item-observacoes" name="observacoes" rows="2">${item.observacoes || ''}</textarea>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelEditItem" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </form>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            if (!document.getElementById('inventory-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'inventory-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                    .custom-modal form{display:flex;flex-direction:column;gap:10px;}
+                `;
+                document.head.appendChild(style);
+            }
+
+            modal.querySelector('#cancelEditItem').addEventListener('click', () => overlay.remove());
+
+            modal.querySelector('#editItemForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const payload = {
+                    nome: formData.get('nome'),
+                    grupo_item_id: parseInt(formData.get('grupo_item_id')),
+                    descricao: formData.get('descricao') || null,
+                    unidade: formData.get('unidade'),
+                    quantidade: parseFloat(formData.get('quantidade') || 0),
+                    min_estoque: parseInt(formData.get('min_estoque') || 0),
+                    preco_unitario: parseFloat(formData.get('preco_unitario') || 0),
+                    estoque_local_id: formData.get('estoque_local_id') ? parseInt(formData.get('estoque_local_id')) : null,
+                    fornecedor: formData.get('fornecedor') || null,
+                    observacoes: formData.get('observacoes') || null
+                };
+                try {
+                    await API.inventory.update(id, payload);
+                    Toast.success('Item atualizado com sucesso');
+                    overlay.remove();
+                    await this.refresh();
+                } catch (err) {
+                    Toast.error(err.message || 'Erro ao atualizar item');
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao editar item:', error);
+            Toast.error('Erro ao preparar edição');
+        }
     }
 
-    showMovementModal(id) {
-        // TODO: Implementar modal de movimentação
-        Toast.info('Modal de movimentação em desenvolvimento');
+    async showMovementModal(id) {
+        try {
+            const itemResp = await API.inventory.get(id);
+            const item = itemResp.peca || itemResp;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Movimentar Estoque</h2>
+                <form id="movementForm">
+                    <p><strong>${item.nome}</strong> (${item.codigo})</p>
+                    <label for="movement-tipo">Tipo*</label>
+                    <select id="movement-tipo" name="tipo" required>
+                        <option value="entrada">Entrada</option>
+                        <option value="saida">Saída</option>
+                    </select>
+
+                    <label for="movement-quantidade">Quantidade*</label>
+                    <input type="number" id="movement-quantidade" name="quantidade" step="0.01" required />
+
+                    <label for="movement-motivo">Motivo</label>
+                    <input type="text" id="movement-motivo" name="motivo" />
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelMovement" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </form>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            if (!document.getElementById('inventory-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'inventory-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:400px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                    .custom-modal form{display:flex;flex-direction:column;gap:10px;}
+                `;
+                document.head.appendChild(style);
+            }
+
+            modal.querySelector('#cancelMovement').addEventListener('click', () => overlay.remove());
+
+            modal.querySelector('#movementForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const payload = {
+                    tipo: formData.get('tipo'),
+                    quantidade: parseFloat(formData.get('quantidade') || 0),
+                    motivo: formData.get('motivo') || null
+                };
+                try {
+                    await API.inventory.createMovement(id, payload);
+                    Toast.success('Movimentação registrada');
+                    overlay.remove();
+                    await this.refresh();
+                } catch (err) {
+                    Toast.error(err.message || 'Erro na movimentação');
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao movimentar item:', error);
+            Toast.error('Erro ao preparar movimentação');
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.models.usuario import db
+from src.db import db
 from src.models.peca import Peca
 from src.models.movimentacao_estoque import MovimentacaoEstoque
 from src.models.estoque_local import EstoqueLocal

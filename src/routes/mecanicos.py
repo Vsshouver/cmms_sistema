@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.models.usuario import db
+from src.db import db
 from src.models.mecanico import Mecanico
 from src.utils.auth import token_required, supervisor_or_admin_required
 from datetime import datetime

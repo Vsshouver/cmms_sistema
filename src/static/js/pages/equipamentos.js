@@ -742,24 +742,367 @@ class EquipmentsPage {
         }
     }
 
-    showCreateModal() {
-        // TODO: Implementar modal de criação de equipamento
-        Toast.info('Modal de criação em desenvolvimento');
+    async showCreateModal() {
+        try {
+            const typesResp = await API.equipmentTypes.getAll();
+            const types = typesResp.tipos_equipamento || typesResp.data || typesResp || [];
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Novo Equipamento</h2>
+                <form id="equipmentForm">
+                    <label for="equipment-codigo_interno">Código Interno*</label>
+                    <input type="text" id="equipment-codigo_interno" name="codigo_interno" required />
+
+                    <label for="equipment-nome">Nome*</label>
+                    <input type="text" id="equipment-nome" name="nome" required />
+
+                    <label for="equipment-tipo">Tipo*</label>
+                    <select id="equipment-tipo" name="tipo" required>
+                        <option value="">Selecione...</option>
+                        ${types.map(t => `<option value="${t.nome}">${t.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="equipment-modelo">Modelo*</label>
+                    <input type="text" id="equipment-modelo" name="modelo" required />
+
+                    <label for="equipment-fabricante">Fabricante*</label>
+                    <input type="text" id="equipment-fabricante" name="fabricante" required />
+
+                    <label for="equipment-numero_serie">Número de Série*</label>
+                    <input type="text" id="equipment-numero_serie" name="numero_serie" required />
+
+                    <label for="equipment-status">Status*</label>
+                    <select id="equipment-status" name="status" required>
+                        <option value="ativo">Ativo</option>
+                        <option value="manutencao">Em Manutenção</option>
+                        <option value="inativo">Inativo</option>
+                    </select>
+
+                    <label for="equipment-localizacao">Localização*</label>
+                    <input type="text" id="equipment-localizacao" name="localizacao" required />
+
+                    <label for="equipment-horimetro_atual">Horímetro Atual</label>
+                    <input type="number" id="equipment-horimetro_atual" name="horimetro_atual" step="0.01" />
+
+                    <label for="equipment-data_aquisicao">Data de Aquisição*</label>
+                    <input type="date" id="equipment-data_aquisicao" name="data_aquisicao" required />
+
+                    <label for="equipment-valor_aquisicao">Valor de Aquisição</label>
+                    <input type="number" id="equipment-valor_aquisicao" name="valor_aquisicao" step="0.01" />
+
+                    <label for="equipment-observacoes">Observações</label>
+                    <textarea id="equipment-observacoes" name="observacoes" rows="2"></textarea>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelEquipment" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </form>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            if (!document.getElementById('equipments-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'equipments-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                    .custom-modal form{display:flex;flex-direction:column;gap:10px;}
+                `;
+                document.head.appendChild(style);
+            }
+
+            modal.querySelector('#cancelEquipment').addEventListener('click', () => overlay.remove());
+
+            modal.querySelector('#equipmentForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const payload = {
+                    codigo_interno: formData.get('codigo_interno'),
+                    nome: formData.get('nome'),
+                    tipo: formData.get('tipo'),
+                    modelo: formData.get('modelo'),
+                    fabricante: formData.get('fabricante'),
+                    numero_serie: formData.get('numero_serie'),
+                    status: formData.get('status'),
+                    localizacao: formData.get('localizacao'),
+                    horimetro_atual: parseFloat(formData.get('horimetro_atual') || 0),
+                    data_aquisicao: formData.get('data_aquisicao'),
+                    valor_aquisicao: parseFloat(formData.get('valor_aquisicao') || 0),
+                    observacoes: formData.get('observacoes') || null
+                };
+                try {
+                    await API.equipments.create(payload);
+                    Toast.success('Equipamento criado com sucesso');
+                    overlay.remove();
+                    await this.refresh();
+                } catch (err) {
+                    Toast.error(err.message || 'Erro ao criar equipamento');
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao exibir modal de criação:', error);
+            Toast.error('Erro ao preparar modal');
+        }
     }
 
-    viewDetails(id) {
-        // TODO: Implementar visualização de detalhes
-        Toast.info('Visualização de detalhes em desenvolvimento');
+    async viewDetails(id) {
+        try {
+            const data = await API.equipments.get(id);
+            const eq = data.equipamento || data;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Detalhes do Equipamento</h2>
+                <div class="equipment-details-modal">
+                    <p><strong>Código:</strong> ${eq.codigo_interno}</p>
+                    <p><strong>Nome:</strong> ${eq.nome}</p>
+                    <p><strong>Tipo:</strong> ${eq.tipo || eq.tipo_equipamento}</p>
+                    <p><strong>Modelo:</strong> ${eq.modelo}</p>
+                    <p><strong>Fabricante:</strong> ${eq.fabricante}</p>
+                    <p><strong>Número Série:</strong> ${eq.numero_serie}</p>
+                    <p><strong>Status:</strong> ${Utils.formatStatus(eq.status)}</p>
+                    <p><strong>Localização:</strong> ${eq.localizacao}</p>
+                    <p><strong>Horímetro:</strong> ${Utils.formatNumber(eq.horimetro_atual || 0, 2)}</p>
+                    <p><strong>Data Aquisição:</strong> ${Utils.formatDate(eq.data_aquisicao)}</p>
+                    ${eq.valor_aquisicao ? `<p><strong>Valor Aquisição:</strong> R$ ${Utils.formatCurrency(eq.valor_aquisicao)}</p>` : ''}
+                    ${eq.observacoes ? `<p><strong>Observações:</strong> ${eq.observacoes}</p>` : ''}
+                </div>
+                <div class="form-actions"><button id="closeDetails" class="btn btn-secondary">Fechar</button></div>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            modal.querySelector('#closeDetails').addEventListener('click', () => overlay.remove());
+
+            if (!document.getElementById('equipments-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'equipments-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                `;
+                document.head.appendChild(style);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar detalhes do equipamento:', error);
+            Toast.error('Erro ao carregar detalhes');
+        }
     }
 
-    editEquipment(id) {
-        // TODO: Implementar edição de equipamento
-        Toast.info('Edição de equipamento em desenvolvimento');
+    async editEquipment(id) {
+        try {
+            const [equipResp, typesResp] = await Promise.all([
+                API.equipments.get(id),
+                API.equipmentTypes.getAll()
+            ]);
+
+            const eq = equipResp.equipamento || equipResp;
+            const types = typesResp.data || typesResp || [];
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Editar Equipamento</h2>
+                <form id="editEquipmentForm">
+                    <label for="edit-equipment-nome">Nome*</label>
+                    <input type="text" id="edit-equipment-nome" name="nome" value="${eq.nome || ''}" required />
+
+                    <label for="edit-equipment-tipo">Tipo*</label>
+                    <select id="edit-equipment-tipo" name="tipo" required>
+                        ${types.map(t => `<option value="${t.nome}" ${t.nome === (eq.tipo || eq.tipo_equipamento) ? 'selected' : ''}>${t.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="edit-equipment-modelo">Modelo*</label>
+                    <input type="text" id="edit-equipment-modelo" name="modelo" value="${eq.modelo || ''}" required />
+
+                    <label for="edit-equipment-fabricante">Fabricante*</label>
+                    <input type="text" id="edit-equipment-fabricante" name="fabricante" value="${eq.fabricante || ''}" required />
+
+                    <label for="edit-equipment-status">Status*</label>
+                    <select id="edit-equipment-status" name="status" required>
+                        <option value="ativo" ${eq.status === 'ativo' ? 'selected' : ''}>Ativo</option>
+                        <option value="manutencao" ${eq.status === 'manutencao' ? 'selected' : ''}>Em Manutenção</option>
+                        <option value="inativo" ${eq.status === 'inativo' ? 'selected' : ''}>Inativo</option>
+                    </select>
+
+                    <label for="edit-equipment-localizacao">Localização*</label>
+                    <input type="text" id="edit-equipment-localizacao" name="localizacao" value="${eq.localizacao || ''}" required />
+
+                    <label for="edit-equipment-horimetro_atual">Horímetro Atual</label>
+                    <input type="number" id="edit-equipment-horimetro_atual" name="horimetro_atual" step="0.01" value="${eq.horimetro_atual || 0}" />
+
+                    <label for="edit-equipment-valor_aquisicao">Valor de Aquisição</label>
+                    <input type="number" id="edit-equipment-valor_aquisicao" name="valor_aquisicao" step="0.01" value="${eq.valor_aquisicao || ''}" />
+
+                    <label for="edit-equipment-observacoes">Observações</label>
+                    <textarea id="edit-equipment-observacoes" name="observacoes" rows="2">${eq.observacoes || ''}</textarea>
+
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelEditEquipment" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </form>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            if (!document.getElementById('equipments-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'equipments-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                    .custom-modal form{display:flex;flex-direction:column;gap:10px;}
+                `;
+                document.head.appendChild(style);
+            }
+
+            modal.querySelector('#cancelEditEquipment').addEventListener('click', () => overlay.remove());
+
+            modal.querySelector('#editEquipmentForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const payload = {
+                    nome: formData.get('nome'),
+                    tipo: formData.get('tipo'),
+                    modelo: formData.get('modelo'),
+                    fabricante: formData.get('fabricante'),
+                    status: formData.get('status'),
+                    localizacao: formData.get('localizacao'),
+                    horimetro_atual: parseFloat(formData.get('horimetro_atual') || 0),
+                    valor_aquisicao: parseFloat(formData.get('valor_aquisicao') || 0),
+                    observacoes: formData.get('observacoes') || null
+                };
+                try {
+                    await API.equipments.update(id, payload);
+                    Toast.success('Equipamento atualizado com sucesso');
+                    overlay.remove();
+                    await this.refresh();
+                } catch (err) {
+                    Toast.error(err.message || 'Erro ao atualizar equipamento');
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao editar equipamento:', error);
+            Toast.error('Erro ao preparar edição');
+        }
     }
 
-    createWorkOrder(equipmentId) {
-        // TODO: Implementar criação de OS para equipamento
-        Toast.info('Criação de OS em desenvolvimento');
+    async createWorkOrder(equipmentId) {
+        try {
+            const [equipResp, typesResp, mechResp] = await Promise.all([
+                API.equipments.get(equipmentId),
+                API.maintenanceTypes.getAll(),
+                API.mechanics.getAll()
+            ]);
+
+            const equipment = equipResp.equipamento || equipResp;
+            const types = typesResp.data || typesResp || [];
+            const mechanics = mechResp.data || mechResp || [];
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Nova Ordem de Serviço</h2>
+                <form id="osFromEquipment">
+                    <label for="os-equipamento-nome">Equipamento</label>
+                    <input type="text" id="os-equipamento-nome" value="${equipment.nome}" disabled />
+                    <input type="hidden" id="os-equipamento-id" name="equipamento_id" value="${equipmentId}" />
+
+                    <label for="os-tipo">Tipo de Manutenção*</label>
+                    <select id="os-tipo" name="tipo" required>
+                        <option value="">Selecione...</option>
+                        ${types.map(t => `<option value="${t.id}">${t.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="os-prioridade">Prioridade*</label>
+                    <select id="os-prioridade" name="prioridade" required>
+                        <option value="baixa">Baixa</option>
+                        <option value="media">Média</option>
+                        <option value="alta">Alta</option>
+                        <option value="critica">Crítica</option>
+                    </select>
+
+                    <label for="os-mecanico_id">Mecânico (opcional)</label>
+                    <select id="os-mecanico_id" name="mecanico_id">
+                        <option value="">Nenhum</option>
+                        ${mechanics.map(m => `<option value="${m.id}">${m.nome_completo || m.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="os-data_prevista">Data Prevista</label>
+                    <input type="datetime-local" id="os-data_prevista" name="data_prevista" />
+
+                    <label for="os-descricao_problema">Descrição do Problema*</label>
+                    <textarea id="os-descricao_problema" name="descricao_problema" rows="3" required></textarea>
+
+                    <label for="os-observacoes">Observações</label>
+                    <textarea id="os-observacoes" name="observacoes" rows="2"></textarea>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelCreateOS" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </form>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            if (!document.getElementById('equipments-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'equipments-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                    .custom-modal form{display:flex;flex-direction:column;gap:10px;}
+                `;
+                document.head.appendChild(style);
+            }
+
+            modal.querySelector('#cancelCreateOS').addEventListener('click', () => overlay.remove());
+
+            modal.querySelector('#osFromEquipment').addEventListener('submit', async e => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const payload = {
+                    equipamento_id: parseInt(formData.get('equipamento_id')), 
+                    tipo: parseInt(formData.get('tipo')), 
+                    prioridade: formData.get('prioridade'),
+                    mecanico_id: formData.get('mecanico_id') ? parseInt(formData.get('mecanico_id')) : null,
+                    data_prevista: formData.get('data_prevista') ? new Date(formData.get('data_prevista')).toISOString().slice(0,19).replace('T',' ') : null,
+                    descricao_problema: formData.get('descricao_problema'),
+                    observacoes: formData.get('observacoes') || null
+                };
+                try {
+                    await API.workOrders.create(payload);
+                    Toast.success('Ordem de serviço criada com sucesso');
+                    overlay.remove();
+                    await this.refresh();
+                } catch (err) {
+                    Toast.error(err.message || 'Erro ao criar ordem de serviço');
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao criar OS para equipamento:', error);
+            Toast.error('Erro ao preparar OS');
+        }
     }
 }
 

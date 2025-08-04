@@ -182,16 +182,22 @@ class LoginForm {
         if (this.emailInput) {
             this.emailInput.focus();
         }
+
+        Utils.applyFormStyles(this.form);
     }
 
     async handleSubmit(e) {
         e.preventDefault();
+        Utils.clearFormErrors(this.form);
 
         const email = this.emailInput?.value.trim();
         const senha = this.passwordInput?.value;
 
-        if (!email || !senha) {
-            this.showError('Por favor, preencha todos os campos.');
+        const errors = {};
+        if (!email) errors.email = 'Campo obrigatório';
+        if (!senha) errors.password = 'Campo obrigatório';
+        if (Object.keys(errors).length) {
+            Utils.showFormErrors(this.form, errors);
             return;
         }
 
@@ -210,6 +216,7 @@ class LoginForm {
             }, 800);
         } else {
             this.showError(result.error || 'Erro ao fazer login. Verifique suas credenciais.');
+            Utils.showFormErrors(this.form, { password: result.error || 'Credenciais inválidas' });
         }
 
         this.setLoading(false);
@@ -245,6 +252,7 @@ class LoginForm {
         if (this.errorDiv) {
             this.errorDiv.style.display = 'none';
         }
+        Utils.clearFormErrors(this.form);
     }
 
     showSuccess(message) {

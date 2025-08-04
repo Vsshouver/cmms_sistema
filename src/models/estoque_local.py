@@ -1,4 +1,4 @@
-from src.models.usuario import db
+from src.db import db
 from datetime import datetime
 
 class EstoqueLocal(db.Model):
