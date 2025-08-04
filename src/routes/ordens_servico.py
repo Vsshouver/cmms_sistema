@@ -261,6 +261,8 @@ def update_ordem_servico(current_user, os_id):
         data = request.get_json()
         
         # Atualizar campos permitidos
+        if 'equipamento_id' in data:
+            os.equipamento_id = data['equipamento_id']
         if 'mecanico_id' in data:
             os.mecanico_id = data['mecanico_id']
         if 'tipo' in data:
