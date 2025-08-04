@@ -679,8 +679,8 @@ class WorkOrdersPage {
                 <textarea name="observacoes" rows="2"></textarea>
 
                 <div class="form-actions">
-                    <button type="submit">Salvar</button>
-                    <button type="button" id="cancelNewWorkOrder">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" id="cancelNewWorkOrder" class="btn btn-secondary">Cancelar</button>
                 </div>
             </form>
         `;
@@ -712,11 +712,6 @@ class WorkOrdersPage {
                 .custom-modal form {
                     display: flex;
                     flex-direction: column;
-                    gap: 10px;
-                }
-                .custom-modal .form-actions {
-                    display: flex;
-                    justify-content: flex-end;
                     gap: 10px;
                 }
             `;
@@ -778,7 +773,7 @@ class WorkOrdersPage {
                     <p><strong>Descrição:</strong> ${os.descricao_problema || '-'}</p>
                     ${os.descricao_solucao ? `<p><strong>Solução:</strong> ${os.descricao_solucao}</p>` : ''}
                 </div>
-                <div class="form-actions"><button id="closeWorkOrderDetails">Fechar</button></div>
+                <div class="form-actions"><button id="closeWorkOrderDetails" class="btn btn-secondary">Fechar</button></div>
             `;
 
             overlay.appendChild(modal);
@@ -806,11 +801,6 @@ class WorkOrdersPage {
                         width: 450px;
                         max-height: 80vh;
                         overflow-y: auto;
-                    }
-                    .custom-modal .form-actions {
-                        display: flex;
-                        justify-content: flex-end;
-                        margin-top: 10px;
                     }
                 `;
                 document.head.appendChild(style);
@@ -898,8 +888,8 @@ class WorkOrdersPage {
                     <textarea name="observacoes" rows="2">${os.observacoes || ''}</textarea>
 
                     <div class="form-actions">
-                        <button type="submit">Salvar</button>
-                        <button type="button" id="cancelEditWorkOrder">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelEditWorkOrder" class="btn btn-secondary">Cancelar</button>
                     </div>
                 </form>
             `;

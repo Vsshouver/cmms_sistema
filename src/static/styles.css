@@ -757,7 +757,6 @@ body {
     resize: vertical;
     min-height: 100px;
 }
-
 .form-input.is-invalid,
 .form-select.is-invalid,
 .form-textarea.is-invalid {
@@ -775,7 +774,7 @@ body {
     font-size: 0.75rem;
     margin-top: 0.25rem;
     display: block;
-}
+
 
 /* Status Badges */
 .badge {
