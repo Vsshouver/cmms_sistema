@@ -52,6 +52,7 @@ class ApiClient {
 
             const contentType = response.headers.get('content-type') || '';
 
+            // Helper to translate HTTP status codes into user-friendly messages
             const buildMessage = (status, message) => {
                 if (status === 404 && !message) return 'Recurso não encontrado';
                 if ((status === 400 || status === 422) && !message) return 'Dados inválidos';
