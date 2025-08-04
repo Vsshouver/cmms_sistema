@@ -40,20 +40,21 @@ class ApiClient {
         try {
             const response = await fetch(url, config);
 
-            // Se o token estiver expirado ou inválido, limpe e recarregue
+            // Desloga se o token estiver inválido ou expirado
             if (response.status === 401) {
                 this.setToken(null);
                 window.location.reload();
                 return;
             }
 
+            // Download de blob (arquivos)
             if (options.responseType === 'blob') {
                 return response.blob();
             }
 
             const contentType = response.headers.get('content-type') || '';
 
-            // Traduz códigos HTTP em mensagens mais amigáveis
+            // Traduz status HTTP em mensagens amigáveis
             const buildMessage = (status, message) => {
                 if (status === 404 && !message) return 'Recurso não encontrado';
                 if ((status === 400 || status === 422) && !message) return 'Dados inválidos';
@@ -61,7 +62,7 @@ class ApiClient {
                 return message || `HTTP ${status}`;
             };
 
-            // Processa respostas JSON
+            // Trata respostas JSON
             if (contentType.includes('application/json')) {
                 const data = await response.json();
                 if (!response.ok) {
@@ -70,12 +71,13 @@ class ApiClient {
                 return data;
             }
 
-            // Processa respostas de texto
+            // Trata respostas de texto
             const text = await response.text();
             if (!response.ok) {
                 throw new Error(buildMessage(response.status, text));
             }
             return text;
+
         } catch (error) {
             console.error(`API Error [${endpoint}]:`, error);
             if (typeof Toast !== 'undefined') {
@@ -127,6 +129,7 @@ class ApiClient {
 
 const api = new ApiClient();
 
+// Definição de todos os serviços disponíveis via API
 const API = {
     auth: {
         login: (credentials) => api.post('/auth/login', credentials),
