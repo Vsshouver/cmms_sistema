@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.models.usuario import db
+from src.db import db
 from src.models.analise_oleo import AnaliseOleo
 from src.models.equipamento import Equipamento
 from src.utils.auth import token_required, pcm_or_above_required

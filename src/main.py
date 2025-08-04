@@ -11,7 +11,7 @@ import os
 import sys
 
 # Importar modelos
-from src.models.usuario import db
+from src.db import db
 
 # Importar blueprints
 from src.routes.auth import auth_bp
