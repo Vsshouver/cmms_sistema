@@ -12,19 +12,144 @@ class PreventivasPage {
             deve_gerar: '',
             search: ''
         };
-        
-        this.init();
     }
-
-    async init() {
+    async render(container) {
         try {
             await this.loadData();
+            container.innerHTML = this.getHTML();
             this.setupEventListeners();
             this.applyFilters();
+            window.preventivas = this;
         } catch (error) {
-            console.error('Erro ao inicializar página de preventivas:', error);
-            Toast.error('Erro ao carregar dados');
+            console.error('Erro ao carregar página de preventivas:', error);
+            container.innerHTML = '<div class="page-error">Erro ao carregar dados</div>';
         }
+    }
+
+    getHTML() {
+        return `
+            <div class="preventivas-page">
+                <div class="page-header">
+                    <div class="page-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div>
+                            <h1>Planos de Preventiva</h1>
+                            <p>Gerencie os planos de manutenção preventiva</p>
+                        </div>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="new-plan-btn">
+                            <i class="fas fa-plus"></i> Novo Plano
+                        </button>
+                        <button class="btn btn-secondary" id="generate-os-btn">
+                            <i class="fas fa-cogs"></i> Gerar OS Pendentes
+                        </button>
+                        <button class="btn btn-outline" id="refresh-data">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-total">0</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon active">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-ativos">0</div>
+                            <div class="stat-label">Ativos</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-pendentes">0</div>
+                            <div class="stat-label">Pendentes</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon inactive">
+                            <i class="fas fa-pause-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-inativos">0</div>
+                            <div class="stat-label">Inativos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filters-section">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label for="filter-equipamento">Equipamento</label>
+                            <select id="filter-equipamento">
+                                <option value="">Todos os equipamentos</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-ativo">Status</label>
+                            <select id="filter-ativo">
+                                <option value="">Todos</option>
+                                <option value="true">Ativo</option>
+                                <option value="false">Inativo</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-deve-gerar">Situação</label>
+                            <select id="filter-deve-gerar">
+                                <option value="">Todos</option>
+                                <option value="true">Pendente</option>
+                                <option value="false">Em dia</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="search-input">Buscar</label>
+                            <input type="text" id="search-input" placeholder="Nome, descrição...">
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn btn-outline" id="clear-filters">
+                                <i class="fas fa-times"></i> Limpar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-controls">
+                    <div class="controls-left">
+                        <select id="items-per-page">
+                            <option value="15">15 por página</option>
+                            <option value="30">30 por página</option>
+                            <option value="50">50 por página</option>
+                        </select>
+                    </div>
+                    <div class="controls-right">
+                        <label for="sort-by">Ordenar por:</label>
+                        <select id="sort-by">
+                            <option value="nome-asc">Nome (A-Z)</option>
+                            <option value="nome-desc">Nome (Z-A)</option>
+                            <option value="equipamento_nome-asc">Equipamento (A-Z)</option>
+                            <option value="prioridade-desc">Prioridade</option>
+                            <option value="created_at-desc">Mais recentes</option>
+                            <option value="created_at-asc">Mais antigos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="plans-container" id="plans-container"></div>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        `;
     }
 
     async loadData() {
@@ -264,10 +389,17 @@ class PreventivasPage {
             inativos: this.data.filter(p => !p.ativo).length
         };
 
-        document.querySelector('#stat-total')?.textContent = stats.total;
-        document.querySelector('#stat-ativos')?.textContent = stats.ativos;
-        document.querySelector('#stat-pendentes')?.textContent = stats.pendentes;
-        document.querySelector('#stat-inativos')?.textContent = stats.inativos;
+        const totalEl = document.querySelector('#stat-total');
+        if (totalEl) totalEl.textContent = stats.total;
+
+        const ativosEl = document.querySelector('#stat-ativos');
+        if (ativosEl) ativosEl.textContent = stats.ativos;
+
+        const pendentesEl = document.querySelector('#stat-pendentes');
+        if (pendentesEl) pendentesEl.textContent = stats.pendentes;
+
+        const inativosEl = document.querySelector('#stat-inativos');
+        if (inativosEl) inativosEl.textContent = stats.inativos;
     }
 
     updatePagination() {
@@ -544,11 +676,6 @@ class PreventivasPage {
     }
 }
 
-// Inicializar quando a página carregar
-let preventivas;
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.location.pathname.includes('preventivas')) {
-        preventivas = new PreventivasPage();
-    }
-});
+// Exportar a classe para uso global
+window.PreventivasPage = PreventivasPage;
 
