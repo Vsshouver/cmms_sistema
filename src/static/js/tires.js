@@ -53,8 +53,8 @@ function openCreateTireModal() {
                 <input type="number" name="vida_util_estimada" step="0.01" />
 
                 <div class="form-actions">
-                    <button type="submit">Salvar</button>
-                    <button type="button" id="cancelNewTire">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" id="cancelNewTire" class="btn btn-secondary">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -127,11 +127,6 @@ modalStyle.textContent = `
 .custom-modal form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-.custom-modal .form-actions {
-    display: flex;
-    justify-content: flex-end;
     gap: 10px;
 }
 .custom-modal button {

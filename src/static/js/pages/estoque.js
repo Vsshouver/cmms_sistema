@@ -791,8 +791,8 @@ class InventoryPage {
                     <textarea name="observacoes" rows="2"></textarea>
 
                     <div class="form-actions">
-                        <button type="submit">Salvar</button>
-                        <button type="button" id="cancelNewItem">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelNewItem" class="btn btn-secondary">Cancelar</button>
                     </div>
                 </form>
             `;
@@ -807,7 +807,6 @@ class InventoryPage {
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
                     .custom-modal form{display:flex;flex-direction:column;gap:10px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;gap:10px;}
                 `;
                 document.head.appendChild(style);
             }
@@ -868,7 +867,7 @@ class InventoryPage {
                     ${item.fornecedor ? `<p><strong>Fornecedor:</strong> ${item.fornecedor}</p>` : ''}
                     ${item.observacoes ? `<p><strong>Observações:</strong> ${item.observacoes}</p>` : ''}
                 </div>
-                <div class="form-actions"><button id="closeItemDetails">Fechar</button></div>
+                <div class="form-actions"><button id="closeItemDetails" class="btn btn-secondary">Fechar</button></div>
             `;
             overlay.appendChild(modal);
             (document.getElementById('modals-container') || document.body).appendChild(overlay);
@@ -880,7 +879,6 @@ class InventoryPage {
                 style.textContent = `
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;margin-top:10px;}
                 `;
                 document.head.appendChild(style);
             }
@@ -948,8 +946,8 @@ class InventoryPage {
                     <textarea name="observacoes" rows="2">${item.observacoes || ''}</textarea>
 
                     <div class="form-actions">
-                        <button type="submit">Salvar</button>
-                        <button type="button" id="cancelEditItem">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelEditItem" class="btn btn-secondary">Cancelar</button>
                     </div>
                 </form>
             `;
@@ -964,7 +962,6 @@ class InventoryPage {
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
                     .custom-modal form{display:flex;flex-direction:column;gap:10px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;gap:10px;}
                 `;
                 document.head.appendChild(style);
             }
@@ -1027,8 +1024,8 @@ class InventoryPage {
                     <input type="text" name="motivo" />
 
                     <div class="form-actions">
-                        <button type="submit">Salvar</button>
-                        <button type="button" id="cancelMovement">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelMovement" class="btn btn-secondary">Cancelar</button>
                     </div>
                 </form>
             `;
@@ -1043,7 +1040,6 @@ class InventoryPage {
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:400px;max-height:80vh;overflow-y:auto;border-radius:4px;}
                     .custom-modal form{display:flex;flex-direction:column;gap:10px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;gap:10px;}
                 `;
                 document.head.appendChild(style);
             }

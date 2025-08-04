@@ -851,7 +851,7 @@ class TiresPage {
                         </table>
                     </div>
                 </div>
-                <div class="form-actions"><button id="closeReport">Fechar</button></div>
+                <div class="form-actions"><button id="closeReport" class="btn btn-secondary">Fechar</button></div>
             `;
 
             overlay.appendChild(modal);
@@ -865,7 +865,6 @@ class TiresPage {
                 style.textContent = `
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:600px;max-height:80vh;overflow-y:auto;border-radius:4px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;margin-top:10px;}
                     .report-section{margin-bottom:20px;}
                     .report-section h3{margin-bottom:10px;}
                 `;
@@ -921,8 +920,8 @@ class TiresPage {
             <input type="number" name="vida_util_estimada" step="0.01" />
 
             <div class="form-actions">
-                <button type="submit">Salvar</button>
-                <button type="button" id="cancelNewTire">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <button type="button" id="cancelNewTire" class="btn btn-secondary">Cancelar</button>
             </div>
         </form>
     `;
@@ -960,11 +959,6 @@ class TiresPage {
             .custom-modal form {
                 display: flex;
                 flex-direction: column;
-                gap: 10px;
-            }
-            .custom-modal .form-actions {
-                display: flex;
-                justify-content: flex-end;
                 gap: 10px;
             }
             .custom-modal button {
