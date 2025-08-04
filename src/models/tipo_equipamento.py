@@ -12,7 +12,11 @@ class TipoEquipamento(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacionamentos
-    equipamentos = db.relationship('Equipamento', backref='tipo_equipamento_obj', lazy=True)
+    # Relacionamento bidirecional com Equipamento utilizando back_populates
+    # para evitar a criação automática de atributos duplicados.
+    equipamentos = db.relationship(
+        'Equipamento', back_populates='tipo_equipamento_obj', lazy=True
+    )
     
     def to_dict(self):
         return {
