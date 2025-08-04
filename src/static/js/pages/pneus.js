@@ -806,29 +806,135 @@ class TiresPage {
     }
 
     showCreateModal() {
-        // TODO: Implementar modal de criação de pneu
-        Toast.info('Modal de criação em desenvolvimento');
+    // Cria e exibe o modal para cadastrar um novo pneu
+    const modalsContainer = document.getElementById('modals-container') || document.body;
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'custom-modal';
+    modal.innerHTML = `
+        <h2>Cadastrar Pneu</h2>
+        <form id="newTireForm">
+            <label>Número de Série*</label>
+            <input type="text" name="numero_serie" required />
+
+            <label>Número de Fogo</label>
+            <input type="text" name="numero_fogo" />
+
+            <label>Marca*</label>
+            <input type="text" name="marca" required />
+
+            <label>Modelo*</label>
+            <input type="text" name="modelo" required />
+
+            <label>Medida* (ex.: 385/65R22.5)</label>
+            <input type="text" name="medida" required />
+
+            <label>Tipo*</label>
+            <select name="tipo" required>
+                <option value="novo">Novo</option>
+                <option value="recapado">Recapado</option>
+            </select>
+
+            <label>Data de Compra*</label>
+            <input type="date" name="data_compra" required />
+
+            <label>Valor de Compra</label>
+            <input type="number" name="valor_compra" step="0.01" />
+
+            <label>Pressão Recomendada (PSI)</label>
+            <input type="number" name="pressao_recomendada" step="0.01" />
+
+            <label>Vida Útil Estimada (km)</label>
+            <input type="number" name="vida_util_estimada" step="0.01" />
+
+            <div class="form-actions">
+                <button type="submit">Salvar</button>
+                <button type="button" id="cancelNewTire">Cancelar</button>
+            </div>
+        </form>
+    `;
+    overlay.appendChild(modal);
+    modalsContainer.appendChild(overlay);
+
+    // Insere estilos para o modal uma única vez
+    if (!document.getElementById('tires-modal-style')) {
+        const style = document.createElement('style');
+        style.id = 'tires-modal-style';
+        style.textContent = `
+            .custom-modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 10000;
+            }
+            .custom-modal {
+                background: #fff;
+                padding: 20px;
+                max-height: 80vh;
+                overflow-y: auto;
+                border-radius: 4px;
+                width: 400px;
+            }
+            .custom-modal h2 {
+                margin-top: 0;
+            }
+            .custom-modal form {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .custom-modal .form-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+            .custom-modal button {
+                padding: 6px 12px;
+            }
+        `;
+        document.head.appendChild(style);
     }
 
-    viewDetails(id) {
-        // TODO: Implementar visualização de detalhes
-        Toast.info('Visualização de detalhes em desenvolvimento');
-    }
+    // Botão cancelar fecha o modal
+    overlay.querySelector('#cancelNewTire').addEventListener('click', () => {
+        overlay.remove();
+    });
 
-    editTire(id) {
-        // TODO: Implementar edição de pneu
-        Toast.info('Edição de pneu em desenvolvimento');
-    }
+    // Submissão do formulário
+    overlay.querySelector('#newTireForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const payload = {
+            numero_serie: formData.get('numero_serie'),
+            numero_fogo: formData.get('numero_fogo') || null,
+            marca: formData.get('marca'),
+            modelo: formData.get('modelo'),
+            medida: formData.get('medida'),
+            tipo: formData.get('tipo'),
+            data_compra: formData.get('data_compra'),
+            valor_compra: parseFloat(formData.get('valor_compra') || 0),
+            pressao_recomendada: parseFloat(formData.get('pressao_recomendada') || 0),
+            vida_util_estimada: parseFloat(formData.get('vida_util_estimada') || 0)
+        };
+        try {
+            await API.tires.create(payload);
+            Toast.success('Pneu cadastrado com sucesso!');
+            overlay.remove();
+            await this.refresh(); // Recarrega a listagem
+        } catch (error) {
+            Toast.error(error.message || 'Erro ao criar pneu.');
+            console.error(error);
+        }
+    });
+}
 
-    installTire(id) {
-        // TODO: Implementar instalação de pneu
-        Toast.info('Instalação de pneu em desenvolvimento');
-    }
-
-    updateTread(id) {
-        // TODO: Implementar atualização de sulco
-        Toast.info('Atualização de sulco em desenvolvimento');
-    }
 }
 
 // Instância global para uso nos event handlers
