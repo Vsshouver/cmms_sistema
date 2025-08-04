@@ -8,7 +8,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 from flask import Flask
-from src.models.usuario import db
+from src.db import db
 
 # Importar todos os modelos para que sejam registrados
 from src.models.equipamento import Equipamento

@@ -12,7 +12,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 from flask import Flask
-from src.models.usuario import db, Usuario
+from src.db import db
+from src.models.usuario import Usuario
 from src.models.equipamento import Equipamento
 from src.models.mecanico import Mecanico
 from src.models.ordem_servico import OrdemServico
