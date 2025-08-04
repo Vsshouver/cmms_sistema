@@ -50,13 +50,22 @@ class ApiClient {
                 return response.blob();
             }
 
-            const data = await response.json();
+            const contentType = response.headers.get('content-type') || '';
+            let data;
 
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP ${response.status}`);
+            if (contentType.includes('application/json')) {
+                data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+                return data;
             }
 
-            return data;
+            const text = await response.text();
+            if (!response.ok) {
+                throw new Error(text || `HTTP ${response.status}`);
+            }
+            return text;
         } catch (error) {
             console.error(`API Error [${endpoint}]:`, error);
             throw error;
@@ -171,7 +180,7 @@ const API = {
         delete: (id) => api.delete(`/estoque/pecas/${id}`),
 
         getMovements: (params) => api.get('/estoque/movimentacoes', params),
-        createMovement: (data) => api.post('/estoque/movimentacao', data),
+        createMovement: (id, data) => api.post(`/estoque/pecas/${id}/movimentacao`, data),
 
         doInventory: (data) => api.post('/estoque/inventario', data),
         getInventoryReport: (params) => api.get('/estoque/relatorio-inventario', params),
