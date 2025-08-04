@@ -798,8 +798,8 @@ class EquipmentsPage {
                     <textarea id="equipment-observacoes" name="observacoes" rows="2"></textarea>
 
                     <div class="form-actions">
-                        <button type="submit">Salvar</button>
-                        <button type="button" id="cancelEquipment">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelEquipment" class="btn btn-secondary">Cancelar</button>
                     </div>
                 </form>
             `;
@@ -814,7 +814,6 @@ class EquipmentsPage {
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
                     .custom-modal form{display:flex;flex-direction:column;gap:10px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;gap:10px;}
                 `;
                 document.head.appendChild(style);
             }
@@ -878,7 +877,7 @@ class EquipmentsPage {
                     ${eq.valor_aquisicao ? `<p><strong>Valor Aquisição:</strong> R$ ${Utils.formatCurrency(eq.valor_aquisicao)}</p>` : ''}
                     ${eq.observacoes ? `<p><strong>Observações:</strong> ${eq.observacoes}</p>` : ''}
                 </div>
-                <div class="form-actions"><button id="closeDetails">Fechar</button></div>
+                <div class="form-actions"><button id="closeDetails" class="btn btn-secondary">Fechar</button></div>
             `;
 
             overlay.appendChild(modal);
@@ -892,7 +891,6 @@ class EquipmentsPage {
                 style.textContent = `
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;margin-top:10px;}
                 `;
                 document.head.appendChild(style);
             }
@@ -952,9 +950,10 @@ class EquipmentsPage {
                     <label for="edit-equipment-observacoes">Observações</label>
                     <textarea id="edit-equipment-observacoes" name="observacoes" rows="2">${eq.observacoes || ''}</textarea>
 
+
                     <div class="form-actions">
-                        <button type="submit">Salvar</button>
-                        <button type="button" id="cancelEditEquipment">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelEditEquipment" class="btn btn-secondary">Cancelar</button>
                     </div>
                 </form>
             `;
@@ -969,7 +968,6 @@ class EquipmentsPage {
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
                     .custom-modal form{display:flex;flex-direction:column;gap:10px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;gap:10px;}
                 `;
                 document.head.appendChild(style);
             }
@@ -1058,8 +1056,8 @@ class EquipmentsPage {
                     <textarea id="os-observacoes" name="observacoes" rows="2"></textarea>
 
                     <div class="form-actions">
-                        <button type="submit">Salvar</button>
-                        <button type="button" id="cancelCreateOS">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" id="cancelCreateOS" class="btn btn-secondary">Cancelar</button>
                     </div>
                 </form>
             `;
@@ -1074,7 +1072,6 @@ class EquipmentsPage {
                     .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
                     .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
                     .custom-modal form{display:flex;flex-direction:column;gap:10px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;gap:10px;}
                 `;
                 document.head.appendChild(style);
             }
