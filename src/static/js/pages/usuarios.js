@@ -382,21 +382,380 @@ class UsersPage {
     }
 
     openCreateModal() {
-        Utils.showNotification('Modal de criação em desenvolvimento', 'info');
+        const modalContent = `
+            <form id="user-form" class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nome Completo *</label>
+                    <input type="text" name="nome" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">E-mail *</label>
+                    <input type="email" name="email" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Senha *</label>
+                    <input type="password" name="senha" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Confirmar Senha *</label>
+                    <input type="password" name="confirmar_senha" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Cargo</label>
+                    <input type="text" name="cargo" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Nível de Acesso *</label>
+                    <select name="nivel_acesso" class="form-select" required>
+                        <option value="">Selecione um nível</option>
+                        <option value="admin">Administrador</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="pcm">PCM</option>
+                        <option value="almoxarife">Almoxarife</option>
+                        <option value="mecanico">Mecânico</option>
+                        <option value="operador">Operador</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select name="ativo" class="form-select" required>
+                        <option value="true">Ativo</option>
+                        <option value="false">Inativo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Telefone</label>
+                    <input type="tel" name="telefone" class="form-input">
+                </div>
+            </form>
+        `;
+
+        const modal = Modal.show({
+            title: 'Novo Usuário',
+            content: modalContent,
+            size: 'lg'
+        });
+
+        // Adicionar botões no footer
+        const footer = document.createElement('div');
+        footer.className = 'modal-footer';
+        footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
+            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
+        `;
+        modal.querySelector('.modal-body').appendChild(footer);
+
+        // Event listeners
+        modal.addEventListener('click', async (e) => {
+            if (e.target.dataset.action === 'cancel') {
+                Modal.close(modal);
+            } else if (e.target.dataset.action === 'save') {
+                await this.saveUser(modal);
+            }
+        });
     }
 
     viewItem(id) {
         const item = this.data.find(item => item.id === id);
         if (item) {
-            Utils.showNotification(`Visualizando: ${item.nome_completo || item.username}`, 'info');
+            this.showViewModal(item);
         }
     }
 
     editItem(id) {
         const item = this.data.find(item => item.id === id);
         if (item) {
-            Utils.showNotification(`Editando: ${item.nome_completo || item.username}`, 'info');
+            this.openEditModal(item);
         }
+    }
+
+    openEditModal(user) {
+        const modalContent = `
+            <form id="user-form" class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nome Completo *</label>
+                    <input type="text" name="nome" class="form-input" value="${user.nome_completo || ''}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">E-mail *</label>
+                    <input type="email" name="email" class="form-input" value="${user.email || ''}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Nova Senha</label>
+                    <input type="password" name="senha" class="form-input" placeholder="Deixe em branco para manter a atual">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Confirmar Nova Senha</label>
+                    <input type="password" name="confirmar_senha" class="form-input" placeholder="Deixe em branco para manter a atual">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Cargo</label>
+                    <input type="text" name="cargo" class="form-input" value="${user.cargo || ''}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Nível de Acesso *</label>
+                    <select name="nivel_acesso" class="form-select" required>
+                        <option value="">Selecione um nível</option>
+                        <option value="admin" ${user.nivel_acesso === 'admin' ? 'selected' : ''}>Administrador</option>
+                        <option value="supervisor" ${user.nivel_acesso === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                        <option value="pcm" ${user.nivel_acesso === 'pcm' ? 'selected' : ''}>PCM</option>
+                        <option value="almoxarife" ${user.nivel_acesso === 'almoxarife' ? 'selected' : ''}>Almoxarife</option>
+                        <option value="mecanico" ${user.nivel_acesso === 'mecanico' ? 'selected' : ''}>Mecânico</option>
+                        <option value="operador" ${user.nivel_acesso === 'operador' ? 'selected' : ''}>Operador</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select name="ativo" class="form-select" required>
+                        <option value="true" ${user.ativo ? 'selected' : ''}>Ativo</option>
+                        <option value="false" ${!user.ativo ? 'selected' : ''}>Inativo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Telefone</label>
+                    <input type="tel" name="telefone" class="form-input" value="${user.telefone || ''}">
+                </div>
+            </form>
+        `;
+
+        const modal = Modal.show({
+            title: 'Editar Usuário',
+            content: modalContent,
+            size: 'lg'
+        });
+
+        // Adicionar botões no footer
+        const footer = document.createElement('div');
+        footer.className = 'modal-footer';
+        footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
+            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
+        `;
+        modal.querySelector('.modal-body').appendChild(footer);
+
+        // Event listeners
+        modal.addEventListener('click', async (e) => {
+            if (e.target.dataset.action === 'cancel') {
+                Modal.close(modal);
+            } else if (e.target.dataset.action === 'save') {
+                await this.updateUser(modal, user.id);
+            }
+        });
+    }
+
+    async saveUser(modal) {
+        try {
+            const form = modal.querySelector('#user-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Validação básica
+            if (!data.nome || !data.email || !data.senha || !data.nivel_acesso) {
+                Toast.error('Preencha todos os campos obrigatórios');
+                return;
+            }
+
+            if (data.senha !== data.confirmar_senha) {
+                Toast.error('As senhas não coincidem');
+                return;
+            }
+
+            // Remover campo de confirmação
+            delete data.confirmar_senha;
+
+            // Converter ativo para boolean
+            data.ativo = data.ativo === 'true';
+
+            Loading.show('Salvando usuário...');
+
+            await API.users.create(data);
+            
+            Loading.hide();
+            Modal.close(modal);
+            Toast.success('Usuário criado com sucesso!');
+            
+            // Recarregar dados
+            await this.refreshData();
+
+        } catch (error) {
+            Loading.hide();
+            console.error('Erro ao salvar usuário:', error);
+            Toast.error('Erro ao salvar usuário: ' + (error.message || 'Erro desconhecido'));
+        }
+    }
+
+    async updateUser(modal, userId) {
+        try {
+            const form = modal.querySelector('#user-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Validação básica
+            if (!data.nome || !data.email || !data.nivel_acesso) {
+                Toast.error('Preencha todos os campos obrigatórios');
+                return;
+            }
+
+            // Validar senhas se foram preenchidas
+            if (data.senha || data.confirmar_senha) {
+                if (data.senha !== data.confirmar_senha) {
+                    Toast.error('As senhas não coincidem');
+                    return;
+                }
+            } else {
+                // Remover campos de senha se estão vazios
+                delete data.senha;
+            }
+
+            // Remover campo de confirmação
+            delete data.confirmar_senha;
+
+            // Converter ativo para boolean
+            data.ativo = data.ativo === 'true';
+
+            Loading.show('Atualizando usuário...');
+
+            await API.users.update(userId, data);
+            
+            Loading.hide();
+            Modal.close(modal);
+            Toast.success('Usuário atualizado com sucesso!');
+            
+            // Recarregar dados
+            await this.refreshData();
+
+        } catch (error) {
+            Loading.hide();
+            console.error('Erro ao atualizar usuário:', error);
+            Toast.error('Erro ao atualizar usuário: ' + (error.message || 'Erro desconhecido'));
+        }
+    }
+
+    async deleteItem(userId) {
+        const user = this.data.find(u => u.id === userId);
+        if (!user) return;
+
+        try {
+            const confirmed = await Modal.confirm(
+                `Tem certeza que deseja excluir o usuário "${user.nome_completo || user.username}"?`,
+                'Confirmar Exclusão'
+            );
+
+            if (!confirmed) return;
+
+            Loading.show('Excluindo usuário...');
+
+            await API.users.delete(userId);
+            
+            Loading.hide();
+            Toast.success('Usuário excluído com sucesso!');
+            
+            // Recarregar dados
+            await this.refreshData();
+
+        } catch (error) {
+            Loading.hide();
+            console.error('Erro ao excluir usuário:', error);
+            Toast.error('Erro ao excluir usuário: ' + (error.message || 'Erro desconhecido'));
+        }
+    }
+
+    showViewModal(user) {
+        const modalContent = `
+            <div class="user-details">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Nome:</label>
+                        <span>${user.nome_completo || user.username || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>E-mail:</label>
+                        <span>${user.email || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Cargo:</label>
+                        <span>${user.cargo || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Nível de Acesso:</label>
+                        <span class="badge badge-info">${this.getAccessLevelLabel(user.nivel_acesso)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Status:</label>
+                        <span class="badge badge-${user.ativo ? 'success' : 'error'}">${user.ativo ? 'Ativo' : 'Inativo'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Telefone:</label>
+                        <span>${user.telefone || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Criado em:</label>
+                        <span>${user.created_at ? Utils.formatDate(user.created_at) : '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Último acesso:</label>
+                        <span>${user.ultimo_login ? Utils.formatDate(user.ultimo_login) : 'Nunca'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const modal = Modal.show({
+            title: `Detalhes do Usuário: ${user.nome_completo || user.username}`,
+            content: modalContent,
+            size: 'lg'
+        });
+
+        // Adicionar botões no footer
+        const footer = document.createElement('div');
+        footer.className = 'modal-footer';
+        footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-action="close">Fechar</button>
+            ${auth.hasPermission('admin') ? `
+                <button type="button" class="btn btn-warning" data-action="edit">Editar</button>
+                <button type="button" class="btn btn-danger" data-action="delete">Excluir</button>
+            ` : ''}
+        `;
+        modal.querySelector('.modal-body').appendChild(footer);
+
+        // Event listeners
+        modal.addEventListener('click', async (e) => {
+            if (e.target.dataset.action === 'close') {
+                Modal.close(modal);
+            } else if (e.target.dataset.action === 'edit') {
+                Modal.close(modal);
+                this.openEditModal(user);
+            } else if (e.target.dataset.action === 'delete') {
+                Modal.close(modal);
+                await this.deleteItem(user.id);
+            }
+        });
+    }
+
+    getAccessLevelLabel(level) {
+        const labels = {
+            'admin': 'Administrador',
+            'supervisor': 'Supervisor',
+            'pcm': 'PCM',
+            'almoxarife': 'Almoxarife',
+            'mecanico': 'Mecânico',
+            'operador': 'Operador'
+        };
+        return labels[level] || level;
     }
 
     resetPassword(id) {

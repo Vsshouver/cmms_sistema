@@ -538,11 +538,11 @@ class EquipmentsPage {
                     </div>
                     
                     <div class="equipment-actions">
-                        <button class="btn-icon btn-icon-primary" onclick="equipmentsPage.viewDetails(${item.id})" title="Ver detalhes">
+                        <button class="btn-icon btn-icon-primary" onclick="equipmentsPage.showViewModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Ver detalhes">
                             <i class="fas fa-eye"></i>
                         </button>
                         ${auth.hasPermission('admin') ? `
-                            <button class="btn-icon btn-icon-secondary" onclick="equipmentsPage.editEquipment(${item.id})" title="Editar">
+                            <button class="btn-icon btn-icon-secondary" onclick="equipmentsPage.showEditModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
                         ` : ''}
@@ -586,11 +586,11 @@ class EquipmentsPage {
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-icon btn-icon-primary" onclick="equipmentsPage.viewDetails(${item.id})" title="Ver detalhes">
+                        <button class="btn-icon btn-icon-primary" onclick="equipmentsPage.showViewModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Ver detalhes">
                             <i class="fas fa-eye"></i>
                         </button>
                         ${auth.hasPermission('admin') ? `
-                            <button class="btn-icon btn-icon-secondary" onclick="equipmentsPage.editEquipment(${item.id})" title="Editar">
+                            <button class="btn-icon btn-icon-secondary" onclick="equipmentsPage.showEditModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
                         ` : ''}
@@ -743,8 +743,340 @@ class EquipmentsPage {
     }
 
     showCreateModal() {
-        // TODO: Implementar modal de criação de equipamento
-        Toast.info('Modal de criação em desenvolvimento');
+        const modalContent = `
+            <form id="equipment-form" class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nome do Equipamento *</label>
+                    <input type="text" name="nome" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo de Equipamento *</label>
+                    <select name="tipo_equipamento_id" class="form-select" required>
+                        <option value="">Selecione um tipo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Modelo</label>
+                    <input type="text" name="modelo" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Número de Série</label>
+                    <input type="text" name="numero_serie" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select name="status" class="form-select" required>
+                        <option value="ativo">Ativo</option>
+                        <option value="manutencao">Em Manutenção</option>
+                        <option value="inativo">Inativo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Localização</label>
+                    <input type="text" name="localizacao" class="form-input">
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label class="form-label">Descrição</label>
+                    <textarea name="descricao" class="form-textarea" rows="3"></textarea>
+                </div>
+            </form>
+        `;
+
+        const modal = Modal.show({
+            title: 'Novo Equipamento',
+            content: modalContent,
+            size: 'lg'
+        });
+
+        // Carregar tipos de equipamento
+        this.loadEquipmentTypesForModal(modal);
+
+        // Adicionar botões no footer
+        const footer = document.createElement('div');
+        footer.className = 'modal-footer';
+        footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
+            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
+        `;
+        modal.querySelector('.modal-body').appendChild(footer);
+
+        // Event listeners
+        modal.addEventListener('click', async (e) => {
+            if (e.target.dataset.action === 'cancel') {
+                Modal.close(modal);
+            } else if (e.target.dataset.action === 'save') {
+                await this.saveEquipment(modal);
+            }
+        });
+    }
+
+    showEditModal(equipment) {
+        const modalContent = `
+            <form id="equipment-form" class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nome do Equipamento *</label>
+                    <input type="text" name="nome" class="form-input" value="${equipment.nome || ''}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo de Equipamento *</label>
+                    <select name="tipo_equipamento_id" class="form-select" required>
+                        <option value="">Selecione um tipo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Modelo</label>
+                    <input type="text" name="modelo" class="form-input" value="${equipment.modelo || ''}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Número de Série</label>
+                    <input type="text" name="numero_serie" class="form-input" value="${equipment.numero_serie || ''}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select name="status" class="form-select" required>
+                        <option value="ativo" ${equipment.status === 'ativo' ? 'selected' : ''}>Ativo</option>
+                        <option value="manutencao" ${equipment.status === 'manutencao' ? 'selected' : ''}>Em Manutenção</option>
+                        <option value="inativo" ${equipment.status === 'inativo' ? 'selected' : ''}>Inativo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Localização</label>
+                    <input type="text" name="localizacao" class="form-input" value="${equipment.localizacao || ''}">
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label class="form-label">Descrição</label>
+                    <textarea name="descricao" class="form-textarea" rows="3">${equipment.descricao || ''}</textarea>
+                </div>
+            </form>
+        `;
+
+        const modal = Modal.show({
+            title: 'Editar Equipamento',
+            content: modalContent,
+            size: 'lg'
+        });
+
+        // Carregar tipos de equipamento
+        this.loadEquipmentTypesForModal(modal, equipment.tipo_equipamento_id);
+
+        // Adicionar botões no footer
+        const footer = document.createElement('div');
+        footer.className = 'modal-footer';
+        footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
+            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
+        `;
+        modal.querySelector('.modal-body').appendChild(footer);
+
+        // Event listeners
+        modal.addEventListener('click', async (e) => {
+            if (e.target.dataset.action === 'cancel') {
+                Modal.close(modal);
+            } else if (e.target.dataset.action === 'save') {
+                await this.updateEquipment(modal, equipment.id);
+            }
+        });
+    }
+
+    async loadEquipmentTypesForModal(modal, selectedId = null) {
+        try {
+            const types = await API.equipmentTypes.getAll();
+            const select = modal.querySelector('select[name="tipo_equipamento_id"]');
+            
+            if (select) {
+                // Limpar opções existentes (exceto a primeira)
+                select.innerHTML = '<option value="">Selecione um tipo</option>';
+                
+                // Adicionar tipos
+                types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.id;
+                    option.textContent = type.nome;
+                    if (selectedId && type.id == selectedId) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao carregar tipos de equipamento:', error);
+            Toast.error('Erro ao carregar tipos de equipamento');
+        }
+    }
+
+    async saveEquipment(modal) {
+        try {
+            const form = modal.querySelector('#equipment-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Validação básica
+            if (!data.nome || !data.tipo_equipamento_id || !data.status) {
+                Toast.error('Preencha todos os campos obrigatórios');
+                return;
+            }
+
+            Loading.show('Salvando equipamento...');
+
+            await API.equipments.create(data);
+            
+            Loading.hide();
+            Modal.close(modal);
+            Toast.success('Equipamento criado com sucesso!');
+            
+            // Recarregar dados
+            await this.refresh();
+
+        } catch (error) {
+            Loading.hide();
+            console.error('Erro ao salvar equipamento:', error);
+            Toast.error('Erro ao salvar equipamento: ' + (error.message || 'Erro desconhecido'));
+        }
+    }
+
+    async updateEquipment(modal, equipmentId) {
+        try {
+            const form = modal.querySelector('#equipment-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Validação básica
+            if (!data.nome || !data.tipo_equipamento_id || !data.status) {
+                Toast.error('Preencha todos os campos obrigatórios');
+                return;
+            }
+
+            Loading.show('Atualizando equipamento...');
+
+            await API.equipments.update(equipmentId, data);
+            
+            Loading.hide();
+            Modal.close(modal);
+            Toast.success('Equipamento atualizado com sucesso!');
+            
+            // Recarregar dados
+            await this.refresh();
+
+        } catch (error) {
+            Loading.hide();
+            console.error('Erro ao atualizar equipamento:', error);
+            Toast.error('Erro ao atualizar equipamento: ' + (error.message || 'Erro desconhecido'));
+        }
+    }
+
+    async deleteEquipment(equipmentId, equipmentName) {
+        try {
+            const confirmed = await Modal.confirm(
+                `Tem certeza que deseja excluir o equipamento "${equipmentName}"?`,
+                'Confirmar Exclusão'
+            );
+
+            if (!confirmed) return;
+
+            Loading.show('Excluindo equipamento...');
+
+            await API.equipments.delete(equipmentId);
+            
+            Loading.hide();
+            Toast.success('Equipamento excluído com sucesso!');
+            
+            // Recarregar dados
+            await this.refresh();
+
+        } catch (error) {
+            Loading.hide();
+            console.error('Erro ao excluir equipamento:', error);
+            Toast.error('Erro ao excluir equipamento: ' + (error.message || 'Erro desconhecido'));
+        }
+    }
+
+    showViewModal(equipment) {
+        const modalContent = `
+            <div class="equipment-details">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Nome:</label>
+                        <span>${equipment.nome || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Tipo:</label>
+                        <span>${equipment.tipo_nome || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Modelo:</label>
+                        <span>${equipment.modelo || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Número de Série:</label>
+                        <span>${equipment.numero_serie || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Status:</label>
+                        <span class="badge badge-${this.getStatusBadgeClass(equipment.status)}">${this.getStatusLabel(equipment.status)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Localização:</label>
+                        <span>${equipment.localizacao || '-'}</span>
+                    </div>
+                    <div class="detail-item full-width">
+                        <label>Descrição:</label>
+                        <span>${equipment.descricao || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Criado em:</label>
+                        <span>${equipment.created_at ? Utils.formatDate(equipment.created_at) : '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Atualizado em:</label>
+                        <span>${equipment.updated_at ? Utils.formatDate(equipment.updated_at) : '-'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const modal = Modal.show({
+            title: `Detalhes do Equipamento: ${equipment.nome}`,
+            content: modalContent,
+            size: 'lg'
+        });
+
+        // Adicionar botões no footer
+        const footer = document.createElement('div');
+        footer.className = 'modal-footer';
+        footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-action="close">Fechar</button>
+            ${auth.hasPermission('admin') ? `
+                <button type="button" class="btn btn-warning" data-action="edit">Editar</button>
+                <button type="button" class="btn btn-danger" data-action="delete">Excluir</button>
+            ` : ''}
+        `;
+        modal.querySelector('.modal-body').appendChild(footer);
+
+        // Event listeners
+        modal.addEventListener('click', async (e) => {
+            if (e.target.dataset.action === 'close') {
+                Modal.close(modal);
+            } else if (e.target.dataset.action === 'edit') {
+                Modal.close(modal);
+                this.showEditModal(equipment);
+            } else if (e.target.dataset.action === 'delete') {
+                Modal.close(modal);
+                await this.deleteEquipment(equipment.id, equipment.nome);
+            }
+        });
+    }em desenvolvimento');
     }
 
     viewDetails(id) {
