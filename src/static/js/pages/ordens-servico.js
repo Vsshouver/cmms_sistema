@@ -23,6 +23,9 @@ class WorkOrdersPage {
             // Configurar eventos
             this.setupEvents(container);
 
+            // Disponibilizar instância global para handlers inline
+            window.workOrdersPage = this;
+
             // Aplicar filtros iniciais
             this.applyFilters();
 
@@ -35,7 +38,9 @@ class WorkOrdersPage {
     async loadData() {
         try {
             const response = await API.workOrders.getAll();
-            this.data = Array.isArray(response) ? response : (response.data || []);
+            this.data = Array.isArray(response)
+                ? response
+                : (response.ordens_servico || response.data || []);
             this.filteredData = [...this.data];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
@@ -624,9 +629,9 @@ class WorkOrdersPage {
         const maintenanceTypes = await API.maintenanceTypes.getAll();
         const mechanicsResponse = await API.mechanics.getAll();
 
-        const equipments = equipResponse.data || equipResponse || [];
-        const types = maintenanceTypes.data || maintenanceTypes || [];
-        const mechanics = mechanicsResponse.data || mechanicsResponse || [];
+        const equipments = equipResponse.equipamentos || equipResponse.data || [];
+        const types = maintenanceTypes.tipos_manutencao || maintenanceTypes.data || [];
+        const mechanics = mechanicsResponse.mecanicos || mechanicsResponse.data || [];
 
         // Criar overlay e modal
         const overlay = document.createElement('div');
@@ -679,7 +684,7 @@ class WorkOrdersPage {
             </form>
         `;
         overlay.appendChild(modal);
-        document.getElementById('modals-container').appendChild(overlay);
+        (document.getElementById('modals-container') || document.body).appendChild(overlay);
 
         // Estilos (ou mova para CSS)
         if (!document.getElementById('workorder-modal-style')) {
@@ -750,6 +755,186 @@ class WorkOrdersPage {
         Toast.error(err.message || 'Erro ao preparar modal.');
     }
 }
+
+    async viewDetails(id) {
+        try {
+            const data = await API.workOrders.get(id);
+            const os = data.ordem_servico || data;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Detalhes da OS</h2>
+                <div class="workorder-details">
+                    <p><strong>Número:</strong> ${os.numero_os}</p>
+                    <p><strong>Status:</strong> ${Utils.formatStatus(os.status)}</p>
+                    <p><strong>Prioridade:</strong> ${Utils.formatPriority(os.prioridade)}</p>
+                    <p><strong>Equipamento:</strong> ${os.equipamento?.nome || os.equipamento_nome || '-'}</p>
+                    <p><strong>Mecânico:</strong> ${os.mecanico?.nome_completo || os.mecanico_nome || 'Não atribuído'}</p>
+                    <p><strong>Data de Abertura:</strong> ${Utils.formatDate(os.data_abertura)} ${Utils.formatTime(os.data_abertura)}</p>
+                    ${os.data_prevista ? `<p><strong>Data Prevista:</strong> ${Utils.formatDate(os.data_prevista)} ${Utils.formatTime(os.data_prevista)}</p>` : ''}
+                    <p><strong>Descrição:</strong> ${os.descricao_problema || '-'}</p>
+                    ${os.descricao_solucao ? `<p><strong>Solução:</strong> ${os.descricao_solucao}</p>` : ''}
+                </div>
+                <div class="form-actions"><button id="closeWorkOrderDetails">Fechar</button></div>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            modal.querySelector('#closeWorkOrderDetails').addEventListener('click', () => overlay.remove());
+
+            if (!document.getElementById('workorder-modal-style')) {
+                const style = document.createElement('style');
+                style.id = 'workorder-modal-style';
+                style.textContent = `
+                    .custom-modal-overlay {
+                        position: fixed;
+                        top: 0; left: 0; right: 0; bottom: 0;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        background: rgba(0,0,0,0.5);
+                        z-index: 10000;
+                    }
+                    .custom-modal {
+                        background: #fff;
+                        padding: 20px;
+                        border-radius: 4px;
+                        width: 450px;
+                        max-height: 80vh;
+                        overflow-y: auto;
+                    }
+                    .custom-modal .form-actions {
+                        display: flex;
+                        justify-content: flex-end;
+                        margin-top: 10px;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar detalhes da OS:', error);
+            Toast.error(error.message || 'Erro ao carregar detalhes');
+        }
+    }
+
+    async printWorkOrder(id) {
+        try {
+            const blob = await API.workOrders.print(id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `OS_${id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Erro ao gerar PDF da OS:', error);
+            Toast.error(error.message || 'Erro ao gerar PDF');
+        }
+    }
+
+    async editWorkOrder(id) {
+        try {
+            // Carregar dados necessários em paralelo
+            const [osResponse, equipResponse, maintenanceTypes, mechanicsResponse] = await Promise.all([
+                API.workOrders.get(id),
+                API.equipments.getAll(),
+                API.maintenanceTypes.getAll(),
+                API.mechanics.getAll()
+            ]);
+
+            const os = osResponse.data || osResponse;
+            const equipments = equipResponse.equipamentos || equipResponse.data || [];
+            const types = maintenanceTypes.tipos_manutencao || maintenanceTypes.data || [];
+            const mechanics = mechanicsResponse.mecanicos || mechanicsResponse.data || [];
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <h2>Editar Ordem de Serviço</h2>
+                <form id="editWorkOrderForm">
+                    <label>Equipamento*</label>
+                    <select name="equipamento_id" required>
+                        <option value="">Selecione...</option>
+                        ${equipments.map(e => `<option value="${e.id}" ${e.id === os.equipamento_id ? 'selected' : ''}>${e.nome || e.modelo || e.codigo_interno}</option>`).join('')}
+                    </select>
+
+                    <label>Tipo de Manutenção*</label>
+                    <select name="tipo" required>
+                        <option value="">Selecione...</option>
+                        ${types.map(t => `<option value="${t.id}" ${t.id === (os.tipo_manutencao_id || os.tipo) ? 'selected' : ''}>${t.nome}</option>`).join('')}
+                    </select>
+
+                    <label>Prioridade*</label>
+                    <select name="prioridade" required>
+                        <option value="">Selecione...</option>
+                        <option value="baixa" ${os.prioridade === 'baixa' ? 'selected' : ''}>Baixa</option>
+                        <option value="media" ${os.prioridade === 'media' ? 'selected' : ''}>Média</option>
+                        <option value="alta" ${os.prioridade === 'alta' ? 'selected' : ''}>Alta</option>
+                        <option value="critica" ${os.prioridade === 'critica' ? 'selected' : ''}>Crítica</option>
+                    </select>
+
+                    <label>Mecânico (opcional)</label>
+                    <select name="mecanico_id">
+                        <option value="">Nenhum</option>
+                        ${mechanics.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${m.nome_completo || m.nome}</option>`).join('')}
+                    </select>
+
+                    <label>Data Prevista</label>
+                    <input type="datetime-local" name="data_prevista" value="${os.data_prevista ? new Date(os.data_prevista).toISOString().slice(0,16) : ''}" />
+
+                    <label>Descrição do Problema*</label>
+                    <textarea name="descricao_problema" rows="3" required>${os.descricao_problema || ''}</textarea>
+
+                    <label>Observações</label>
+                    <textarea name="observacoes" rows="2">${os.observacoes || ''}</textarea>
+
+                    <div class="form-actions">
+                        <button type="submit">Salvar</button>
+                        <button type="button" id="cancelEditWorkOrder">Cancelar</button>
+                    </div>
+                </form>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            modal.querySelector('#cancelEditWorkOrder').addEventListener('click', () => overlay.remove());
+
+            modal.querySelector('#editWorkOrderForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const payload = {
+                    equipamento_id: parseInt(formData.get('equipamento_id')),
+                    tipo: formData.get('tipo'),
+                    prioridade: formData.get('prioridade'),
+                    mecanico_id: formData.get('mecanico_id') ? parseInt(formData.get('mecanico_id')) : null,
+                    data_prevista: formData.get('data_prevista') ? new Date(formData.get('data_prevista')).toISOString().slice(0,19).replace('T',' ') : null,
+                    descricao_problema: formData.get('descricao_problema'),
+                    observacoes: formData.get('observacoes') || null
+                };
+                try {
+                    await API.workOrders.update(id, payload);
+                    Toast.success('Ordem de serviço atualizada com sucesso!');
+                    overlay.remove();
+                    await this.refresh();
+                } catch (error) {
+                    console.error(error);
+                    Toast.error(error.message || 'Erro ao atualizar OS.');
+                }
+            });
+        } catch (err) {
+            console.error('Erro ao preparar modal de edição:', err);
+            Toast.error(err.message || 'Erro ao preparar modal.');
+        }
+    }
 }
 
 // Exportar a classe para uso global
