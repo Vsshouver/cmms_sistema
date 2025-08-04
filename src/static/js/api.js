@@ -50,15 +50,35 @@ class ApiClient {
                 return response.blob();
             }
 
-            const data = await response.json();
+            const contentType = response.headers.get('content-type') || '';
+            let data;
 
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP ${response.status}`);
+            if (contentType.includes('application/json')) {
+                data = await response.json();
+                if (!response.ok) {
+                    let message = data.error || data.message;
+                    if (response.status === 404 && !message) message = 'Recurso não encontrado';
+                    if ((response.status === 400 || response.status === 422) && !message) message = 'Dados inválidos';
+                    if (response.status >= 500 && !message) message = 'Erro interno do servidor';
+                    throw new Error(message || `HTTP ${response.status}`);
+                }
+                return data;
             }
 
-            return data;
+            const text = await response.text();
+            if (!response.ok) {
+                let message = text;
+                if (response.status === 404 && !message) message = 'Recurso não encontrado';
+                if ((response.status === 400 || response.status === 422) && !message) message = 'Dados inválidos';
+                if (response.status >= 500 && !message) message = 'Erro interno do servidor';
+                throw new Error(message || `HTTP ${response.status}`);
+            }
+            return text;
         } catch (error) {
             console.error(`API Error [${endpoint}]:`, error);
+            if (typeof Toast !== 'undefined') {
+                Toast.error(error.message || 'Erro de conexão');
+            }
             throw error;
         }
     }
@@ -171,7 +191,7 @@ const API = {
         delete: (id) => api.delete(`/estoque/pecas/${id}`),
 
         getMovements: (params) => api.get('/estoque/movimentacoes', params),
-        createMovement: (data) => api.post('/estoque/movimentacao', data),
+        createMovement: (id, data) => api.post(`/estoque/pecas/${id}/movimentacao`, data),
 
         doInventory: (data) => api.post('/estoque/inventario', data),
         getInventoryReport: (params) => api.get('/estoque/relatorio-inventario', params),
