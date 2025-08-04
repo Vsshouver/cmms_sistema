@@ -50,15 +50,33 @@ class ApiClient {
                 return response.blob();
             }
 
-            const data = await response.json();
+            const contentType = response.headers.get('content-type') || '';
 
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP ${response.status}`);
+            const buildMessage = (status, message) => {
+                if (status === 404 && !message) return 'Recurso não encontrado';
+                if ((status === 400 || status === 422) && !message) return 'Dados inválidos';
+                if (status >= 500 && !message) return 'Erro interno do servidor';
+                return message || `HTTP ${status}`;
+            };
+
+            if (contentType.includes('application/json')) {
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(buildMessage(response.status, data.error || data.message));
+                }
+                return data;
             }
 
-            return data;
+            const text = await response.text();
+            if (!response.ok) {
+                throw new Error(buildMessage(response.status, text));
+            }
+            return text;
         } catch (error) {
             console.error(`API Error [${endpoint}]:`, error);
+            if (typeof Toast !== 'undefined') {
+                Toast.error(error.message || 'Erro de conexão');
+            }
             throw error;
         }
     }
@@ -171,7 +189,7 @@ const API = {
         delete: (id) => api.delete(`/estoque/pecas/${id}`),
 
         getMovements: (params) => api.get('/estoque/movimentacoes', params),
-        createMovement: (data) => api.post('/estoque/movimentacao', data),
+        createMovement: (id, data) => api.post(`/estoque/pecas/${id}/movimentacao`, data),
 
         doInventory: (data) => api.post('/estoque/inventario', data),
         getInventoryReport: (params) => api.get('/estoque/relatorio-inventario', params),

@@ -299,7 +299,67 @@ class MaintenanceTypesPage {
     }
 
     openCreateModal() {
-        Utils.showNotification('Modal de criação em desenvolvimento', 'info');
+        const content = `
+            <form id="mt-create-form" class="form">
+                <div class="form-group">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigo" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nome</label>
+                    <input type="text" name="nome" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descrição</label>
+                    <textarea name="descricao" class="form-textarea"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cor de identificação</label>
+                    <input type="color" name="cor_identificacao" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" name="ativo" checked> Ativo
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        `;
+
+        const overlay = Modal.show({
+            title: 'Novo Tipo de Manutenção',
+            content,
+            size: 'md'
+        });
+
+        const form = overlay.querySelector('#mt-create-form');
+        const cancelBtn = overlay.querySelector('[data-action="cancel"]');
+
+        cancelBtn.addEventListener('click', () => Modal.close(overlay));
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = {
+                codigo: formData.get('codigo'),
+                nome: formData.get('nome'),
+                descricao: formData.get('descricao'),
+                cor_identificacao: formData.get('cor_identificacao'),
+                ativo: formData.get('ativo') === 'on'
+            };
+
+            try {
+                await API.maintenanceTypes.create(data);
+                Toast.success('Tipo de manutenção criado com sucesso');
+                Modal.close(overlay);
+                await this.refreshData();
+            } catch (error) {
+                Toast.error(error.message || 'Erro ao criar tipo de manutenção');
+            }
+        });
     }
 
     viewItem(id) {
