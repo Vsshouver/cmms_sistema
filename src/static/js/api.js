@@ -40,6 +40,7 @@ class ApiClient {
         try {
             const response = await fetch(url, config);
 
+            // Se o token estiver expirado ou inválido, limpe e recarregue
             if (response.status === 401) {
                 this.setToken(null);
                 window.location.reload();
@@ -52,7 +53,7 @@ class ApiClient {
 
             const contentType = response.headers.get('content-type') || '';
 
-            // Helper para traduzir códigos de status em mensagens amigáveis
+            // Traduz códigos HTTP em mensagens mais amigáveis
             const buildMessage = (status, message) => {
                 if (status === 404 && !message) return 'Recurso não encontrado';
                 if ((status === 400 || status === 422) && !message) return 'Dados inválidos';
@@ -60,6 +61,7 @@ class ApiClient {
                 return message || `HTTP ${status}`;
             };
 
+            // Processa respostas JSON
             if (contentType.includes('application/json')) {
                 const data = await response.json();
                 if (!response.ok) {
@@ -68,6 +70,7 @@ class ApiClient {
                 return data;
             }
 
+            // Processa respostas de texto
             const text = await response.text();
             if (!response.ok) {
                 throw new Error(buildMessage(response.status, text));
