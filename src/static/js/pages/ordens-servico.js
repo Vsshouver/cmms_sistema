@@ -41,6 +41,7 @@ class WorkOrdersPage {
             this.data = Array.isArray(response)
                 ? response
                 : (response.ordens_servico || response.data || []);
+
             this.filteredData = [...this.data];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
@@ -755,7 +756,6 @@ class WorkOrdersPage {
         Toast.error(err.message || 'Erro ao preparar modal.');
     }
 }
-
     async viewDetails(id) {
         try {
             const data = await API.workOrders.get(id);
@@ -838,6 +838,7 @@ class WorkOrdersPage {
         }
     }
 
+
     async editWorkOrder(id) {
         try {
             // Carregar dados necessários em paralelo
@@ -849,10 +850,10 @@ class WorkOrdersPage {
             ]);
 
             const os = osResponse.data || osResponse;
+
             const equipments = equipResponse.equipamentos || equipResponse.data || [];
             const types = maintenanceTypes.tipos_manutencao || maintenanceTypes.data || [];
             const mechanics = mechanicsResponse.mecanicos || mechanicsResponse.data || [];
-
             const overlay = document.createElement('div');
             overlay.className = 'custom-modal-overlay';
             const modal = document.createElement('div');
