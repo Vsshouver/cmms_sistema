@@ -887,38 +887,38 @@ class TiresPage {
     modal.innerHTML = `
         <h2>Cadastrar Pneu</h2>
         <form id="newTireForm">
-            <label>Número de Série*</label>
-            <input type="text" name="numero_serie" required />
+            <label for="tire-numero_serie">Número de Série*</label>
+            <input type="text" id="tire-numero_serie" name="numero_serie" required />
 
-            <label>Número de Fogo</label>
-            <input type="text" name="numero_fogo" />
+            <label for="tire-numero_fogo">Número de Fogo</label>
+            <input type="text" id="tire-numero_fogo" name="numero_fogo" />
 
-            <label>Marca*</label>
-            <input type="text" name="marca" required />
+            <label for="tire-marca">Marca*</label>
+            <input type="text" id="tire-marca" name="marca" required />
 
-            <label>Modelo*</label>
-            <input type="text" name="modelo" required />
+            <label for="tire-modelo">Modelo*</label>
+            <input type="text" id="tire-modelo" name="modelo" required />
 
-            <label>Medida* (ex.: 385/65R22.5)</label>
-            <input type="text" name="medida" required />
+            <label for="tire-medida">Medida* (ex.: 385/65R22.5)</label>
+            <input type="text" id="tire-medida" name="medida" required />
 
-            <label>Tipo*</label>
-            <select name="tipo" required>
+            <label for="tire-tipo">Tipo*</label>
+            <select id="tire-tipo" name="tipo" required>
                 <option value="novo">Novo</option>
                 <option value="recapado">Recapado</option>
             </select>
 
-            <label>Data de Compra*</label>
-            <input type="date" name="data_compra" required />
+            <label for="tire-data_compra">Data de Compra*</label>
+            <input type="date" id="tire-data_compra" name="data_compra" required />
 
-            <label>Valor de Compra</label>
-            <input type="number" name="valor_compra" step="0.01" />
+            <label for="tire-valor_compra">Valor de Compra</label>
+            <input type="number" id="tire-valor_compra" name="valor_compra" step="0.01" />
 
-            <label>Pressão Recomendada (PSI)</label>
-            <input type="number" name="pressao_recomendada" step="0.01" />
+            <label for="tire-pressao_recomendada">Pressão Recomendada (PSI)</label>
+            <input type="number" id="tire-pressao_recomendada" name="pressao_recomendada" step="0.01" />
 
-            <label>Vida Útil Estimada (km)</label>
-            <input type="number" name="vida_util_estimada" step="0.01" />
+            <label for="tire-vida_util_estimada">Vida Útil Estimada (km)</label>
+            <input type="number" id="tire-vida_util_estimada" name="vida_util_estimada" step="0.01" />
 
             <div class="form-actions">
                 <button type="submit">Salvar</button>

@@ -642,20 +642,20 @@ class WorkOrdersPage {
         modal.innerHTML = `
             <h2>Criar Ordem de Serviço</h2>
             <form id="newWorkOrderForm">
-                <label>Equipamento*</label>
-                <select name="equipamento_id" required>
+                <label for="nwo-equipamento_id">Equipamento*</label>
+                <select id="nwo-equipamento_id" name="equipamento_id" required>
                     <option value="">Selecione...</option>
                     ${equipments.map(e => `<option value="${e.id}">${e.nome || e.modelo || e.codigo_interno}</option>`).join('')}
                 </select>
 
-                <label>Tipo de Manutenção*</label>
-                <select name="tipo" required>
+                <label for="nwo-tipo">Tipo de Manutenção*</label>
+                <select id="nwo-tipo" name="tipo" required>
                     <option value="">Selecione...</option>
                     ${types.map(t => `<option value="${t.id}">${t.nome}</option>`).join('')}
                 </select>
 
-                <label>Prioridade*</label>
-                <select name="prioridade" required>
+                <label for="nwo-prioridade">Prioridade*</label>
+                <select id="nwo-prioridade" name="prioridade" required>
                     <option value="">Selecione...</option>
                     <option value="baixa">Baixa</option>
                     <option value="media">Média</option>
@@ -663,20 +663,20 @@ class WorkOrdersPage {
                     <option value="critica">Crítica</option>
                 </select>
 
-                <label>Mecânico (opcional)</label>
-                <select name="mecanico_id">
+                <label for="nwo-mecanico_id">Mecânico (opcional)</label>
+                <select id="nwo-mecanico_id" name="mecanico_id">
                     <option value="">Nenhum</option>
                     ${mechanics.map(m => `<option value="${m.id}">${m.nome_completo || m.nome}</option>`).join('')}
                 </select>
 
-                <label>Data Prevista</label>
-                <input type="datetime-local" name="data_prevista" />
+                <label for="nwo-data_prevista">Data Prevista</label>
+                <input type="datetime-local" id="nwo-data_prevista" name="data_prevista" />
 
-                <label>Descrição do Problema*</label>
-                <textarea name="descricao_problema" rows="3" required></textarea>
+                <label for="nwo-descricao_problema">Descrição do Problema*</label>
+                <textarea id="nwo-descricao_problema" name="descricao_problema" rows="3" required></textarea>
 
-                <label>Observações</label>
-                <textarea name="observacoes" rows="2"></textarea>
+                <label for="nwo-observacoes">Observações</label>
+                <textarea id="nwo-observacoes" name="observacoes" rows="2"></textarea>
 
                 <div class="form-actions">
                     <button type="submit">Salvar</button>
@@ -861,20 +861,20 @@ class WorkOrdersPage {
             modal.innerHTML = `
                 <h2>Editar Ordem de Serviço</h2>
                 <form id="editWorkOrderForm">
-                    <label>Equipamento*</label>
-                    <select name="equipamento_id" required>
+                    <label for="ewo-equipamento_id">Equipamento*</label>
+                    <select id="ewo-equipamento_id" name="equipamento_id" required>
                         <option value="">Selecione...</option>
                         ${equipments.map(e => `<option value="${e.id}" ${e.id === os.equipamento_id ? 'selected' : ''}>${e.nome || e.modelo || e.codigo_interno}</option>`).join('')}
                     </select>
 
-                    <label>Tipo de Manutenção*</label>
-                    <select name="tipo" required>
+                    <label for="ewo-tipo">Tipo de Manutenção*</label>
+                    <select id="ewo-tipo" name="tipo" required>
                         <option value="">Selecione...</option>
                         ${types.map(t => `<option value="${t.id}" ${t.id === (os.tipo_manutencao_id || os.tipo) ? 'selected' : ''}>${t.nome}</option>`).join('')}
                     </select>
 
-                    <label>Prioridade*</label>
-                    <select name="prioridade" required>
+                    <label for="ewo-prioridade">Prioridade*</label>
+                    <select id="ewo-prioridade" name="prioridade" required>
                         <option value="">Selecione...</option>
                         <option value="baixa" ${os.prioridade === 'baixa' ? 'selected' : ''}>Baixa</option>
                         <option value="media" ${os.prioridade === 'media' ? 'selected' : ''}>Média</option>
@@ -882,20 +882,20 @@ class WorkOrdersPage {
                         <option value="critica" ${os.prioridade === 'critica' ? 'selected' : ''}>Crítica</option>
                     </select>
 
-                    <label>Mecânico (opcional)</label>
-                    <select name="mecanico_id">
+                    <label for="ewo-mecanico_id">Mecânico (opcional)</label>
+                    <select id="ewo-mecanico_id" name="mecanico_id">
                         <option value="">Nenhum</option>
                         ${mechanics.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${m.nome_completo || m.nome}</option>`).join('')}
                     </select>
 
-                    <label>Data Prevista</label>
-                    <input type="datetime-local" name="data_prevista" value="${os.data_prevista ? new Date(os.data_prevista).toISOString().slice(0,16) : ''}" />
+                    <label for="ewo-data_prevista">Data Prevista</label>
+                    <input type="datetime-local" id="ewo-data_prevista" name="data_prevista" value="${os.data_prevista ? new Date(os.data_prevista).toISOString().slice(0,16) : ''}" />
 
-                    <label>Descrição do Problema*</label>
-                    <textarea name="descricao_problema" rows="3" required>${os.descricao_problema || ''}</textarea>
+                    <label for="ewo-descricao_problema">Descrição do Problema*</label>
+                    <textarea id="ewo-descricao_problema" name="descricao_problema" rows="3" required>${os.descricao_problema || ''}</textarea>
 
-                    <label>Observações</label>
-                    <textarea name="observacoes" rows="2">${os.observacoes || ''}</textarea>
+                    <label for="ewo-observacoes">Observações</label>
+                    <textarea id="ewo-observacoes" name="observacoes" rows="2">${os.observacoes || ''}</textarea>
 
                     <div class="form-actions">
                         <button type="submit">Salvar</button>

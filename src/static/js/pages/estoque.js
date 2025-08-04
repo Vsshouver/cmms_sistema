@@ -751,44 +751,44 @@ class InventoryPage {
             modal.innerHTML = `
                 <h2>Nova Peça</h2>
                 <form id="newItemForm">
-                    <label>Código*</label>
-                    <input type="text" name="codigo" required />
+                    <label for="new-item-codigo">Código*</label>
+                    <input type="text" id="new-item-codigo" name="codigo" required />
 
-                    <label>Nome*</label>
-                    <input type="text" name="nome" required />
+                    <label for="new-item-nome">Nome*</label>
+                    <input type="text" id="new-item-nome" name="nome" required />
 
-                    <label>Grupo*</label>
-                    <select name="grupo_item_id" required>
+                    <label for="new-item-grupo_item_id">Grupo*</label>
+                    <select id="new-item-grupo_item_id" name="grupo_item_id" required>
                         <option value="">Selecione...</option>
                         ${grupos.map(g => `<option value="${g.id}">${g.nome}</option>`).join('')}
                     </select>
 
-                    <label>Descrição</label>
-                    <input type="text" name="descricao" />
+                    <label for="new-item-descricao">Descrição</label>
+                    <input type="text" id="new-item-descricao" name="descricao" />
 
-                    <label>Unidade*</label>
-                    <input type="text" name="unidade" required />
+                    <label for="new-item-unidade">Unidade*</label>
+                    <input type="text" id="new-item-unidade" name="unidade" required />
 
-                    <label>Quantidade Inicial</label>
-                    <input type="number" name="quantidade" step="0.01" />
+                    <label for="new-item-quantidade">Quantidade Inicial</label>
+                    <input type="number" id="new-item-quantidade" name="quantidade" step="0.01" />
 
-                    <label>Estoque Mínimo</label>
-                    <input type="number" name="min_estoque" />
+                    <label for="new-item-min_estoque">Estoque Mínimo</label>
+                    <input type="number" id="new-item-min_estoque" name="min_estoque" />
 
-                    <label>Preço Unitário</label>
-                    <input type="number" name="preco_unitario" step="0.01" />
+                    <label for="new-item-preco_unitario">Preço Unitário</label>
+                    <input type="number" id="new-item-preco_unitario" name="preco_unitario" step="0.01" />
 
-                    <label>Local</label>
-                    <select name="estoque_local_id">
+                    <label for="new-item-estoque_local_id">Local</label>
+                    <select id="new-item-estoque_local_id" name="estoque_local_id">
                         <option value="">Selecione...</option>
                         ${locais.map(l => `<option value="${l.id}">${l.nome}</option>`).join('')}
                     </select>
 
-                    <label>Fornecedor</label>
-                    <input type="text" name="fornecedor" />
+                    <label for="new-item-fornecedor">Fornecedor</label>
+                    <input type="text" id="new-item-fornecedor" name="fornecedor" />
 
-                    <label>Observações</label>
-                    <textarea name="observacoes" rows="2"></textarea>
+                    <label for="new-item-observacoes">Observações</label>
+                    <textarea id="new-item-observacoes" name="observacoes" rows="2"></textarea>
 
                     <div class="form-actions">
                         <button type="submit">Salvar</button>
@@ -909,43 +909,43 @@ class InventoryPage {
             modal.innerHTML = `
                 <h2>Editar Item</h2>
                 <form id="editItemForm">
-                    <label>Código</label>
-                    <input type="text" value="${item.codigo}" disabled />
+                    <label for="edit-item-codigo">Código</label>
+                    <input type="text" id="edit-item-codigo" value="${item.codigo}" disabled />
 
-                    <label>Nome*</label>
-                    <input type="text" name="nome" value="${item.nome}" required />
+                    <label for="edit-item-nome">Nome*</label>
+                    <input type="text" id="edit-item-nome" name="nome" value="${item.nome}" required />
 
-                    <label>Grupo*</label>
-                    <select name="grupo_item_id" required>
+                    <label for="edit-item-grupo_item_id">Grupo*</label>
+                    <select id="edit-item-grupo_item_id" name="grupo_item_id" required>
                         ${grupos.map(g => `<option value="${g.id}" ${g.id === item.grupo_item_id ? 'selected' : ''}>${g.nome}</option>`).join('')}
                     </select>
 
-                    <label>Descrição</label>
-                    <input type="text" name="descricao" value="${item.descricao || ''}" />
+                    <label for="edit-item-descricao">Descrição</label>
+                    <input type="text" id="edit-item-descricao" name="descricao" value="${item.descricao || ''}" />
 
-                    <label>Unidade*</label>
-                    <input type="text" name="unidade" value="${item.unidade}" required />
+                    <label for="edit-item-unidade">Unidade*</label>
+                    <input type="text" id="edit-item-unidade" name="unidade" value="${item.unidade}" required />
 
-                    <label>Quantidade</label>
-                    <input type="number" name="quantidade" step="0.01" value="${item.quantidade_atual || item.quantidade || 0}" />
+                    <label for="edit-item-quantidade">Quantidade</label>
+                    <input type="number" id="edit-item-quantidade" name="quantidade" step="0.01" value="${item.quantidade_atual || item.quantidade || 0}" />
 
-                    <label>Estoque Mínimo</label>
-                    <input type="number" name="min_estoque" value="${item.estoque_minimo || item.min_estoque || 0}" />
+                    <label for="edit-item-min_estoque">Estoque Mínimo</label>
+                    <input type="number" id="edit-item-min_estoque" name="min_estoque" value="${item.estoque_minimo || item.min_estoque || 0}" />
 
-                    <label>Preço Unitário</label>
-                    <input type="number" name="preco_unitario" step="0.01" value="${item.preco_unitario || 0}" />
+                    <label for="edit-item-preco_unitario">Preço Unitário</label>
+                    <input type="number" id="edit-item-preco_unitario" name="preco_unitario" step="0.01" value="${item.preco_unitario || 0}" />
 
-                    <label>Local</label>
-                    <select name="estoque_local_id">
+                    <label for="edit-item-estoque_local_id">Local</label>
+                    <select id="edit-item-estoque_local_id" name="estoque_local_id">
                         <option value="">Selecione...</option>
                         ${locais.map(l => `<option value="${l.id}" ${l.id === item.estoque_local_id ? 'selected' : ''}>${l.nome}</option>`).join('')}
                     </select>
 
-                    <label>Fornecedor</label>
-                    <input type="text" name="fornecedor" value="${item.fornecedor || ''}" />
+                    <label for="edit-item-fornecedor">Fornecedor</label>
+                    <input type="text" id="edit-item-fornecedor" name="fornecedor" value="${item.fornecedor || ''}" />
 
-                    <label>Observações</label>
-                    <textarea name="observacoes" rows="2">${item.observacoes || ''}</textarea>
+                    <label for="edit-item-observacoes">Observações</label>
+                    <textarea id="edit-item-observacoes" name="observacoes" rows="2">${item.observacoes || ''}</textarea>
 
                     <div class="form-actions">
                         <button type="submit">Salvar</button>
@@ -1014,17 +1014,17 @@ class InventoryPage {
                 <h2>Movimentar Estoque</h2>
                 <form id="movementForm">
                     <p><strong>${item.nome}</strong> (${item.codigo})</p>
-                    <label>Tipo*</label>
-                    <select name="tipo" required>
+                    <label for="movement-tipo">Tipo*</label>
+                    <select id="movement-tipo" name="tipo" required>
                         <option value="entrada">Entrada</option>
                         <option value="saida">Saída</option>
                     </select>
 
-                    <label>Quantidade*</label>
-                    <input type="number" name="quantidade" step="0.01" required />
+                    <label for="movement-quantidade">Quantidade*</label>
+                    <input type="number" id="movement-quantidade" name="quantidade" step="0.01" required />
 
-                    <label>Motivo</label>
-                    <input type="text" name="motivo" />
+                    <label for="movement-motivo">Motivo</label>
+                    <input type="text" id="movement-motivo" name="motivo" />
 
                     <div class="form-actions">
                         <button type="submit">Salvar</button>
