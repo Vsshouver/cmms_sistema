@@ -23,7 +23,12 @@ class Equipamento(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relacionamentos
-    tipo_equipamento_obj = db.relationship('TipoEquipamento', backref='equipamentos', lazy=True)
+    # Use back_populates para vincular explicitamente com TipoEquipamento e
+    # evitar a criação automática de um backref que causa conflito quando o
+    # relacionamento oposto também define um atributo.
+    tipo_equipamento_obj = db.relationship(
+        'TipoEquipamento', back_populates='equipamentos', lazy=True
+    )
     ordens_servico = db.relationship('OrdemServico', backref='equipamento', lazy=True)
 
     def to_dict(self):
