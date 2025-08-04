@@ -754,63 +754,49 @@ class EquipmentsPage {
             modal.innerHTML = `
                 <h2>Novo Equipamento</h2>
                 <form id="equipmentForm">
-                    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                        <div class="form-group">
-                            <label class="form-label">Código Interno*</label>
-                            <input type="text" name="codigo_interno" class="form-input" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Nome*</label>
-                            <input type="text" name="nome" class="form-input" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tipo*</label>
-                            <select name="tipo" class="form-select" required>
-                                <option value="">Selecione...</option>
-                                ${types.map(t => `<option value="${t.nome}">${t.nome}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Modelo*</label>
-                            <input type="text" name="modelo" class="form-input" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Fabricante*</label>
-                            <input type="text" name="fabricante" class="form-input" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Número de Série*</label>
-                            <input type="text" name="numero_serie" class="form-input" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Status*</label>
-                            <select name="status" class="form-select" required>
-                                <option value="ativo">Ativo</option>
-                                <option value="manutencao">Em Manutenção</option>
-                                <option value="inativo">Inativo</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Localização*</label>
-                            <input type="text" name="localizacao" class="form-input" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Horímetro Atual</label>
-                            <input type="number" name="horimetro_atual" class="form-input" step="0.01" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Data de Aquisição*</label>
-                            <input type="date" name="data_aquisicao" class="form-input" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Valor de Aquisição</label>
-                            <input type="number" name="valor_aquisicao" class="form-input" step="0.01" />
-                        </div>
-                        <div class="form-group" style="grid-column: 1 / -1;">
-                            <label class="form-label">Observações</label>
-                            <textarea name="observacoes" class="form-textarea" rows="2"></textarea>
-                        </div>
-                    </div>
+                    <label for="equipment-codigo_interno">Código Interno*</label>
+                    <input type="text" id="equipment-codigo_interno" name="codigo_interno" required />
+
+                    <label for="equipment-nome">Nome*</label>
+                    <input type="text" id="equipment-nome" name="nome" required />
+
+                    <label for="equipment-tipo">Tipo*</label>
+                    <select id="equipment-tipo" name="tipo" required>
+                        <option value="">Selecione...</option>
+                        ${types.map(t => `<option value="${t.nome}">${t.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="equipment-modelo">Modelo*</label>
+                    <input type="text" id="equipment-modelo" name="modelo" required />
+
+                    <label for="equipment-fabricante">Fabricante*</label>
+                    <input type="text" id="equipment-fabricante" name="fabricante" required />
+
+                    <label for="equipment-numero_serie">Número de Série*</label>
+                    <input type="text" id="equipment-numero_serie" name="numero_serie" required />
+
+                    <label for="equipment-status">Status*</label>
+                    <select id="equipment-status" name="status" required>
+                        <option value="ativo">Ativo</option>
+                        <option value="manutencao">Em Manutenção</option>
+                        <option value="inativo">Inativo</option>
+                    </select>
+
+                    <label for="equipment-localizacao">Localização*</label>
+                    <input type="text" id="equipment-localizacao" name="localizacao" required />
+
+                    <label for="equipment-horimetro_atual">Horímetro Atual</label>
+                    <input type="number" id="equipment-horimetro_atual" name="horimetro_atual" step="0.01" />
+
+                    <label for="equipment-data_aquisicao">Data de Aquisição*</label>
+                    <input type="date" id="equipment-data_aquisicao" name="data_aquisicao" required />
+
+                    <label for="equipment-valor_aquisicao">Valor de Aquisição</label>
+                    <input type="number" id="equipment-valor_aquisicao" name="valor_aquisicao" step="0.01" />
+
+                    <label for="equipment-observacoes">Observações</label>
+                    <textarea id="equipment-observacoes" name="observacoes" rows="2"></textarea>
+
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Salvar</button>
                         <button type="button" id="cancelEquipment" class="btn btn-secondary">Cancelar</button>
@@ -931,50 +917,40 @@ class EquipmentsPage {
             modal.innerHTML = `
                 <h2>Editar Equipamento</h2>
                 <form id="editEquipmentForm">
-                    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                        <div class="form-group">
-                            <label class="form-label">Nome*</label>
-                            <input type="text" name="nome" class="form-input" value="${eq.nome || ''}" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tipo*</label>
-                            <select name="tipo" class="form-select" required>
-                                ${types.map(t => `<option value="${t.nome}" ${t.nome === (eq.tipo || eq.tipo_equipamento) ? 'selected' : ''}>${t.nome}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Modelo*</label>
-                            <input type="text" name="modelo" class="form-input" value="${eq.modelo || ''}" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Fabricante*</label>
-                            <input type="text" name="fabricante" class="form-input" value="${eq.fabricante || ''}" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Status*</label>
-                            <select name="status" class="form-select" required>
-                                <option value="ativo" ${eq.status === 'ativo' ? 'selected' : ''}>Ativo</option>
-                                <option value="manutencao" ${eq.status === 'manutencao' ? 'selected' : ''}>Em Manutenção</option>
-                                <option value="inativo" ${eq.status === 'inativo' ? 'selected' : ''}>Inativo</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Localização*</label>
-                            <input type="text" name="localizacao" class="form-input" value="${eq.localizacao || ''}" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Horímetro Atual</label>
-                            <input type="number" name="horimetro_atual" class="form-input" step="0.01" value="${eq.horimetro_atual || 0}" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Valor de Aquisição</label>
-                            <input type="number" name="valor_aquisicao" class="form-input" step="0.01" value="${eq.valor_aquisicao || ''}" />
-                        </div>
-                        <div class="form-group" style="grid-column: 1 / -1;">
-                            <label class="form-label">Observações</label>
-                            <textarea name="observacoes" class="form-textarea" rows="2">${eq.observacoes || ''}</textarea>
-                        </div>
-                    </div>
+                    <label for="edit-equipment-nome">Nome*</label>
+                    <input type="text" id="edit-equipment-nome" name="nome" value="${eq.nome || ''}" required />
+
+                    <label for="edit-equipment-tipo">Tipo*</label>
+                    <select id="edit-equipment-tipo" name="tipo" required>
+                        ${types.map(t => `<option value="${t.nome}" ${t.nome === (eq.tipo || eq.tipo_equipamento) ? 'selected' : ''}>${t.nome}</option>`).join('')}
+                    </select>
+
+                    <label for="edit-equipment-modelo">Modelo*</label>
+                    <input type="text" id="edit-equipment-modelo" name="modelo" value="${eq.modelo || ''}" required />
+
+                    <label for="edit-equipment-fabricante">Fabricante*</label>
+                    <input type="text" id="edit-equipment-fabricante" name="fabricante" value="${eq.fabricante || ''}" required />
+
+                    <label for="edit-equipment-status">Status*</label>
+                    <select id="edit-equipment-status" name="status" required>
+                        <option value="ativo" ${eq.status === 'ativo' ? 'selected' : ''}>Ativo</option>
+                        <option value="manutencao" ${eq.status === 'manutencao' ? 'selected' : ''}>Em Manutenção</option>
+                        <option value="inativo" ${eq.status === 'inativo' ? 'selected' : ''}>Inativo</option>
+                    </select>
+
+                    <label for="edit-equipment-localizacao">Localização*</label>
+                    <input type="text" id="edit-equipment-localizacao" name="localizacao" value="${eq.localizacao || ''}" required />
+
+                    <label for="edit-equipment-horimetro_atual">Horímetro Atual</label>
+                    <input type="number" id="edit-equipment-horimetro_atual" name="horimetro_atual" step="0.01" value="${eq.horimetro_atual || 0}" />
+
+                    <label for="edit-equipment-valor_aquisicao">Valor de Aquisição</label>
+                    <input type="number" id="edit-equipment-valor_aquisicao" name="valor_aquisicao" step="0.01" value="${eq.valor_aquisicao || ''}" />
+
+                    <label for="edit-equipment-observacoes">Observações</label>
+                    <textarea id="edit-equipment-observacoes" name="observacoes" rows="2">${eq.observacoes || ''}</textarea>
+
+
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Salvar</button>
                         <button type="button" id="cancelEditEquipment" class="btn btn-secondary">Cancelar</button>
@@ -1046,38 +1022,38 @@ class EquipmentsPage {
             modal.innerHTML = `
                 <h2>Nova Ordem de Serviço</h2>
                 <form id="osFromEquipment">
-                    <label>Equipamento</label>
-                    <input type="text" value="${equipment.nome}" disabled />
-                    <input type="hidden" name="equipamento_id" value="${equipmentId}" />
+                    <label for="os-equipamento-nome">Equipamento</label>
+                    <input type="text" id="os-equipamento-nome" value="${equipment.nome}" disabled />
+                    <input type="hidden" id="os-equipamento-id" name="equipamento_id" value="${equipmentId}" />
 
-                    <label>Tipo de Manutenção*</label>
-                    <select name="tipo" required>
+                    <label for="os-tipo">Tipo de Manutenção*</label>
+                    <select id="os-tipo" name="tipo" required>
                         <option value="">Selecione...</option>
                         ${types.map(t => `<option value="${t.id}">${t.nome}</option>`).join('')}
                     </select>
 
-                    <label>Prioridade*</label>
-                    <select name="prioridade" required>
+                    <label for="os-prioridade">Prioridade*</label>
+                    <select id="os-prioridade" name="prioridade" required>
                         <option value="baixa">Baixa</option>
                         <option value="media">Média</option>
                         <option value="alta">Alta</option>
                         <option value="critica">Crítica</option>
                     </select>
 
-                    <label>Mecânico (opcional)</label>
-                    <select name="mecanico_id">
+                    <label for="os-mecanico_id">Mecânico (opcional)</label>
+                    <select id="os-mecanico_id" name="mecanico_id">
                         <option value="">Nenhum</option>
                         ${mechanics.map(m => `<option value="${m.id}">${m.nome_completo || m.nome}</option>`).join('')}
                     </select>
 
-                    <label>Data Prevista</label>
-                    <input type="datetime-local" name="data_prevista" />
+                    <label for="os-data_prevista">Data Prevista</label>
+                    <input type="datetime-local" id="os-data_prevista" name="data_prevista" />
 
-                    <label>Descrição do Problema*</label>
-                    <textarea name="descricao_problema" rows="3" required></textarea>
+                    <label for="os-descricao_problema">Descrição do Problema*</label>
+                    <textarea id="os-descricao_problema" name="descricao_problema" rows="3" required></textarea>
 
-                    <label>Observações</label>
-                    <textarea name="observacoes" rows="2"></textarea>
+                    <label for="os-observacoes">Observações</label>
+                    <textarea id="os-observacoes" name="observacoes" rows="2"></textarea>
 
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Salvar</button>
