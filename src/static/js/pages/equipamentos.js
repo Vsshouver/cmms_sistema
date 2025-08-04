@@ -1076,7 +1076,6 @@ class EquipmentsPage {
                 await this.deleteEquipment(equipment.id, equipment.nome);
             }
         });
-    }em desenvolvimento');
     }
 
     viewDetails(id) {
