@@ -750,9 +750,7 @@ class WorkOrdersPage {
         Toast.error(err.message || 'Erro ao preparar modal.');
     }
 }
+}
 
-/// Instância global para uso nos event handlers
-//const workOrdersPage = new WorkOrdersPage();
-
-// Exportar para uso global
-//window.WorkOrdersPage = WorkOrdersPage;
+// Exportar a classe para uso global
+window.WorkOrdersPage = WorkOrdersPage;
