@@ -617,24 +617,137 @@ class WorkOrdersPage {
         }
     }
 
-    showCreateModal() {
-        // TODO: Implementar modal de criação de OS
-        Toast.info('Modal de criação em desenvolvimento');
-    }
+    async showCreateModal() {
+    try {
+        // Carregar equipamentos, tipos de manutenção e mecânicos
+        const equipResponse = await API.equipments.getAll();
+        const maintenanceTypes = await API.maintenanceTypes.getAll();
+        const mechanicsResponse = await API.mechanics.getAll();
 
-    viewDetails(id) {
-        // TODO: Implementar visualização de detalhes
-        Toast.info('Visualização de detalhes em desenvolvimento');
-    }
+        const equipments = equipResponse.data || equipResponse || [];
+        const types = maintenanceTypes.data || maintenanceTypes || [];
+        const mechanics = mechanicsResponse.data || mechanicsResponse || [];
 
-    editWorkOrder(id) {
-        // TODO: Implementar edição de OS
-        Toast.info('Edição de OS em desenvolvimento');
-    }
+        // Criar overlay e modal
+        const overlay = document.createElement('div');
+        overlay.className = 'custom-modal-overlay';
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal';
+        modal.innerHTML = `
+            <h2>Criar Ordem de Serviço</h2>
+            <form id="newWorkOrderForm">
+                <label>Equipamento*</label>
+                <select name="equipamento_id" required>
+                    <option value="">Selecione...</option>
+                    ${equipments.map(e => `<option value="${e.id}">${e.nome || e.modelo || e.codigo_interno}</option>`).join('')}
+                </select>
 
-    printWorkOrder(id) {
-        // TODO: Implementar impressão de OS
-        Toast.info('Impressão de OS em desenvolvimento');
+                <label>Tipo de Manutenção*</label>
+                <select name="tipo" required>
+                    <option value="">Selecione...</option>
+                    ${types.map(t => `<option value="${t.id}">${t.nome}</option>`).join('')}
+                </select>
+
+                <label>Prioridade*</label>
+                <select name="prioridade" required>
+                    <option value="">Selecione...</option>
+                    <option value="baixa">Baixa</option>
+                    <option value="media">Média</option>
+                    <option value="alta">Alta</option>
+                    <option value="critica">Crítica</option>
+                </select>
+
+                <label>Mecânico (opcional)</label>
+                <select name="mecanico_id">
+                    <option value="">Nenhum</option>
+                    ${mechanics.map(m => `<option value="${m.id}">${m.nome_completo || m.nome}</option>`).join('')}
+                </select>
+
+                <label>Data Prevista</label>
+                <input type="datetime-local" name="data_prevista" />
+
+                <label>Descrição do Problema*</label>
+                <textarea name="descricao_problema" rows="3" required></textarea>
+
+                <label>Observações</label>
+                <textarea name="observacoes" rows="2"></textarea>
+
+                <div class="form-actions">
+                    <button type="submit">Salvar</button>
+                    <button type="button" id="cancelNewWorkOrder">Cancelar</button>
+                </div>
+            </form>
+        `;
+        overlay.appendChild(modal);
+        document.getElementById('modals-container').appendChild(overlay);
+
+        // Estilos (ou mova para CSS)
+        if (!document.getElementById('workorder-modal-style')) {
+            const style = document.createElement('style');
+            style.id = 'workorder-modal-style';
+            style.textContent = `
+                .custom-modal-overlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    background: rgba(0,0,0,0.5);
+                    z-index: 10000;
+                }
+                .custom-modal {
+                    background: #fff;
+                    padding: 20px;
+                    border-radius: 4px;
+                    width: 450px;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                }
+                .custom-modal form {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                .custom-modal .form-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 10px;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Cancelar: remover modal
+        modal.querySelector('#cancelNewWorkOrder').addEventListener('click', () => {
+            overlay.remove();
+        });
+
+        // Submissão: enviar à API
+        modal.querySelector('#newWorkOrderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const payload = {
+                equipamento_id: parseInt(formData.get('equipamento_id')),
+                tipo: formData.get('tipo'),
+                prioridade: formData.get('prioridade'),
+                mecanico_id: formData.get('mecanico_id') ? parseInt(formData.get('mecanico_id')) : null,
+                data_prevista: formData.get('data_prevista') ? new Date(formData.get('data_prevista')).toISOString().slice(0,19).replace('T',' ') : null,
+                descricao_problema: formData.get('descricao_problema'),
+                observacoes: formData.get('observacoes') || null
+            };
+            try {
+                await API.workOrders.create(payload);
+                Toast.success('Ordem de serviço criada com sucesso!');
+                overlay.remove();
+                await this.refresh(); // Atualiza a listagem
+            } catch (error) {
+                Toast.error(error.message || 'Erro ao criar OS.');
+                console.error(error);
+            }
+        });
+    } catch (err) {
+        console.error('Erro ao preparar modal de criação:', err);
+        Toast.error(err.message || 'Erro ao preparar modal.');
     }
 }
 
@@ -643,4 +756,3 @@ const workOrdersPage = new WorkOrdersPage();
 
 // Exportar para uso global
 window.WorkOrdersPage = WorkOrdersPage;
-
