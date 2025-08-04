@@ -51,27 +51,25 @@ class ApiClient {
             }
 
             const contentType = response.headers.get('content-type') || '';
-            let data;
+
+            const buildMessage = (status, message) => {
+                if (status === 404 && !message) return 'Recurso não encontrado';
+                if ((status === 400 || status === 422) && !message) return 'Dados inválidos';
+                if (status >= 500 && !message) return 'Erro interno do servidor';
+                return message || `HTTP ${status}`;
+            };
 
             if (contentType.includes('application/json')) {
-                data = await response.json();
+                const data = await response.json();
                 if (!response.ok) {
-                    let message = data.error || data.message;
-                    if (response.status === 404 && !message) message = 'Recurso não encontrado';
-                    if ((response.status === 400 || response.status === 422) && !message) message = 'Dados inválidos';
-                    if (response.status >= 500 && !message) message = 'Erro interno do servidor';
-                    throw new Error(message || `HTTP ${response.status}`);
+                    throw new Error(buildMessage(response.status, data.error || data.message));
                 }
                 return data;
             }
 
             const text = await response.text();
             if (!response.ok) {
-                let message = text;
-                if (response.status === 404 && !message) message = 'Recurso não encontrado';
-                if ((response.status === 400 || response.status === 422) && !message) message = 'Dados inválidos';
-                if (response.status >= 500 && !message) message = 'Erro interno do servidor';
-                throw new Error(message || `HTTP ${response.status}`);
+                throw new Error(buildMessage(response.status, text));
             }
             return text;
         } catch (error) {
