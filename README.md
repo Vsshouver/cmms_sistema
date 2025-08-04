@@ -11,7 +11,7 @@ Sistema completo de gerenciamento de manutenção (CMMS) desenvolvido especifica
 - **Ordens de Serviço**: Criação, acompanhamento e conclusão com alocação de peças
 - **Controle de Estoque**: Gestão completa de peças com movimentações e inventário
 - **Gestão de Pneus**: Controle específico com tratativas e medição de sulcos
-- **Sistema de Usuários**: Controle de acesso por níveis (ADM, Supervisor, PCM, etc.)
+- **Sistema de Usuários**: Controle de acesso por níveis (ADM, Supervisor, PCM, etc.), com lógica centralizada em `src/models/usuario.py` e `src/routes/usuarios.py`
 - **Importação de Dados**: Upload de peças via CSV/Excel
 - **Relatórios em PDF**: Impressão de ordens de serviço
 - **Análise de Óleo**: Controle de análises laboratoriais
