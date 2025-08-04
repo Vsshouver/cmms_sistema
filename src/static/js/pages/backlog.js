@@ -15,20 +15,175 @@ class BacklogPage {
             search: ''
         };
         this.stats = {};
-        
-        this.init();
     }
-
-    async init() {
+    async render(container) {
         try {
             await this.loadData();
             await this.loadStats();
+            container.innerHTML = this.getHTML();
             this.setupEventListeners();
             this.applyFilters();
+            window.backlog = this;
         } catch (error) {
-            console.error('Erro ao inicializar página de backlog:', error);
-            Toast.error('Erro ao carregar dados');
+            console.error('Erro ao carregar página de backlog:', error);
+            container.innerHTML = '<div class="page-error">Erro ao carregar dados</div>';
         }
+    }
+
+    getHTML() {
+        return `
+            <div class="backlog-page">
+                <div class="page-header">
+                    <div class="page-title">
+                        <i class="fas fa-tasks"></i>
+                        <div>
+                            <h1>Backlog</h1>
+                            <p>Controle de pendências de manutenção</p>
+                        </div>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="new-item-btn">
+                            <i class="fas fa-plus"></i> Novo Item
+                        </button>
+                        <button class="btn btn-secondary" id="recalc-priority-btn">
+                            <i class="fas fa-calculator"></i> Recalcular Priorização
+                        </button>
+                        <button class="btn btn-outline" id="refresh-data">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-total">0</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon critical">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-criticos">0</div>
+                            <div class="stat-label">Críticos</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon warning">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-atrasados">0</div>
+                            <div class="stat-label">Atrasados</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon info">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-esforco">0h</div>
+                            <div class="stat-label">Esforço Est.</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon success">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="stat-custo">R$ 0</div>
+                            <div class="stat-label">Custo Est.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filters-section">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label for="filter-categoria">Categoria</label>
+                            <select id="filter-categoria">
+                                <option value="">Todas</option>
+                                <option value="manutencao">Manutenção</option>
+                                <option value="melhoria">Melhoria</option>
+                                <option value="projeto">Projeto</option>
+                                <option value="emergencia">Emergência</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-status">Status</label>
+                            <select id="filter-status">
+                                <option value="">Todos</option>
+                                <option value="identificado">Identificado</option>
+                                <option value="analisado">Analisado</option>
+                                <option value="aprovado">Aprovado</option>
+                                <option value="em_execucao">Em Execução</option>
+                                <option value="concluido">Concluído</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-prioridade">Prioridade</label>
+                            <select id="filter-prioridade">
+                                <option value="">Todas</option>
+                                <option value="baixa">Baixa</option>
+                                <option value="media">Média</option>
+                                <option value="alta">Alta</option>
+                                <option value="critica">Crítica</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-responsavel">Responsável</label>
+                            <input type="text" id="filter-responsavel" placeholder="Nome do responsável">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-equipamento">Equipamento</label>
+                            <select id="filter-equipamento">
+                                <option value="">Todos os equipamentos</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="search-input">Buscar</label>
+                            <input type="text" id="search-input" placeholder="Título, descrição...">
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn btn-outline" id="clear-filters">
+                                <i class="fas fa-times"></i> Limpar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-controls">
+                    <div class="controls-left">
+                        <select id="items-per-page">
+                            <option value="20">20 por página</option>
+                            <option value="50">50 por página</option>
+                            <option value="100">100 por página</option>
+                        </select>
+                    </div>
+                    <div class="controls-right">
+                        <label for="sort-by">Ordenar por:</label>
+                        <select id="sort-by">
+                            <option value="score_priorizacao-desc">Score (Maior)</option>
+                            <option value="score_priorizacao-asc">Score (Menor)</option>
+                            <option value="titulo-asc">Título (A-Z)</option>
+                            <option value="titulo-desc">Título (Z-A)</option>
+                            <option value="data_identificacao-desc">Mais recentes</option>
+                            <option value="data_identificacao-asc">Mais antigos</option>
+                            <option value="data_prevista-asc">Data prevista</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="backlog-container" id="backlog-container"></div>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        `;
     }
 
     async loadData() {
@@ -643,11 +798,6 @@ class BacklogPage {
     }
 }
 
-// Inicializar quando a página carregar
-let backlog;
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.location.pathname.includes('backlog')) {
-        backlog = new BacklogPage();
-    }
-});
+// Exportar a classe para uso global
+window.BacklogPage = BacklogPage;
 
