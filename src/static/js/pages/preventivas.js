@@ -389,10 +389,17 @@ class PreventivasPage {
             inativos: this.data.filter(p => !p.ativo).length
         };
 
-        document.querySelector('#stat-total')?.textContent = stats.total;
-        document.querySelector('#stat-ativos')?.textContent = stats.ativos;
-        document.querySelector('#stat-pendentes')?.textContent = stats.pendentes;
-        document.querySelector('#stat-inativos')?.textContent = stats.inativos;
+        const totalEl = document.querySelector('#stat-total');
+        if (totalEl) totalEl.textContent = stats.total;
+
+        const ativosEl = document.querySelector('#stat-ativos');
+        if (ativosEl) ativosEl.textContent = stats.ativos;
+
+        const pendentesEl = document.querySelector('#stat-pendentes');
+        if (pendentesEl) pendentesEl.textContent = stats.pendentes;
+
+        const inativosEl = document.querySelector('#stat-inativos');
+        if (inativosEl) inativosEl.textContent = stats.inativos;
     }
 
     updatePagination() {

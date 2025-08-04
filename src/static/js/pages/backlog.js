@@ -282,11 +282,20 @@ class BacklogPage {
     }
 
     updateStatsDisplay() {
-        document.querySelector('#stat-total')?.textContent = this.stats.total || 0;
-        document.querySelector('#stat-criticos')?.textContent = this.stats.criticos || 0;
-        document.querySelector('#stat-atrasados')?.textContent = this.stats.atrasados || 0;
-        document.querySelector('#stat-esforco')?.textContent = `${this.stats.esforco_total_estimado || 0}h`;
-        document.querySelector('#stat-custo')?.textContent = Utils.formatCurrency(this.stats.custo_total_estimado || 0);
+        const totalEl = document.querySelector('#stat-total');
+        if (totalEl) totalEl.textContent = this.stats.total || 0;
+
+        const criticosEl = document.querySelector('#stat-criticos');
+        if (criticosEl) criticosEl.textContent = this.stats.criticos || 0;
+
+        const atrasadosEl = document.querySelector('#stat-atrasados');
+        if (atrasadosEl) atrasadosEl.textContent = this.stats.atrasados || 0;
+
+        const esforcoEl = document.querySelector('#stat-esforco');
+        if (esforcoEl) esforcoEl.textContent = `${this.stats.esforco_total_estimado || 0}h`;
+
+        const custoEl = document.querySelector('#stat-custo');
+        if (custoEl) custoEl.textContent = Utils.formatCurrency(this.stats.custo_total_estimado || 0);
     }
 
     applyFilters() {
