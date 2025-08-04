@@ -5,7 +5,8 @@ class CMSApp {
         this.loadingScreen = null;
         this.loginScreen = null;
         this.appContainer = null;
-        
+        Utils.setupFormObserver();
+
         this.init();
     }
 

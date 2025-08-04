@@ -334,13 +334,66 @@ const Utils = {
             'alta': 'Alta',
             'critica': 'Crítica'
         };
-        
+
         return priorityMap[priority] || priority;
+    },
+
+    // Aplicar classes padrão a campos de formulário
+    applyFormStyles(root = document) {
+        if (!root) return;
+        root.querySelectorAll('input:not(.form-input), select:not(.form-select), textarea:not(.form-textarea)')
+            .forEach(el => {
+                if (el.tagName === 'INPUT') el.classList.add('form-input');
+                if (el.tagName === 'SELECT') el.classList.add('form-select');
+                if (el.tagName === 'TEXTAREA') el.classList.add('form-textarea');
+            });
+    },
+
+    // Observar DOM para aplicar estilos em campos adicionados dinamicamente
+    setupFormObserver() {
+        this.applyFormStyles();
+        const observer = new MutationObserver(mutations => {
+            for (const mutation of mutations) {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType !== 1) return;
+                    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(node.tagName)) {
+                        this.applyFormStyles(node.parentElement || node);
+                    } else {
+                        this.applyFormStyles(node);
+                    }
+                });
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    },
+
+    // Limpar mensagens de erro do formulário
+    clearFormErrors(form) {
+        if (!form) return;
+        form.querySelectorAll('.form-error').forEach(el => el.remove());
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+    },
+
+    // Exibir mensagens de erro de validação
+    showFormErrors(form, errors = {}) {
+        if (!form) return;
+        this.clearFormErrors(form);
+        Object.entries(errors).forEach(([field, message]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (input) {
+                input.classList.add('is-invalid');
+                const small = document.createElement('small');
+                small.className = 'form-error';
+                small.textContent = message;
+                input.insertAdjacentElement('afterend', small);
+            }
+        });
     },
 
     formatTime(dateString) {
         if (!dateString) return '-';
-        
+
         const date = new Date(dateString);
         return date.toLocaleTimeString('pt-BR', {
             hour: '2-digit',
