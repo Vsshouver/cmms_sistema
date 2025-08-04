@@ -151,6 +151,8 @@ class NavigationManager {
         const pageClasses = {
             'dashboard': 'DashboardPage',
             'ordens-servico': 'WorkOrdersPage',
+            'preventivas': 'PreventivasPage',
+            'backlog': 'BacklogPage',
             'equipamentos': 'EquipmentsPage',
             'tipos-equipamento': 'EquipmentTypesPage',
             'estoque': 'InventoryPage',
