@@ -744,77 +744,73 @@ class InventoryPage {
             const grupos = groupsResp.data || groupsResp || [];
             const locais = locationsResp.data || locationsResp || [];
 
-            const overlay = document.createElement('div');
-            overlay.className = 'custom-modal-overlay';
-            const modal = document.createElement('div');
-            modal.className = 'custom-modal';
-            modal.innerHTML = `
-                <h2>Nova Peça</h2>
+            const content = `
                 <form id="newItemForm">
-                    <label>Código*</label>
-                    <input type="text" name="codigo" required />
-
-                    <label>Nome*</label>
-                    <input type="text" name="nome" required />
-
-                    <label>Grupo*</label>
-                    <select name="grupo_item_id" required>
-                        <option value="">Selecione...</option>
-                        ${grupos.map(g => `<option value="${g.id}">${g.nome}</option>`).join('')}
-                    </select>
-
-                    <label>Descrição</label>
-                    <input type="text" name="descricao" />
-
-                    <label>Unidade*</label>
-                    <input type="text" name="unidade" required />
-
-                    <label>Quantidade Inicial</label>
-                    <input type="number" name="quantidade" step="0.01" />
-
-                    <label>Estoque Mínimo</label>
-                    <input type="number" name="min_estoque" />
-
-                    <label>Preço Unitário</label>
-                    <input type="number" name="preco_unitario" step="0.01" />
-
-                    <label>Local</label>
-                    <select name="estoque_local_id">
-                        <option value="">Selecione...</option>
-                        ${locais.map(l => `<option value="${l.id}">${l.nome}</option>`).join('')}
-                    </select>
-
-                    <label>Fornecedor</label>
-                    <input type="text" name="fornecedor" />
-
-                    <label>Observações</label>
-                    <textarea name="observacoes" rows="2"></textarea>
-
-                    <div class="form-actions">
-                        <button type="submit">Salvar</button>
-                        <button type="button" id="cancelNewItem">Cancelar</button>
+                    <div class="form-group">
+                        <label class="form-label">Código*</label>
+                        <input type="text" name="codigo" class="form-input" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nome*</label>
+                        <input type="text" name="nome" class="form-input" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Grupo*</label>
+                        <select name="grupo_item_id" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            ${grupos.map(g => `<option value="${g.id}">${g.nome}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Descrição</label>
+                        <input type="text" name="descricao" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Unidade*</label>
+                        <input type="text" name="unidade" class="form-input" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantidade Inicial</label>
+                        <input type="number" name="quantidade" step="0.01" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estoque Mínimo</label>
+                        <input type="number" name="min_estoque" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Preço Unitário</label>
+                        <input type="number" name="preco_unitario" step="0.01" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Local</label>
+                        <select name="estoque_local_id" class="form-select">
+                            <option value="">Selecione...</option>
+                            ${locais.map(l => `<option value="${l.id}">${l.nome}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fornecedor</label>
+                        <input type="text" name="fornecedor" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Observações</label>
+                        <textarea name="observacoes" rows="2" class="form-textarea"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" id="cancelNewItem">Cancelar</button>
                     </div>
                 </form>
             `;
 
-            overlay.appendChild(modal);
-            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+            const overlay = Modal.show({
+                title: 'Nova Peça',
+                content
+            });
 
-            if (!document.getElementById('inventory-modal-style')) {
-                const style = document.createElement('style');
-                style.id = 'inventory-modal-style';
-                style.textContent = `
-                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
-                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
-                    .custom-modal form{display:flex;flex-direction:column;gap:10px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;gap:10px;}
-                `;
-                document.head.appendChild(style);
-            }
+            overlay.querySelector('#cancelNewItem').addEventListener('click', () => Modal.close(overlay));
 
-            modal.querySelector('#cancelNewItem').addEventListener('click', () => overlay.remove());
-
-            modal.querySelector('#newItemForm').addEventListener('submit', async e => {
+            overlay.querySelector('#newItemForm').addEventListener('submit', async e => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const payload = {
@@ -833,7 +829,7 @@ class InventoryPage {
                 try {
                     await API.inventory.create(payload);
                     Toast.success('Item criado com sucesso');
-                    overlay.remove();
+                    Modal.close(overlay);
                     await this.refresh();
                 } catch (err) {
                     Toast.error(err.message || 'Erro ao criar item');
@@ -850,12 +846,7 @@ class InventoryPage {
             const data = await API.inventory.get(id);
             const item = data.peca || data;
 
-            const overlay = document.createElement('div');
-            overlay.className = 'custom-modal-overlay';
-            const modal = document.createElement('div');
-            modal.className = 'custom-modal';
-            modal.innerHTML = `
-                <h2>Detalhes da Peça</h2>
+            const content = `
                 <div class="item-details-modal">
                     <p><strong>Código:</strong> ${item.codigo}</p>
                     <p><strong>Nome:</strong> ${item.nome}</p>
@@ -868,22 +859,15 @@ class InventoryPage {
                     ${item.fornecedor ? `<p><strong>Fornecedor:</strong> ${item.fornecedor}</p>` : ''}
                     ${item.observacoes ? `<p><strong>Observações:</strong> ${item.observacoes}</p>` : ''}
                 </div>
-                <div class="form-actions"><button id="closeItemDetails">Fechar</button></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="closeItemDetails">Fechar</button>
+                </div>
             `;
-            overlay.appendChild(modal);
-            (document.getElementById('modals-container') || document.body).appendChild(overlay);
-            modal.querySelector('#closeItemDetails').addEventListener('click', () => overlay.remove());
-
-            if (!document.getElementById('inventory-modal-style')) {
-                const style = document.createElement('style');
-                style.id = 'inventory-modal-style';
-                style.textContent = `
-                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
-                    .custom-modal{background:#fff;padding:20px;width:450px;max-height:80vh;overflow-y:auto;border-radius:4px;}
-                    .custom-modal .form-actions{display:flex;justify-content:flex-end;margin-top:10px;}
-                `;
-                document.head.appendChild(style);
-            }
+            const overlay = Modal.show({
+                title: 'Detalhes da Peça',
+                content
+            });
+            overlay.querySelector('#closeItemDetails').addEventListener('click', () => Modal.close(overlay));
         } catch (error) {
             console.error('Erro ao carregar detalhes do item:', error);
             Toast.error('Erro ao carregar detalhes');
