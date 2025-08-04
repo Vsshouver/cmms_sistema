@@ -157,15 +157,19 @@ class CMSApp {
 
     async loadNotifications() {
         try {
-            // Carregar alertas para mecânicos
+            let total = 0;
+
             if (auth.hasPermission('mecanico')) {
                 const alerts = await API.workOrders.getMechanicAlerts();
-                this.updateNotificationBadge(alerts.total_alertas);
+                total += alerts.total_alertas || 0;
             }
 
-            // Carregar outros tipos de notificação baseado no perfil
-            // TODO: Implementar outros tipos de notificação
+            if (auth.hasPermission('supervisor') || auth.hasPermission('admin')) {
+                const tireAlerts = await API.tires.getAlerts();
+                total += tireAlerts.total_alertas || 0;
+            }
 
+            this.updateNotificationBadge(total);
         } catch (error) {
             console.error('Erro ao carregar notificações:', error);
         }
@@ -246,10 +250,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Inicializar tooltips
 function initializeTooltips() {
-    // Implementar tooltips se necessário
     const tooltipElements = document.querySelectorAll('[data-tooltip]');
+
+    if (!document.getElementById('tooltip-style')) {
+        const style = document.createElement('style');
+        style.id = 'tooltip-style';
+        style.textContent = `
+            .tooltip{position:absolute;padding:4px 8px;background:#333;color:#fff;border-radius:4px;font-size:12px;z-index:10000;pointer-events:none;white-space:nowrap;}
+        `;
+        document.head.appendChild(style);
+    }
+
     tooltipElements.forEach(element => {
-        // TODO: Implementar sistema de tooltips
+        element.addEventListener('mouseenter', () => {
+            const text = element.dataset.tooltip;
+            if (!text) return;
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = text;
+            document.body.appendChild(tooltip);
+            const rect = element.getBoundingClientRect();
+            const tipRect = tooltip.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + rect.width / 2 - tipRect.width / 2 + window.scrollX}px`;
+            tooltip.style.top = `${rect.top - tipRect.height - 8 + window.scrollY}px`;
+            element._tooltip = tooltip;
+        });
+        element.addEventListener('mouseleave', () => {
+            if (element._tooltip) {
+                element._tooltip.remove();
+                element._tooltip = null;
+            }
+        });
     });
 }
 

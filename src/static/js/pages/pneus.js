@@ -800,9 +800,81 @@ class TiresPage {
         }
     }
 
-    showPerformanceReport() {
-        // TODO: Implementar relatório de performance
-        Toast.info('Relatório de performance em desenvolvimento');
+    async showPerformanceReport() {
+        try {
+            const response = await API.tires.getPerformanceReport();
+            const report = response.relatorio || response;
+
+            const stats = report.estatisticas_gerais || {};
+            const marcas = report.performance_por_marca || {};
+            const top = report.top_pneus_km || [];
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-modal-overlay';
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+
+            const marcasRows = Object.keys(marcas).map(m => {
+                const d = marcas[m];
+                return `<tr><td>${m}</td><td>${d.total}</td><td>${Utils.formatNumber(d.km_medio || 0,2)}</td><td>${Utils.formatCurrency(d.valor_medio || 0)}</td><td>${Utils.formatNumber(d.taxa_descarte || 0,2)}%</td><td>${Utils.formatNumber(d.taxa_recapagem || 0,2)}%</td></tr>`;
+            }).join('');
+
+            const topRows = top.map(p => `<tr><td>${p.numero_serie}</td><td>${p.numero_fogo || ''}</td><td>${p.marca || ''}</td><td>${p.modelo || ''}</td><td>${Utils.formatNumber(p.km_rodados || 0,2)}</td><td>${p.equipamento || ''}</td></tr>`).join('');
+
+            modal.innerHTML = `
+                <h2>Relatório de Performance de Pneus</h2>
+                <div class="report-section">
+                    <h3>Estatísticas Gerais</h3>
+                    <ul>
+                        <li>Total de pneus: ${stats.total_pneus || 0}</li>
+                        <li>Em uso: ${stats.pneus_em_uso || 0}</li>
+                        <li>Estoque: ${stats.pneus_estoque || 0}</li>
+                        <li>Descarte: ${stats.pneus_descarte || 0}</li>
+                        <li>Recapagem: ${stats.pneus_recapagem || 0}</li>
+                    </ul>
+                </div>
+                <div class="report-section">
+                    <h3>Performance por Marca</h3>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead><tr><th>Marca</th><th>Total</th><th>KM Médio</th><th>Valor Médio</th><th>Descartes</th><th>Recapagens</th></tr></thead>
+                            <tbody>${marcasRows || '<tr><td colspan="6" class="text-center">Sem dados</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="report-section">
+                    <h3>Top 5 Pneus por KM</h3>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead><tr><th>Série</th><th>Fogo</th><th>Marca</th><th>Modelo</th><th>KM Rodados</th><th>Equipamento</th></tr></thead>
+                            <tbody>${topRows || '<tr><td colspan="6" class="text-center">Sem dados</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="form-actions"><button id="closeReport">Fechar</button></div>
+            `;
+
+            overlay.appendChild(modal);
+            (document.getElementById('modals-container') || document.body).appendChild(overlay);
+
+            modal.querySelector('#closeReport').addEventListener('click', () => overlay.remove());
+
+            if (!document.getElementById('tires-report-style')) {
+                const style = document.createElement('style');
+                style.id = 'tires-report-style';
+                style.textContent = `
+                    .custom-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);z-index:10000;}
+                    .custom-modal{background:#fff;padding:20px;width:600px;max-height:80vh;overflow-y:auto;border-radius:4px;}
+                    .custom-modal .form-actions{display:flex;justify-content:flex-end;margin-top:10px;}
+                    .report-section{margin-bottom:20px;}
+                    .report-section h3{margin-bottom:10px;}
+                `;
+                document.head.appendChild(style);
+            }
+        } catch (error) {
+            console.error('Erro ao gerar relatório de performance:', error);
+            Toast.error('Erro ao gerar relatório');
+        }
     }
 
     showCreateModal() {
