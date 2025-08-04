@@ -164,6 +164,52 @@ def iniciar_ordem_servico(current_user, os_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@ordens_servico_bp.route('/ordens-servico/<int:os_id>/status', methods=['PUT'])
+@token_required
+def atualizar_status_ordem_servico(current_user, os_id):
+    try:
+        ordem_servico = OrdemServico.query.get_or_404(os_id)
+        data = request.get_json()
+        novo_status = data.get('status')
+
+        status_validos = ['aberta', 'em_execucao', 'aguardando_pecas', 'concluida', 'cancelada']
+        if novo_status not in status_validos:
+            return jsonify({'error': 'Status inválido'}), 400
+
+        # Regras de transição simples
+        transicoes = {
+            'aberta': ['em_execucao', 'aguardando_pecas', 'cancelada'],
+            'em_execucao': ['aguardando_pecas', 'concluida', 'cancelada'],
+            'aguardando_pecas': ['em_execucao', 'cancelada'],
+            'concluida': [],
+            'cancelada': []
+        }
+
+        if novo_status == ordem_servico.status:
+            return jsonify({'message': 'Status inalterado', 'ordem_servico': ordem_servico.to_dict()}), 200
+
+        if novo_status not in transicoes.get(ordem_servico.status, []):
+            return jsonify({'error': 'Transição de status inválida'}), 400
+
+        ordem_servico.status = novo_status
+        if novo_status == 'em_execucao' and not ordem_servico.data_inicio:
+            ordem_servico.data_inicio = datetime.utcnow()
+        if novo_status in ['concluida', 'cancelada']:
+            ordem_servico.data_encerramento = datetime.utcnow()
+
+        ordem_servico.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Status atualizado com sucesso',
+            'ordem_servico': ordem_servico.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @ordens_servico_bp.route('/ordens-servico/<int:os_id>/concluir', methods=['PUT'])
 @token_required
 @mecanico_or_above_required
@@ -261,6 +307,8 @@ def update_ordem_servico(current_user, os_id):
         data = request.get_json()
         
         # Atualizar campos permitidos
+        if 'equipamento_id' in data:
+            os.equipamento_id = data['equipamento_id']
         if 'mecanico_id' in data:
             os.mecanico_id = data['mecanico_id']
         if 'tipo' in data:

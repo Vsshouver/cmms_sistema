@@ -177,7 +177,8 @@ const API = {
         getParts: (id) => api.get(`/ordens-servico/${id}/pecas`),
         getAlerts: (id) => api.get(`/ordens-servico/${id}/alertas`),
         getMechanicAlerts: () => api.get('/ordens-servico/alertas-mecanico'),
-        print: (id) => api.download(`/ordens-servico/${id}/imprimir`, `OS_${id}.pdf`)
+        print: (id) => api.download(`/ordens-servico/${id}/imprimir`, `OS_${id}.pdf`),
+        updateStatus: (id, data) => api.put(`/ordens-servico/${id}/status`, data)
     },
 
     maintenanceTypes: {
