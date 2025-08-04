@@ -751,8 +751,8 @@ class WorkOrdersPage {
     }
 }
 
-// Instância global para uso nos event handlers
-const workOrdersPage = new WorkOrdersPage();
+/// Instância global para uso nos event handlers
+//const workOrdersPage = new WorkOrdersPage();
 
 // Exportar para uso global
-window.WorkOrdersPage = WorkOrdersPage;
+//window.WorkOrdersPage = WorkOrdersPage;
