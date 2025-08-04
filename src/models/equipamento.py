@@ -1,5 +1,6 @@
 from src.db import db
-from datetime import datetime, date
+from datetime import datetime
+from src.models.tipo_equipamento import TipoEquipamento  # Certifique-se de importar corretamente
 
 class Equipamento(db.Model):
     __tablename__ = 'equipamentos'
@@ -20,10 +21,11 @@ class Equipamento(db.Model):
     observacoes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relacionamentos
+    tipo_equipamento_obj = db.relationship('TipoEquipamento', backref='equipamentos', lazy=True)
     ordens_servico = db.relationship('OrdemServico', backref='equipamento', lazy=True)
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -44,4 +46,3 @@ class Equipamento(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
-

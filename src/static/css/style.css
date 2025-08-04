@@ -3695,10 +3695,15 @@ body {
     color: #666;
     line-height: 1.4;
     margin-bottom: 1rem;
+    
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+
+    display: box;
+    box-orient: vertical;
+    line-clamp: 2;
 }
 
 .item-details {
@@ -4309,4 +4314,4 @@ body {
         margin: 1rem;
     }
 }
-
+}
