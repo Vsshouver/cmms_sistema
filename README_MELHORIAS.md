@@ -20,6 +20,7 @@
 - Formulários completos para criação/edição
 - Status workflow implementado
 - Filtros avançados por mecânico, equipamento, etc.
+- Campo `origem` indica a fonte da OS: `manual` (padrão), `preventiva_automatica`, `preventiva_adhoc` ou `backlog`
 
 #### ✅ Estoque (`/js/pages/estoque.js`)
 - Controle de estoque com indicadores visuais

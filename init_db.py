@@ -581,12 +581,19 @@ def atualizar_dados_existentes():
                 'preventiva': 'Preventiva',
                 'corretiva': 'Corretiva Mecânica'
             }
-            
+
             tipo_nome = tipo_map.get(ordem.tipo, 'Corretiva Mecânica')
             tipo_manutencao = TipoManutencao.query.filter_by(nome=tipo_nome).first()
             if tipo_manutencao:
                 ordem.tipo_manutencao_id = tipo_manutencao.id
-    
+
+    # Definir origem padrão para ordens de serviço existentes
+    ordens_origem = OrdemServico.query.filter(OrdemServico.origem.is_(None)).all()
+    if ordens_origem:
+        print(f"📝 Definindo origem padrão em {len(ordens_origem)} ordens de serviço...")
+        for ordem in ordens_origem:
+            ordem.origem = 'manual'
+
     # Atualizar peças com grupo_item_id
     pecas = Peca.query.filter(Peca.grupo_item_id.is_(None)).all()
     if pecas:
