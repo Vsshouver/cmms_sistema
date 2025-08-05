@@ -70,14 +70,11 @@ const WORK_ORDERS_FORMDATA = (container) => {
 };
 
 const ADD_WORK_ORDER = async () => {
-    const modal = document.querySelector("#dynamicModal");
-    if (!modal) {
-        console.error("Modal container não encontrado");
-        return;
-    }
-    const modalBody = modal.querySelector(".modal-body");
-    const modalTitle = modal.querySelector(".modal-title");
-    const buttons = modal.querySelectorAll(".modal-footer button");
+    const modal = document.querySelector('#modal-ordem-servico');
+    if (!modal) return;
+    const modalBody = modal.querySelector('.modal-body');
+    const modalTitle = modal.querySelector('.modal-title');
+    const buttons = modal.querySelectorAll('.modal-footer button');
 
     await loadWorkOrdersRelatedData();
 
@@ -129,11 +126,13 @@ const ADD_WORK_ORDER = async () => {
     `;
 
     modalBody.innerHTML = template;
-    modalTitle.textContent = "Nova Ordem de Serviço";
+    modalTitle.textContent = 'Nova Ordem de Serviço';
 
-    $(modal).modal("show");
-    
-    $(buttons[0]).off("click").on("click", async () => {
+    modal.classList.remove('hidden');
+
+    buttons[1]?.addEventListener('click', () => modal.classList.add('hidden'));
+
+    $(buttons[0]).off('click').on('click', async () => {
         const formData = WORK_ORDERS_FORMDATA(modalBody);
         
         if (!formData.equipamento_id || !formData.tipo || !formData.prioridade || !formData.descricao_problema) {
@@ -157,25 +156,22 @@ const ADD_WORK_ORDER = async () => {
             }
 
             await SYNC_WORK_ORDERS_GRID_DATA();
-            $(modal).modal("hide");
-            Utils.showToast("Ordem de serviço criada com sucesso!", "success");
+            modal.classList.add('hidden');
+            Utils.showToast('Ordem de serviço criada com sucesso!', 'success');
         } catch (error) {
-            console.error("Erro ao criar ordem de serviço:", error);
-            Utils.showToast(error.message, "error");
+            console.error('Erro ao criar ordem de serviço:', error);
+            Utils.showToast(error.message, 'error');
         }
     });
 };
 
 const EDIT_WORK_ORDER = async (params) => {
     const rowData = params.node.data;
-    const modal = document.querySelector("#dynamicModal");
-    if (!modal) {
-        console.error("Modal container não encontrado");
-        return;
-    }
-    const modalBody = modal.querySelector(".modal-body");
-    const modalTitle = modal.querySelector(".modal-title");
-    const buttons = modal.querySelectorAll(".modal-footer button");
+    const modal = document.querySelector('#modal-ordem-servico');
+    if (!modal) return;
+    const modalBody = modal.querySelector('.modal-body');
+    const modalTitle = modal.querySelector('.modal-title');
+    const buttons = modal.querySelectorAll('.modal-footer button');
 
     await loadWorkOrdersRelatedData();
 
@@ -251,11 +247,13 @@ const EDIT_WORK_ORDER = async (params) => {
     `;
 
     modalBody.innerHTML = template;
-    modalTitle.textContent = "Editar Ordem de Serviço";
+    modalTitle.textContent = 'Editar Ordem de Serviço';
 
-    $(modal).modal("show");
-    
-    $(buttons[0]).off("click").on("click", async () => {
+    modal.classList.remove('hidden');
+
+    buttons[1]?.addEventListener('click', () => modal.classList.add('hidden'));
+
+    $(buttons[0]).off('click').on('click', async () => {
         const formData = WORK_ORDERS_FORMDATA(modalBody);
 
         try {
@@ -274,11 +272,11 @@ const EDIT_WORK_ORDER = async (params) => {
             }
 
             await SYNC_WORK_ORDERS_GRID_DATA();
-            $(modal).modal("hide");
-            Utils.showToast("Ordem de serviço atualizada com sucesso!", "success");
+            modal.classList.add('hidden');
+            Utils.showToast('Ordem de serviço atualizada com sucesso!', 'success');
         } catch (error) {
-            console.error("Erro ao atualizar ordem de serviço:", error);
-            Utils.showToast(error.message, "error");
+            console.error('Erro ao atualizar ordem de serviço:', error);
+            Utils.showToast(error.message, 'error');
         }
     });
 };
