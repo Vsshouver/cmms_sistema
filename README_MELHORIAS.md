@@ -78,6 +78,9 @@
 - **Dados consistentes** entre módulos
 - **Relacionamentos** entre entidades
 
+### 6. Biblioteca central de itens
+- Biblioteca central de itens criada para normalização de estoque, ordens de serviço e planos preventivos
+
 ## 🛠️ Tecnologias Utilizadas
 
 ### Frontend
