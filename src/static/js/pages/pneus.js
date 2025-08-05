@@ -457,7 +457,7 @@ const TIRES_GRID_INIT = () => {
                 field: "created_at",
                 minWidth: 150,
                 cellRenderer: (params) => {
-                    if (!params.value) return ";
+                    if (!params.value) return "";
                     return new Date(params.value).toLocaleString("pt-BR");
                 }
             }
