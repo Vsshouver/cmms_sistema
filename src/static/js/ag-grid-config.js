@@ -1,10 +1,8 @@
 // Configuração global do AG-Grid
 class AGGridConfig {
     static init() {
-        // Configurar licença do AG-Grid Enterprise
-        // Substitua "SUA-LICENCA-AQUI" pela licença válida
-        agGrid.LicenseManager.setLicenseKey('SUA-LICENCA-AQUI');
-        
+        // Licença já incluída no bundle ag-grid-enterprise.min.js
+
         // Configurações globais padrão
         this.defaultGridOptions = {
             // Configurações de dados
