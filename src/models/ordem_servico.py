@@ -10,6 +10,7 @@ class OrdemServico(db.Model):
     mecanico_id = db.Column(db.Integer, db.ForeignKey('mecanicos.id'), nullable=True)
     tipo_manutencao_id = db.Column(db.Integer, db.ForeignKey('tipos_manutencao.id'), nullable=True)
     tipo = db.Column(db.String(20), nullable=True)  # Manter para compatibilidade, será removido após migração
+    origem = db.Column(db.String(30), nullable=True)  # preventiva_automatica, preventiva_adhoc, backlog, manual
     prioridade = db.Column(db.String(20), nullable=False)  # baixa, media, alta, critica
     status = db.Column(db.String(30), nullable=False, default='aberta')  # aberta, em_execucao, aguardando_pecas, concluida, cancelada
     descricao_problema = db.Column(db.Text, nullable=False)
@@ -35,6 +36,7 @@ class OrdemServico(db.Model):
             'mecanico_id': self.mecanico_id,
             'tipo_manutencao_id': self.tipo_manutencao_id,
             'tipo': self.tipo,
+            'origem': self.origem,
             'tipo_manutencao': self.tipo_manutencao_obj.nome if self.tipo_manutencao_obj else None,
             'prioridade': self.prioridade,
             'status': self.status,

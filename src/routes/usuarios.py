@@ -12,21 +12,20 @@ usuarios_bp = Blueprint('usuarios', __name__)
 def get_usuarios(current_user):
     try:
         # Filtros opcionais
-        nivel_acesso = request.args.get('nivel_acesso')
+        perfil = request.args.get('perfil')
         ativo = request.args.get('ativo')
         search = request.args.get('search')
         
         query = Usuario.query
         
-        if nivel_acesso:
-            query = query.filter_by(nivel_acesso=nivel_acesso)
+        if perfil:
+            query = query.filter(Usuario.perfil == perfil)
         if ativo is not None:
-            query = query.filter_by(ativo=ativo.lower() == 'true')
+            query = query.filter(Usuario.ativo == (ativo.lower() == 'true'))
         if search:
             query = query.filter(
-                Usuario.nome_completo.contains(search) |
-                Usuario.username.contains(search) |
-                Usuario.email.contains(search)
+                (Usuario.nome_completo.contains(search)) |
+                (Usuario.email.contains(search))
             )
         
         usuarios = query.all()
@@ -37,6 +36,7 @@ def get_usuarios(current_user):
         }), 200
         
     except Exception as e:
+        print(f"Erro ao carregar usuários: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @usuarios_bp.route('/usuarios/<int:usuario_id>', methods=['GET'])

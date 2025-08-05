@@ -10,7 +10,7 @@ class BacklogItem(db.Model):
     
     # Classificação
     categoria = db.Column(db.String(50), nullable=False)  # manutencao, melhoria, projeto, emergencia
-    tipo = db.Column(db.String(50), nullable=False)       # preventiva, corretiva, preditiva, upgrade
+    tipo = db.Column(db.String(50), nullable=False)       # preventiva_adhoc, corretiva, preditiva, upgrade, melhoria
     
     # Priorização
     prioridade = db.Column(db.String(20), default='media')  # baixa, media, alta, critica
@@ -20,6 +20,7 @@ class BacklogItem(db.Model):
     # Relacionamentos opcionais
     equipamento_id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), nullable=True)
     ordem_servico_id = db.Column(db.Integer, db.ForeignKey('ordens_servico.id'), nullable=True)
+    plano_preventiva_id = db.Column(db.Integer, db.ForeignKey('planos_preventiva.id'), nullable=True)  # Novo relacionamento
     
     # Estimativas
     esforco_estimado = db.Column(db.Float, nullable=True)  # Horas estimadas
@@ -47,6 +48,7 @@ class BacklogItem(db.Model):
     # Relacionamentos
     equipamento = db.relationship('Equipamento', backref='backlog_items')
     ordem_servico = db.relationship('OrdemServico', backref='backlog_items')
+    plano_preventiva = db.relationship('PlanoPreventiva', backref='backlog_items')
     
     def calcular_score_priorizacao(self):
         """Calcula o score de priorização baseado em urgência, impacto e outros fatores"""
@@ -135,6 +137,8 @@ class BacklogItem(db.Model):
             'equipamento_nome': self.equipamento.nome if self.equipamento else None,
             'ordem_servico_id': self.ordem_servico_id,
             'ordem_servico_numero': self.ordem_servico.numero_os if self.ordem_servico else None,
+            'plano_preventiva_id': self.plano_preventiva_id,
+            'plano_preventiva_nome': self.plano_preventiva.nome if self.plano_preventiva else None,
             'esforco_estimado': self.esforco_estimado,
             'custo_estimado': self.custo_estimado,
             'data_identificacao': self.data_identificacao.isoformat() if self.data_identificacao else None,

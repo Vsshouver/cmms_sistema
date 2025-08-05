@@ -17,19 +17,21 @@ def get_pneus(current_user):
         equipamento_id = request.args.get('equipamento_id')
         search = request.args.get('search')
         
-        query = Pneu.query
+        # Query com join para incluir equipamento
+        query = db.session.query(Pneu).outerjoin(Equipamento)
         
         if status:
-            query = query.filter_by(status=status)
+            query = query.filter(Pneu.status == status)
         if marca:
-            query = query.filter_by(marca=marca)
+            query = query.filter(Pneu.marca == marca)
         if equipamento_id:
-            query = query.filter_by(equipamento_id=equipamento_id)
+            query = query.filter(Pneu.equipamento_id == equipamento_id)
         if search:
             query = query.filter(
-                Pneu.numero_serie.contains(search) |
-                Pneu.marca.contains(search) |
-                Pneu.modelo.contains(search)
+                (Pneu.numero_fogo.contains(search)) |
+                (Pneu.marca.contains(search)) |
+                (Pneu.modelo.contains(search)) |
+                (Pneu.dot.contains(search))
             )
         
         pneus = query.all()
@@ -41,7 +43,10 @@ def get_pneus(current_user):
             if pneu.equipamento_id:
                 equipamento = Equipamento.query.get(pneu.equipamento_id)
                 if equipamento:
+                    pneu_dict['equipamento_nome'] = equipamento.nome
+                    pneu_dict['equipamento_codigo'] = equipamento.codigo_interno
                     pneu_dict['equipamento'] = {
+                        'id': equipamento.id,
                         'nome': equipamento.nome,
                         'codigo_interno': equipamento.codigo_interno
                     }
@@ -53,6 +58,7 @@ def get_pneus(current_user):
         }), 200
         
     except Exception as e:
+        print(f"Erro ao carregar pneus: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @pneus_bp.route('/pneus/<int:pneu_id>', methods=['GET'])

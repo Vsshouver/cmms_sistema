@@ -3,6 +3,7 @@ from src.db import db
 from src.models.ordem_servico import OrdemServico
 from src.models.equipamento import Equipamento
 from src.models.mecanico import Mecanico
+from src.models.tipo_manutencao import TipoManutencao
 from src.models.peca import Peca
 from src.models.os_peca import OS_Peca
 from src.models.movimentacao_estoque import MovimentacaoEstoque
@@ -23,40 +24,68 @@ def get_ordens_servico(current_user):
         mecanico_id = request.args.get('mecanico_id')
         search = request.args.get('search')
         
-        query = OrdemServico.query
+        # Query com joins para incluir relacionamentos
+        query = db.session.query(OrdemServico)\
+            .outerjoin(Equipamento, OrdemServico.equipamento_id == Equipamento.id)\
+            .outerjoin(Mecanico, OrdemServico.mecanico_id == Mecanico.id)\
+            .outerjoin(TipoManutencao, OrdemServico.tipo_manutencao_id == TipoManutencao.id)
         
         if status:
-            query = query.filter_by(status=status)
+            query = query.filter(OrdemServico.status == status)
         if tipo:
-            query = query.filter_by(tipo=tipo)
+            query = query.filter(OrdemServico.tipo_manutencao_id == tipo)
         if prioridade:
-            query = query.filter_by(prioridade=prioridade)
+            query = query.filter(OrdemServico.prioridade == prioridade)
         if equipamento_id:
-            query = query.filter_by(equipamento_id=equipamento_id)
+            query = query.filter(OrdemServico.equipamento_id == equipamento_id)
         if mecanico_id:
-            query = query.filter_by(mecanico_id=mecanico_id)
+            query = query.filter(OrdemServico.mecanico_id == mecanico_id)
         if search:
             query = query.filter(
-                OrdemServico.numero_os.contains(search) |
-                OrdemServico.descricao_problema.contains(search)
+                (OrdemServico.numero_os.contains(search)) |
+                (OrdemServico.descricao_problema.contains(search))
             )
         
         # Ordenar por data de abertura (mais recentes primeiro)
         ordens = query.order_by(OrdemServico.data_abertura.desc()).all()
         
-        # Incluir informações do equipamento e mecânico
+        # Incluir informações do equipamento, mecânico e tipo de manutenção
         result = []
         for os in ordens:
             os_dict = os.to_dict()
-            if os.equipamento:
-                os_dict['equipamento'] = {
-                    'nome': os.equipamento.nome,
-                    'codigo_interno': os.equipamento.codigo_interno
-                }
-            if os.mecanico:
-                os_dict['mecanico'] = {
-                    'nome_completo': os.mecanico.nome_completo
-                }
+            
+            # Adicionar informações do equipamento
+            if os.equipamento_id:
+                equipamento = Equipamento.query.get(os.equipamento_id)
+                if equipamento:
+                    os_dict['equipamento_nome'] = equipamento.nome
+                    os_dict['equipamento_codigo'] = equipamento.codigo_interno
+                    os_dict['equipamento'] = {
+                        'id': equipamento.id,
+                        'nome': equipamento.nome,
+                        'codigo_interno': equipamento.codigo_interno
+                    }
+            
+            # Adicionar informações do mecânico
+            if os.mecanico_id:
+                mecanico = Mecanico.query.get(os.mecanico_id)
+                if mecanico:
+                    os_dict['mecanico_nome'] = mecanico.nome_completo
+                    os_dict['mecanico'] = {
+                        'id': mecanico.id,
+                        'nome_completo': mecanico.nome_completo
+                    }
+            
+            # Adicionar informações do tipo de manutenção
+            if os.tipo_manutencao_id:
+                tipo_manutencao = TipoManutencao.query.get(os.tipo_manutencao_id)
+                if tipo_manutencao:
+                    os_dict['tipo_manutencao_nome'] = tipo_manutencao.nome
+                    os_dict['tipo_manutencao'] = {
+                        'id': tipo_manutencao.id,
+                        'nome': tipo_manutencao.nome
+                    }
+            
             result.append(os_dict)
         
         return jsonify({
@@ -65,6 +94,7 @@ def get_ordens_servico(current_user):
         }), 200
         
     except Exception as e:
+        print(f"Erro ao carregar ordens de serviço: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @ordens_servico_bp.route('/ordens-servico/<int:os_id>', methods=['GET'])
