@@ -1,13 +1,10 @@
-// Página de Equipamentos
+// Página de Equipamentos com AG-Grid
 class EquipmentsPage {
     constructor() {
+        this.gridApi = null;
+        this.gridColumnApi = null;
         this.data = [];
-        this.filteredData = [];
-        this.currentFilters = {};
-        this.currentSort = { field: 'nome', direction: 'asc' };
-        this.currentPage = 1;
-        this.itemsPerPage = 12;
-        this.viewMode = 'grid'; // grid ou table
+        this.equipmentTypes = [];
     }
 
     async render(container) {
@@ -17,15 +14,16 @@ class EquipmentsPage {
 
             // Carregar dados
             await this.loadData();
+            await this.loadEquipmentTypes();
 
             // Renderizar conteúdo
             container.innerHTML = this.getHTML();
 
+            // Configurar AG-Grid
+            this.setupGrid(container);
+
             // Configurar eventos
             this.setupEvents(container);
-
-            // Aplicar filtros iniciais
-            this.applyFilters();
 
         } catch (error) {
             console.error('Erro ao carregar equipamentos:', error);
@@ -37,12 +35,20 @@ class EquipmentsPage {
         try {
             const response = await API.equipments.getAll();
             this.data = Array.isArray(response) ? response : (response.data || []);
-            this.filteredData = [...this.data];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             this.data = [];
-            this.filteredData = [];
             throw error;
+        }
+    }
+
+    async loadEquipmentTypes() {
+        try {
+            const response = await API.equipmentTypes.getAll();
+            this.equipmentTypes = Array.isArray(response) ? response : (response.data || []);
+        } catch (error) {
+            console.error('Erro ao carregar tipos de equipamento:', error);
+            this.equipmentTypes = [];
         }
     }
 
@@ -90,62 +96,14 @@ class EquipmentsPage {
                             <i class="fas fa-sync-alt"></i>
                             Atualizar
                         </button>
+                        <button class="btn btn-outline" id="export-data">
+                            <i class="fas fa-download"></i>
+                            Exportar
+                        </button>
                         <button class="btn btn-primary" id="create-equipment" ${!auth.hasPermission('admin') ? 'style="display: none;"' : ''}>
                             <i class="fas fa-plus"></i>
                             Novo Equipamento
                         </button>
-                    </div>
-                </div>
-
-                <!-- Filtros e controles -->
-                <div class="filters-section">
-                    <div class="filters-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">Tipo</label>
-                            <select id="filter-tipo" class="filter-select">
-                                <option value="">Todos os tipos</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label class="filter-label">Status</label>
-                            <select id="filter-status" class="filter-select">
-                                <option value="">Todos</option>
-                                <option value="ativo">Ativo</option>
-                                <option value="manutencao">Em Manutenção</option>
-                                <option value="inativo">Inativo</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label class="filter-label">Buscar</label>
-                            <div class="search-input">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="search-input" placeholder="Nome, modelo, número série...">
-                            </div>
-                        </div>
-                        <div class="filter-actions">
-                            <button class="btn btn-outline btn-sm" id="clear-filters">
-                                <i class="fas fa-times"></i>
-                                Limpar
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="view-controls">
-                        <div class="view-mode-toggle">
-                            <button class="view-mode-btn active" data-mode="grid" title="Visualização em grade">
-                                <i class="fas fa-th"></i>
-                            </button>
-                            <button class="view-mode-btn" data-mode="table" title="Visualização em tabela">
-                                <i class="fas fa-list"></i>
-                            </button>
-                        </div>
-                        <div class="items-per-page">
-                            <select id="items-per-page" class="form-select form-select-sm">
-                                <option value="12">12 por página</option>
-                                <option value="24">24 por página</option>
-                                <option value="48">48 por página</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
 
@@ -189,59 +147,179 @@ class EquipmentsPage {
                     </div>
                 </div>
 
-                <!-- Conteúdo principal -->
-                <div class="equipments-content">
-                    <div class="content-header">
-                        <div class="content-info">
-                            <span id="content-info">Mostrando 0 de 0 equipamentos</span>
-                        </div>
-                        <div class="sort-controls" id="sort-controls">
-                            <label>Ordenar por:</label>
-                            <select id="sort-select" class="form-select form-select-sm">
-                                <option value="nome-asc">Nome (A-Z)</option>
-                                <option value="nome-desc">Nome (Z-A)</option>
-                                <option value="tipo-asc">Tipo (A-Z)</option>
-                                <option value="status-asc">Status</option>
-                                <option value="created_at-desc">Mais recentes</option>
-                                <option value="created_at-asc">Mais antigos</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Grid view -->
-                    <div id="grid-view" class="equipments-grid">
-                        <!-- Cards serão inseridos aqui -->
-                    </div>
-
-                    <!-- Table view -->
-                    <div id="table-view" class="table-responsive" style="display: none;">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Equipamento</th>
-                                    <th>Tipo</th>
-                                    <th>Modelo</th>
-                                    <th>Número Série</th>
-                                    <th>Status</th>
-                                    <th>Última Manutenção</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body">
-                                <!-- Linhas serão inseridas aqui -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Paginação -->
-                    <div class="pagination-container">
-                        <div class="pagination" id="pagination">
-                            <!-- Botões de paginação serão inseridos aqui -->
-                        </div>
-                    </div>
+                <!-- Grid Container -->
+                <div class="grid-container">
+                    <div id="equipments-grid" class="ag-theme-alpine" style="height: 600px; width: 100%;"></div>
                 </div>
             </div>
         `;
+    }
+
+    setupGrid(container) {
+        const gridContainer = container.querySelector('#equipments-grid');
+        
+        const columnDefs = [
+            {
+                headerName: 'Equipamento',
+                field: 'nome',
+                minWidth: 200,
+                cellRenderer: (params) => {
+                    return `
+                        <div class="equipment-cell">
+                            <div class="equipment-name">${params.value || ''}</div>
+                            <div class="equipment-code">${params.data.codigo || ''}</div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                headerName: 'Tipo',
+                field: 'tipo_nome',
+                minWidth: 150,
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: this.equipmentTypes.map(type => type.nome)
+                }
+            },
+            {
+                headerName: 'Modelo',
+                field: 'modelo',
+                minWidth: 150
+            },
+            {
+                headerName: 'Número Série',
+                field: 'numero_serie',
+                minWidth: 150
+            },
+            {
+                headerName: 'Status',
+                field: 'status',
+                minWidth: 120,
+                cellRenderer: AGGridConfig.formatters.status,
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: ['ativo', 'inativo', 'manutencao'],
+                    valueFormatter: (params) => {
+                        const statusMap = {
+                            'ativo': 'Ativo',
+                            'inativo': 'Inativo',
+                            'manutencao': 'Em Manutenção'
+                        };
+                        return statusMap[params.value] || params.value;
+                    }
+                }
+            },
+            {
+                headerName: 'Localização',
+                field: 'localizacao',
+                minWidth: 150
+            },
+            {
+                headerName: 'Última Manutenção',
+                field: 'ultima_manutencao',
+                minWidth: 150,
+                cellRenderer: AGGridConfig.formatters.date,
+                filter: 'agDateColumnFilter'
+            },
+            {
+                headerName: 'Criado em',
+                field: 'created_at',
+                minWidth: 150,
+                cellRenderer: AGGridConfig.formatters.datetime,
+                filter: 'agDateColumnFilter',
+                hide: true
+            },
+            {
+                headerName: 'Ações',
+                field: 'actions',
+                minWidth: 120,
+                maxWidth: 120,
+                sortable: false,
+                filter: false,
+                resizable: false,
+                pinned: 'right',
+                cellRenderer: (params) => {
+                    const canEdit = auth.hasPermission('admin') || auth.hasPermission('edit');
+                    const canDelete = auth.hasPermission('admin');
+                    
+                    let html = '<div class="ag-actions">';
+                    
+                    html += `<button class="btn-action btn-view" onclick="equipmentsPage.viewEquipment(${params.data.id})" title="Visualizar">
+                        <i class="fas fa-eye"></i>
+                    </button>`;
+                    
+                    if (canEdit) {
+                        html += `<button class="btn-action btn-edit" onclick="equipmentsPage.editEquipment(${params.data.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>`;
+                    }
+                    
+                    if (canDelete) {
+                        html += `<button class="btn-action btn-delete" onclick="equipmentsPage.deleteEquipment(${params.data.id})" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>`;
+                    }
+                    
+                    html += '</div>';
+                    return html;
+                }
+            }
+        ];
+
+        const gridOptions = {
+            ...AGGridConfig.getDefaultOptions(),
+            columnDefs: columnDefs,
+            rowData: this.data,
+            onGridReady: (params) => {
+                this.gridApi = params.api;
+                this.gridColumnApi = params.columnApi;
+                this.updateStats();
+                
+                // Auto-size columns
+                params.api.sizeColumnsToFit();
+            },
+            onSelectionChanged: () => {
+                this.updateSelectionInfo();
+            },
+            onFilterChanged: () => {
+                this.updateStats();
+            },
+            // Configurações específicas
+            rowSelection: 'multiple',
+            suppressRowClickSelection: true,
+            enableRangeSelection: true,
+            enableCharts: true,
+            sideBar: {
+                toolPanels: [
+                    {
+                        id: 'columns',
+                        labelDefault: 'Colunas',
+                        labelKey: 'columns',
+                        iconKey: 'columns',
+                        toolPanel: 'agColumnsToolPanel',
+                        toolPanelParams: {
+                            suppressRowGroups: true,
+                            suppressValues: true,
+                            suppressPivots: true,
+                            suppressPivotMode: true,
+                            suppressColumnFilter: false,
+                            suppressColumnSelectAll: false,
+                            suppressColumnExpandAll: false
+                        }
+                    },
+                    {
+                        id: 'filters',
+                        labelDefault: 'Filtros',
+                        labelKey: 'filters',
+                        iconKey: 'filter',
+                        toolPanel: 'agFiltersToolPanel'
+                    }
+                ],
+                defaultToolPanel: 'columns'
+            }
+        };
+
+        this.grid = AGGridConfig.createGrid(gridContainer, gridOptions);
     }
 
     setupEvents(container) {
@@ -251,853 +329,422 @@ class EquipmentsPage {
             refreshBtn.addEventListener('click', () => this.refresh());
         }
 
+        // Botão de exportar
+        const exportBtn = container.querySelector('#export-data');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportData());
+        }
+
         // Botão de novo equipamento
         const createBtn = container.querySelector('#create-equipment');
         if (createBtn) {
             createBtn.addEventListener('click', () => this.showCreateModal());
         }
-
-        // Filtros
-        const tipoFilter = container.querySelector('#filter-tipo');
-        const statusFilter = container.querySelector('#filter-status');
-        const searchInput = container.querySelector('#search-input');
-        const clearFiltersBtn = container.querySelector('#clear-filters');
-
-        if (tipoFilter) {
-            tipoFilter.addEventListener('change', () => this.applyFilters());
-        }
-        if (statusFilter) {
-            statusFilter.addEventListener('change', () => this.applyFilters());
-        }
-        if (searchInput) {
-            searchInput.addEventListener('input', Utils.debounce(() => this.applyFilters(), 300));
-        }
-        if (clearFiltersBtn) {
-            clearFiltersBtn.addEventListener('click', () => this.clearFilters());
-        }
-
-        // Controles de visualização
-        const viewModeButtons = container.querySelectorAll('.view-mode-btn');
-        viewModeButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const mode = btn.dataset.mode;
-                this.setViewMode(mode);
-            });
-        });
-
-        // Items per page
-        const itemsPerPageSelect = container.querySelector('#items-per-page');
-        if (itemsPerPageSelect) {
-            itemsPerPageSelect.addEventListener('change', (e) => {
-                this.itemsPerPage = parseInt(e.target.value);
-                this.currentPage = 1;
-                this.updateContent();
-            });
-        }
-
-        // Ordenação
-        const sortSelect = container.querySelector('#sort-select');
-        if (sortSelect) {
-            sortSelect.addEventListener('change', (e) => {
-                const [field, direction] = e.target.value.split('-');
-                this.currentSort = { field, direction };
-                this.sortData();
-                this.updateContent();
-            });
-        }
-    }
-
-    async loadEquipmentTypes() {
-        try {
-            const types = await API.equipmentTypes.getAll();
-            const tipoFilter = document.querySelector('#filter-tipo');
-            
-            if (tipoFilter) {
-                // Limpar opções existentes (exceto "Todos os tipos")
-                tipoFilter.innerHTML = '<option value="">Todos os tipos</option>';
-                
-                // Adicionar tipos
-                types.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type.id;
-                    option.textContent = type.nome;
-                    tipoFilter.appendChild(option);
-                });
-            }
-        } catch (error) {
-            console.error('Erro ao carregar tipos de equipamento:', error);
-        }
-    }
-
-    applyFilters() {
-        const tipoFilter = document.querySelector('#filter-tipo')?.value || '';
-        const statusFilter = document.querySelector('#filter-status')?.value || '';
-        const searchTerm = document.querySelector('#search-input')?.value.toLowerCase() || '';
-
-        this.currentFilters = {
-            tipo: tipoFilter,
-            status: statusFilter,
-            search: searchTerm
-        };
-
-        this.filteredData = this.data.filter(item => {
-            // Filtro de tipo
-            if (tipoFilter && item.tipo_equipamento_id != tipoFilter) {
-                return false;
-            }
-
-            // Filtro de status
-            if (statusFilter && item.status !== statusFilter) {
-                return false;
-            }
-
-            // Filtro de busca
-            if (searchTerm) {
-                const searchFields = [
-                    item.nome,
-                    item.modelo,
-                    item.numero_serie,
-                    item.tipo_nome
-                ].filter(field => field).join(' ').toLowerCase();
-
-                if (!searchFields.includes(searchTerm)) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-
-        this.currentPage = 1;
-        this.sortData();
-        this.updateContent();
-        this.updateStats();
-    }
-
-    clearFilters() {
-        document.querySelector('#filter-tipo').value = '';
-        document.querySelector('#filter-status').value = '';
-        document.querySelector('#search-input').value = '';
-        
-        this.currentFilters = {};
-        this.filteredData = [...this.data];
-        this.currentPage = 1;
-        this.updateContent();
-        this.updateStats();
-    }
-
-    sortData() {
-        this.filteredData.sort((a, b) => {
-            const field = this.currentSort.field;
-            const direction = this.currentSort.direction;
-            
-            let aValue = a[field];
-            let bValue = b[field];
-
-            // Tratamento especial para datas
-            if (field.includes('_at')) {
-                aValue = new Date(aValue || 0);
-                bValue = new Date(bValue || 0);
-            }
-
-            // Tratamento para valores nulos
-            if (aValue === null || aValue === undefined) aValue = '';
-            if (bValue === null || bValue === undefined) bValue = '';
-
-            if (direction === 'asc') {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
-        });
-    }
-
-    setViewMode(mode) {
-        this.viewMode = mode;
-        
-        // Atualizar botões
-        document.querySelectorAll('.view-mode-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === mode);
-        });
-
-        // Mostrar/ocultar views
-        const gridView = document.getElementById('grid-view');
-        const tableView = document.getElementById('table-view');
-        
-        if (mode === 'grid') {
-            gridView.style.display = 'grid';
-            tableView.style.display = 'none';
-            this.itemsPerPage = parseInt(document.querySelector('#items-per-page').value) || 12;
-        } else {
-            gridView.style.display = 'none';
-            tableView.style.display = 'block';
-            this.itemsPerPage = parseInt(document.querySelector('#items-per-page').value) || 12;
-        }
-
-        this.updateContent();
-    }
-
-    updateContent() {
-        if (this.viewMode === 'grid') {
-            this.updateGridView();
-        } else {
-            this.updateTableView();
-        }
-
-        this.updateContentInfo();
-        this.updatePagination();
-    }
-
-    updateGridView() {
-        const gridView = document.getElementById('grid-view');
-        if (!gridView) return;
-
-        // Calcular paginação
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        const pageData = this.filteredData.slice(startIndex, endIndex);
-
-        // Renderizar cards
-        gridView.innerHTML = pageData.length === 0 ? `
-            <div class="empty-state-grid">
-                <div class="empty-state">
-                    <i class="fas fa-truck text-gray-400 text-6xl mb-4"></i>
-                    <h3 class="text-gray-600 text-xl mb-2">Nenhum equipamento encontrado</h3>
-                    <p class="text-gray-500">Tente ajustar os filtros ou adicionar novos equipamentos</p>
-                </div>
-            </div>
-        ` : pageData.map(item => this.getEquipmentCardHTML(item)).join('');
-    }
-
-    updateTableView() {
-        const tbody = document.querySelector('#table-body');
-        if (!tbody) return;
-
-        // Calcular paginação
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        const pageData = this.filteredData.slice(startIndex, endIndex);
-
-        // Renderizar linhas
-        tbody.innerHTML = pageData.length === 0 ? `
-            <tr>
-                <td colspan="7" class="text-center py-8">
-                    <div class="empty-state">
-                        <i class="fas fa-truck text-gray-400 text-4xl mb-4"></i>
-                        <p class="text-gray-600">Nenhum equipamento encontrado</p>
-                    </div>
-                </td>
-            </tr>
-        ` : pageData.map(item => this.getTableRowHTML(item)).join('');
-    }
-
-    getEquipmentCardHTML(item) {
-        return `
-            <div class="equipment-card">
-                <div class="equipment-card-header">
-                    <div class="equipment-icon">
-                        <i class="${this.getEquipmentIcon(item.tipo_nome)}"></i>
-                    </div>
-                    <div class="equipment-status">
-                        <span class="status-badge status-${item.status}">
-                            ${Utils.formatStatus(item.status)}
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="equipment-card-body">
-                    <h3 class="equipment-name">${item.nome}</h3>
-                    <p class="equipment-type">${item.tipo_nome || 'Tipo não definido'}</p>
-                    
-                    <div class="equipment-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Modelo:</span>
-                            <span class="detail-value">${item.modelo || 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Série:</span>
-                            <span class="detail-value">${item.numero_serie || 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Localização:</span>
-                            <span class="detail-value">${item.localizacao || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="equipment-card-footer">
-                    <div class="equipment-stats">
-                        <div class="stat-item">
-                            <i class="fas fa-wrench"></i>
-                            <span>${item.total_os || 0} OS</span>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-clock"></i>
-                            <span>${item.ultima_manutencao ? Utils.formatDate(item.ultima_manutencao) : 'Nunca'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="equipment-actions">
-                        <button class="btn-icon btn-icon-primary" onclick="equipmentsPage.showViewModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Ver detalhes">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        ${auth.hasPermission('admin') ? `
-                            <button class="btn-icon btn-icon-secondary" onclick="equipmentsPage.showEditModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        ` : ''}
-                        <button class="btn-icon btn-icon-success" onclick="equipmentsPage.createWorkOrder(${item.id})" title="Nova OS">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    getTableRowHTML(item) {
-        return `
-            <tr>
-                <td>
-                    <div class="equipment-info">
-                        <div class="equipment-icon-small">
-                            <i class="${this.getEquipmentIcon(item.tipo_nome)}"></i>
-                        </div>
-                        <div>
-                            <span class="font-medium">${item.nome}</span>
-                            <small class="text-gray-500 block">${item.localizacao || 'Localização não definida'}</small>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <span class="badge badge-outline">${item.tipo_nome || 'N/A'}</span>
-                </td>
-                <td>${item.modelo || 'N/A'}</td>
-                <td>
-                    <span class="font-mono text-sm">${item.numero_serie || 'N/A'}</span>
-                </td>
-                <td>
-                    <span class="status-badge status-${item.status}">
-                        ${Utils.formatStatus(item.status)}
-                    </span>
-                </td>
-                <td>
-                    ${item.ultima_manutencao ? Utils.formatDate(item.ultima_manutencao) : 'Nunca'}
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn-icon btn-icon-primary" onclick="equipmentsPage.showViewModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Ver detalhes">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        ${auth.hasPermission('admin') ? `
-                            <button class="btn-icon btn-icon-secondary" onclick="equipmentsPage.showEditModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        ` : ''}
-                        <button class="btn-icon btn-icon-success" onclick="equipmentsPage.createWorkOrder(${item.id})" title="Nova OS">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-
-    getEquipmentIcon(tipo) {
-        const icons = {
-            'Caminhão': 'fas fa-truck',
-            'Escavadeira': 'fas fa-hammer',
-            'Trator': 'fas fa-tractor',
-            'Carregadeira': 'fas fa-truck-loading',
-            'Britador': 'fas fa-cogs',
-            'Peneira': 'fas fa-filter',
-            'Esteira': 'fas fa-conveyor-belt',
-            'Bomba': 'fas fa-pump',
-            'Compressor': 'fas fa-compress-arrows-alt',
-            'Gerador': 'fas fa-bolt'
-        };
-        
-        return icons[tipo] || 'fas fa-cog';
-    }
-
-    updateContentInfo() {
-        const contentInfo = document.querySelector('#content-info');
-        if (contentInfo) {
-            const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
-            const endIndex = Math.min(startIndex + this.itemsPerPage - 1, this.filteredData.length);
-            
-            contentInfo.textContent = this.filteredData.length === 0 
-                ? 'Nenhum equipamento encontrado'
-                : `Mostrando ${startIndex} a ${endIndex} de ${this.filteredData.length} equipamentos`;
-        }
-    }
-
-    updatePagination() {
-        const paginationContainer = document.querySelector('#pagination');
-        if (!paginationContainer) return;
-
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-
-        let paginationHTML = '';
-
-        // Botão anterior
-        paginationHTML += `
-            <button class="pagination-btn ${this.currentPage === 1 ? 'disabled' : ''}" 
-                    onclick="equipmentsPage.goToPage(${this.currentPage - 1})" 
-                    ${this.currentPage === 1 ? 'disabled' : ''}>
-                <i class="fas fa-chevron-left"></i>
-            </button>
-        `;
-
-        // Botões de página
-        const startPage = Math.max(1, this.currentPage - 2);
-        const endPage = Math.min(totalPages, this.currentPage + 2);
-
-        if (startPage > 1) {
-            paginationHTML += `<button class="pagination-btn" onclick="equipmentsPage.goToPage(1)">1</button>`;
-            if (startPage > 2) {
-                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
-            }
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            paginationHTML += `
-                <button class="pagination-btn ${i === this.currentPage ? 'active' : ''}" 
-                        onclick="equipmentsPage.goToPage(${i})">
-                    ${i}
-                </button>
-            `;
-        }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
-            }
-            paginationHTML += `<button class="pagination-btn" onclick="equipmentsPage.goToPage(${totalPages})">${totalPages}</button>`;
-        }
-
-        // Botão próximo
-        paginationHTML += `
-            <button class="pagination-btn ${this.currentPage === totalPages ? 'disabled' : ''}" 
-                    onclick="equipmentsPage.goToPage(${this.currentPage + 1})" 
-                    ${this.currentPage === totalPages ? 'disabled' : ''}>
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        `;
-
-        paginationContainer.innerHTML = paginationHTML;
-    }
-
-    updateStats() {
-        const stats = {
-            ativos: this.data.filter(item => item.status === 'ativo').length,
-            manutencao: this.data.filter(item => item.status === 'manutencao').length,
-            inativos: this.data.filter(item => item.status === 'inativo').length,
-            total: this.data.length
-        };
-
-        document.querySelector('#stat-ativos').textContent = stats.ativos;
-        document.querySelector('#stat-manutencao').textContent = stats.manutencao;
-        document.querySelector('#stat-inativos').textContent = stats.inativos;
-        document.querySelector('#stat-total').textContent = stats.total;
-    }
-
-    goToPage(page) {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        if (page >= 1 && page <= totalPages) {
-            this.currentPage = page;
-            this.updateContent();
-        }
     }
 
     async refresh() {
         try {
-            const refreshBtn = document.querySelector('#refresh-data');
-            if (refreshBtn) {
-                const icon = refreshBtn.querySelector('i');
-                icon.classList.add('fa-spin');
-                refreshBtn.disabled = true;
-            }
-
             await this.loadData();
-            await this.loadEquipmentTypes();
-            this.applyFilters();
-            Toast.success('Dados atualizados');
-
+            if (this.gridApi) {
+                this.gridApi.setRowData(this.data);
+                this.updateStats();
+            }
+            Utils.showToast('Dados atualizados com sucesso', 'success');
         } catch (error) {
             console.error('Erro ao atualizar dados:', error);
-            Toast.error('Erro ao atualizar dados');
-        } finally {
-            const refreshBtn = document.querySelector('#refresh-data');
-            if (refreshBtn) {
-                const icon = refreshBtn.querySelector('i');
-                icon.classList.remove('fa-spin');
-                refreshBtn.disabled = false;
+            Utils.showToast('Erro ao atualizar dados', 'error');
+        }
+    }
+
+    exportData() {
+        if (this.gridApi) {
+            this.gridApi.exportDataAsCsv({
+                fileName: `equipamentos_${new Date().toISOString().split('T')[0]}.csv`,
+                columnSeparator: ';'
+            });
+        }
+    }
+
+    updateStats() {
+        const stats = {
+            total: this.data.length,
+            ativos: this.data.filter(item => item.status === 'ativo').length,
+            manutencao: this.data.filter(item => item.status === 'manutencao').length,
+            inativos: this.data.filter(item => item.status === 'inativo').length
+        };
+
+        // Se há filtros aplicados, usar dados filtrados
+        if (this.gridApi) {
+            const filteredData = [];
+            this.gridApi.forEachNodeAfterFilter(node => {
+                filteredData.push(node.data);
+            });
+            
+            if (filteredData.length !== this.data.length) {
+                stats.total = filteredData.length;
+                stats.ativos = filteredData.filter(item => item.status === 'ativo').length;
+                stats.manutencao = filteredData.filter(item => item.status === 'manutencao').length;
+                stats.inativos = filteredData.filter(item => item.status === 'inativo').length;
+            }
+        }
+
+        document.getElementById('stat-total').textContent = stats.total;
+        document.getElementById('stat-ativos').textContent = stats.ativos;
+        document.getElementById('stat-manutencao').textContent = stats.manutencao;
+        document.getElementById('stat-inativos').textContent = stats.inativos;
+    }
+
+    updateSelectionInfo() {
+        if (this.gridApi) {
+            const selectedRows = this.gridApi.getSelectedRows();
+            console.log('Equipamentos selecionados:', selectedRows.length);
+        }
+    }
+
+    // Métodos de ação
+    viewEquipment(id) {
+        const equipment = this.data.find(item => item.id === id);
+        if (equipment) {
+            this.showViewModal(equipment);
+        }
+    }
+
+    editEquipment(id) {
+        const equipment = this.data.find(item => item.id === id);
+        if (equipment) {
+            this.showEditModal(equipment);
+        }
+    }
+
+    async deleteEquipment(id) {
+        const equipment = this.data.find(item => item.id === id);
+        if (!equipment) return;
+
+        const confirmed = await Utils.showConfirm(
+            'Confirmar Exclusão',
+            `Tem certeza que deseja excluir o equipamento "${equipment.nome}"?`,
+            'Excluir',
+            'Cancelar'
+        );
+
+        if (confirmed) {
+            try {
+                await API.equipments.delete(id);
+                await this.refresh();
+                Utils.showToast('Equipamento excluído com sucesso', 'success');
+            } catch (error) {
+                console.error('Erro ao excluir equipamento:', error);
+                Utils.showToast('Erro ao excluir equipamento', 'error');
             }
         }
     }
 
     showCreateModal() {
-        const modalContent = `
-            <form id="equipment-form" class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Nome do Equipamento *</label>
-                    <input type="text" name="nome" class="form-input" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Tipo de Equipamento *</label>
-                    <select name="tipo_equipamento_id" class="form-select" required>
-                        <option value="">Selecione um tipo</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Modelo</label>
-                    <input type="text" name="modelo" class="form-input">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Número de Série</label>
-                    <input type="text" name="numero_serie" class="form-input">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Status *</label>
-                    <select name="status" class="form-select" required>
-                        <option value="ativo">Ativo</option>
-                        <option value="manutencao">Em Manutenção</option>
-                        <option value="inativo">Inativo</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Localização</label>
-                    <input type="text" name="localizacao" class="form-input">
-                </div>
-                
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label class="form-label">Descrição</label>
-                    <textarea name="descricao" class="form-textarea" rows="3"></textarea>
-                </div>
-            </form>
-        `;
-
-        const modal = Modal.show({
+        const modal = new EquipmentModal();
+        modal.show({
             title: 'Novo Equipamento',
-            content: modalContent,
-            size: 'lg'
-        });
-
-        // Carregar tipos de equipamento
-        this.loadEquipmentTypesForModal(modal);
-
-        // Adicionar botões no footer
-        const footer = document.createElement('div');
-        footer.className = 'modal-footer';
-        footer.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
-            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
-        `;
-        modal.querySelector('.modal-body').appendChild(footer);
-
-        // Event listeners
-        modal.addEventListener('click', async (e) => {
-            if (e.target.dataset.action === 'cancel') {
-                Modal.close(modal);
-            } else if (e.target.dataset.action === 'save') {
-                await this.saveEquipment(modal);
+            equipment: null,
+            equipmentTypes: this.equipmentTypes,
+            onSave: async (data) => {
+                try {
+                    await API.equipments.create(data);
+                    await this.refresh();
+                    Utils.showToast('Equipamento criado com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao criar equipamento:', error);
+                    Utils.showToast('Erro ao criar equipamento', 'error');
+                }
             }
         });
     }
 
     showEditModal(equipment) {
-        const modalContent = `
-            <form id="equipment-form" class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Nome do Equipamento *</label>
-                    <input type="text" name="nome" class="form-input" value="${equipment.nome || ''}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Tipo de Equipamento *</label>
-                    <select name="tipo_equipamento_id" class="form-select" required>
-                        <option value="">Selecione um tipo</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Modelo</label>
-                    <input type="text" name="modelo" class="form-input" value="${equipment.modelo || ''}">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Número de Série</label>
-                    <input type="text" name="numero_serie" class="form-input" value="${equipment.numero_serie || ''}">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Status *</label>
-                    <select name="status" class="form-select" required>
-                        <option value="ativo" ${equipment.status === 'ativo' ? 'selected' : ''}>Ativo</option>
-                        <option value="manutencao" ${equipment.status === 'manutencao' ? 'selected' : ''}>Em Manutenção</option>
-                        <option value="inativo" ${equipment.status === 'inativo' ? 'selected' : ''}>Inativo</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Localização</label>
-                    <input type="text" name="localizacao" class="form-input" value="${equipment.localizacao || ''}">
-                </div>
-                
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label class="form-label">Descrição</label>
-                    <textarea name="descricao" class="form-textarea" rows="3">${equipment.descricao || ''}</textarea>
-                </div>
-            </form>
-        `;
-
-        const modal = Modal.show({
+        const modal = new EquipmentModal();
+        modal.show({
             title: 'Editar Equipamento',
-            content: modalContent,
-            size: 'lg'
-        });
-
-        // Carregar tipos de equipamento
-        this.loadEquipmentTypesForModal(modal, equipment.tipo_equipamento_id);
-
-        // Adicionar botões no footer
-        const footer = document.createElement('div');
-        footer.className = 'modal-footer';
-        footer.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
-            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
-        `;
-        modal.querySelector('.modal-body').appendChild(footer);
-
-        // Event listeners
-        modal.addEventListener('click', async (e) => {
-            if (e.target.dataset.action === 'cancel') {
-                Modal.close(modal);
-            } else if (e.target.dataset.action === 'save') {
-                await this.updateEquipment(modal, equipment.id);
+            equipment: equipment,
+            equipmentTypes: this.equipmentTypes,
+            onSave: async (data) => {
+                try {
+                    await API.equipments.update(equipment.id, data);
+                    await this.refresh();
+                    Utils.showToast('Equipamento atualizado com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao atualizar equipamento:', error);
+                    Utils.showToast('Erro ao atualizar equipamento', 'error');
+                }
             }
         });
-    }
-
-    async loadEquipmentTypesForModal(modal, selectedId = null) {
-        try {
-            const types = await API.equipmentTypes.getAll();
-            const select = modal.querySelector('select[name="tipo_equipamento_id"]');
-            
-            if (select) {
-                // Limpar opções existentes (exceto a primeira)
-                select.innerHTML = '<option value="">Selecione um tipo</option>';
-                
-                // Adicionar tipos
-                types.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type.id;
-                    option.textContent = type.nome;
-                    if (selectedId && type.id == selectedId) {
-                        option.selected = true;
-                    }
-                    select.appendChild(option);
-                });
-            }
-        } catch (error) {
-            console.error('Erro ao carregar tipos de equipamento:', error);
-            Toast.error('Erro ao carregar tipos de equipamento');
-        }
-    }
-
-    async saveEquipment(modal) {
-        try {
-            const form = modal.querySelector('#equipment-form');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-
-            // Validação básica
-            if (!data.nome || !data.tipo_equipamento_id || !data.status) {
-                Toast.error('Preencha todos os campos obrigatórios');
-                return;
-            }
-
-            Loading.show('Salvando equipamento...');
-
-            await API.equipments.create(data);
-            
-            Loading.hide();
-            Modal.close(modal);
-            Toast.success('Equipamento criado com sucesso!');
-            
-            // Recarregar dados
-            await this.refresh();
-
-        } catch (error) {
-            Loading.hide();
-            console.error('Erro ao salvar equipamento:', error);
-            Toast.error('Erro ao salvar equipamento: ' + (error.message || 'Erro desconhecido'));
-        }
-    }
-
-    async updateEquipment(modal, equipmentId) {
-        try {
-            const form = modal.querySelector('#equipment-form');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-
-            // Validação básica
-            if (!data.nome || !data.tipo_equipamento_id || !data.status) {
-                Toast.error('Preencha todos os campos obrigatórios');
-                return;
-            }
-
-            Loading.show('Atualizando equipamento...');
-
-            await API.equipments.update(equipmentId, data);
-            
-            Loading.hide();
-            Modal.close(modal);
-            Toast.success('Equipamento atualizado com sucesso!');
-            
-            // Recarregar dados
-            await this.refresh();
-
-        } catch (error) {
-            Loading.hide();
-            console.error('Erro ao atualizar equipamento:', error);
-            Toast.error('Erro ao atualizar equipamento: ' + (error.message || 'Erro desconhecido'));
-        }
-    }
-
-    async deleteEquipment(equipmentId, equipmentName) {
-        try {
-            const confirmed = await Modal.confirm(
-                `Tem certeza que deseja excluir o equipamento "${equipmentName}"?`,
-                'Confirmar Exclusão'
-            );
-
-            if (!confirmed) return;
-
-            Loading.show('Excluindo equipamento...');
-
-            await API.equipments.delete(equipmentId);
-            
-            Loading.hide();
-            Toast.success('Equipamento excluído com sucesso!');
-            
-            // Recarregar dados
-            await this.refresh();
-
-        } catch (error) {
-            Loading.hide();
-            console.error('Erro ao excluir equipamento:', error);
-            Toast.error('Erro ao excluir equipamento: ' + (error.message || 'Erro desconhecido'));
-        }
     }
 
     showViewModal(equipment) {
-        const modalContent = `
-            <div class="equipment-details">
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>Nome:</label>
-                        <span>${equipment.nome || '-'}</span>
+        const modal = new EquipmentViewModal();
+        modal.show(equipment);
+    }
+}
+
+// Modal de Equipamento
+class EquipmentModal {
+    show(options) {
+        this.options = options;
+        this.render();
+    }
+
+    render() {
+        const { title, equipment, equipmentTypes } = this.options;
+        const isEdit = !!equipment;
+
+        const modalHTML = `
+            <div class="modal-overlay" id="equipment-modal">
+                <div class="modal-container modal-lg">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <div class="detail-item">
-                        <label>Tipo:</label>
-                        <span>${equipment.tipo_nome || '-'}</span>
+                    <div class="modal-body">
+                        <form id="equipment-form" class="form-grid">
+                            <div class="form-group">
+                                <label for="nome">Nome *</label>
+                                <input type="text" id="nome" name="nome" class="form-input" required 
+                                       value="${equipment?.nome || ''}" placeholder="Nome do equipamento">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="codigo">Código</label>
+                                <input type="text" id="codigo" name="codigo" class="form-input" 
+                                       value="${equipment?.codigo || ''}" placeholder="Código do equipamento">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="tipo_equipamento_id">Tipo *</label>
+                                <select id="tipo_equipamento_id" name="tipo_equipamento_id" class="form-select" required>
+                                    <option value="">Selecione o tipo</option>
+                                    ${equipmentTypes.map(type => 
+                                        `<option value="${type.id}" ${equipment?.tipo_equipamento_id == type.id ? 'selected' : ''}>
+                                            ${type.nome}
+                                        </option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="modelo">Modelo</label>
+                                <input type="text" id="modelo" name="modelo" class="form-input" 
+                                       value="${equipment?.modelo || ''}" placeholder="Modelo do equipamento">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="numero_serie">Número de Série</label>
+                                <input type="text" id="numero_serie" name="numero_serie" class="form-input" 
+                                       value="${equipment?.numero_serie || ''}" placeholder="Número de série">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="fabricante">Fabricante</label>
+                                <input type="text" id="fabricante" name="fabricante" class="form-input" 
+                                       value="${equipment?.fabricante || ''}" placeholder="Fabricante">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="ano_fabricacao">Ano de Fabricação</label>
+                                <input type="number" id="ano_fabricacao" name="ano_fabricacao" class="form-input" 
+                                       value="${equipment?.ano_fabricacao || ''}" min="1900" max="2030">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="status">Status *</label>
+                                <select id="status" name="status" class="form-select" required>
+                                    <option value="ativo" ${equipment?.status === 'ativo' ? 'selected' : ''}>Ativo</option>
+                                    <option value="inativo" ${equipment?.status === 'inativo' ? 'selected' : ''}>Inativo</option>
+                                    <option value="manutencao" ${equipment?.status === 'manutencao' ? 'selected' : ''}>Em Manutenção</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="localizacao">Localização</label>
+                                <input type="text" id="localizacao" name="localizacao" class="form-input" 
+                                       value="${equipment?.localizacao || ''}" placeholder="Localização do equipamento">
+                            </div>
+                            
+                            <div class="form-group form-group-full">
+                                <label for="descricao">Descrição</label>
+                                <textarea id="descricao" name="descricao" class="form-textarea" rows="3" 
+                                          placeholder="Descrição do equipamento">${equipment?.descricao || ''}</textarea>
+                            </div>
+                        </form>
                     </div>
-                    <div class="detail-item">
-                        <label>Modelo:</label>
-                        <span>${equipment.modelo || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Número de Série:</label>
-                        <span>${equipment.numero_serie || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Status:</label>
-                        <span class="badge badge-${this.getStatusBadgeClass(equipment.status)}">${this.getStatusLabel(equipment.status)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Localização:</label>
-                        <span>${equipment.localizacao || '-'}</span>
-                    </div>
-                    <div class="detail-item full-width">
-                        <label>Descrição:</label>
-                        <span>${equipment.descricao || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Criado em:</label>
-                        <span>${equipment.created_at ? Utils.formatDate(equipment.created_at) : '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Atualizado em:</label>
-                        <span>${equipment.updated_at ? Utils.formatDate(equipment.updated_at) : '-'}</span>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Cancelar
+                        </button>
+                        <button type="submit" form="equipment-form" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            ${isEdit ? 'Atualizar' : 'Criar'} Equipamento
+                        </button>
                     </div>
                 </div>
             </div>
         `;
 
-        const modal = Modal.show({
-            title: `Detalhes do Equipamento: ${equipment.nome}`,
-            content: modalContent,
-            size: 'lg'
+        document.getElementById('modals-container').innerHTML = modalHTML;
+        
+        // Configurar eventos
+        const form = document.getElementById('equipment-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSubmit(form);
         });
-
-        // Adicionar botões no footer
-        const footer = document.createElement('div');
-        footer.className = 'modal-footer';
-        footer.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-action="close">Fechar</button>
-            ${auth.hasPermission('admin') ? `
-                <button type="button" class="btn btn-warning" data-action="edit">Editar</button>
-                <button type="button" class="btn btn-danger" data-action="delete">Excluir</button>
-            ` : ''}
-        `;
-        modal.querySelector('.modal-body').appendChild(footer);
-
-        // Event listeners
-        modal.addEventListener('click', async (e) => {
-            if (e.target.dataset.action === 'close') {
-                Modal.close(modal);
-            } else if (e.target.dataset.action === 'edit') {
-                Modal.close(modal);
-                this.showEditModal(equipment);
-            } else if (e.target.dataset.action === 'delete') {
-                Modal.close(modal);
-                await this.deleteEquipment(equipment.id, equipment.nome);
-            }
-        });
-    }em desenvolvimento');
     }
 
-    viewDetails(id) {
-        // TODO: Implementar visualização de detalhes
-        Toast.info('Visualização de detalhes em desenvolvimento');
+    handleSubmit(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Validações
+        if (!data.nome.trim()) {
+            Utils.showToast('Nome é obrigatório', 'error');
+            return;
+        }
+        
+        if (!data.tipo_equipamento_id) {
+            Utils.showToast('Tipo de equipamento é obrigatório', 'error');
+            return;
+        }
+
+        this.options.onSave(data);
     }
 
-    editEquipment(id) {
-        // TODO: Implementar edição de equipamento
-        Toast.info('Edição de equipamento em desenvolvimento');
-    }
-
-    createWorkOrder(equipmentId) {
-        // TODO: Implementar criação de OS para equipamento
-        Toast.info('Criação de OS em desenvolvimento');
+    hide() {
+        const modal = document.getElementById('equipment-modal');
+        if (modal) {
+            modal.remove();
+        }
     }
 }
 
-// Instância global para uso nos event handlers
-const equipmentsPage = new EquipmentsPage();
+// Modal de Visualização
+class EquipmentViewModal {
+    show(equipment) {
+        this.render(equipment);
+    }
 
-// Exportar para uso global
-window.EquipmentsPage = EquipmentsPage;
+    render(equipment) {
+        const modalHTML = `
+            <div class="modal-overlay" id="equipment-view-modal">
+                <div class="modal-container modal-lg">
+                    <div class="modal-header">
+                        <h3>Detalhes do Equipamento</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="equipment-details">
+                            <div class="detail-section">
+                                <h4>Informações Básicas</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Nome:</label>
+                                        <span>${equipment.nome || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Código:</label>
+                                        <span>${equipment.codigo || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Tipo:</label>
+                                        <span>${equipment.tipo_nome || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Status:</label>
+                                        <span>${AGGridConfig.formatters.status({value: equipment.status})}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Especificações</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Modelo:</label>
+                                        <span>${equipment.modelo || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Número de Série:</label>
+                                        <span>${equipment.numero_serie || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Fabricante:</label>
+                                        <span>${equipment.fabricante || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Ano de Fabricação:</label>
+                                        <span>${equipment.ano_fabricacao || '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Localização e Descrição</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Localização:</label>
+                                        <span>${equipment.localizacao || '-'}</span>
+                                    </div>
+                                    <div class="detail-item detail-item-full">
+                                        <label>Descrição:</label>
+                                        <span>${equipment.descricao || '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Informações do Sistema</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Criado em:</label>
+                                        <span>${AGGridConfig.formatters.datetime({value: equipment.created_at})}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Última Manutenção:</label>
+                                        <span>${equipment.ultima_manutencao ? AGGridConfig.formatters.date({value: equipment.ultima_manutencao}) : '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Fechar
+                        </button>
+                        ${auth.hasPermission('admin') || auth.hasPermission('edit') ? 
+                            `<button type="button" class="btn btn-primary" onclick="equipmentsPage.editEquipment(${equipment.id}); this.closest('.modal-overlay').remove();">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modals-container').innerHTML = modalHTML;
+    }
+}
+
+// Instância global
+let equipmentsPage = null;
+
+// Registrar página
+window.pages = window.pages || {};
+window.pages.equipamentos = {
+    render: async (container) => {
+        equipmentsPage = new EquipmentsPage();
+        await equipmentsPage.render(container);
+    }
+};
 

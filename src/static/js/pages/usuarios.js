@@ -1,20 +1,28 @@
+// Página de Usuários com AG-Grid
 class UsersPage {
     constructor() {
+        this.gridApi = null;
+        this.gridColumnApi = null;
         this.data = [];
-        this.filteredData = [];
-        this.currentPage = 1;
-        this.itemsPerPage = 10;
-        this.searchTerm = '';
-        this.statusFilter = '';
-        this.accessLevelFilter = '';
     }
 
     async render(container) {
         try {
+            // Mostrar loading
             container.innerHTML = this.getLoadingHTML();
+
+            // Carregar dados
             await this.loadData();
-            container.innerHTML = this.getMainHTML();
-            this.bindEvents();
+
+            // Renderizar conteúdo
+            container.innerHTML = this.getHTML();
+
+            // Configurar AG-Grid
+            this.setupGrid(container);
+
+            // Configurar eventos
+            this.setupEvents(container);
+
         } catch (error) {
             console.error('Erro ao carregar usuários:', error);
             container.innerHTML = this.getErrorHTML(error.message);
@@ -25,11 +33,9 @@ class UsersPage {
         try {
             const response = await API.users.getAll();
             this.data = Array.isArray(response) ? response : (response.data || []);
-            this.filteredData = [...this.data];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             this.data = [];
-            this.filteredData = [];
             throw error;
         }
     }
@@ -37,7 +43,9 @@ class UsersPage {
     getLoadingHTML() {
         return `
             <div class="page-loading">
-                <div class="loading-spinner"></div>
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
                 <p>Carregando usuários...</p>
             </div>
         `;
@@ -46,742 +54,765 @@ class UsersPage {
     getErrorHTML(message) {
         return `
             <div class="page-error">
-                <div class="error-icon">⚠️</div>
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
                 <h3>Erro ao carregar usuários</h3>
                 <p>${message}</p>
-                <button onclick="location.reload()" class="btn btn-primary">Tentar novamente</button>
-            </div>
-        `;
-    }
-
-    getMainHTML() {
-        return `
-            <div class="page-header">
-                <div class="page-title">
-                    <h1><i class="icon-users"></i> Usuários</h1>
-                    <p>Gerencie os usuários do sistema</p>
-                </div>
-                <div class="page-actions">
-                    <button class="btn btn-secondary" onclick="this.refreshData()">
-                        <i class="icon-refresh"></i> Atualizar
-                    </button>
-                    <button class="btn btn-primary" onclick="this.openCreateModal()">
-                        <i class="icon-plus"></i> Novo Usuário
-                    </button>
-                </div>
-            </div>
-
-            <div class="page-filters">
-                <div class="filter-group">
-                    <label>Status</label>
-                    <select onchange="this.handleStatusFilter(event)">
-                        <option value="">Todos</option>
-                        <option value="true">Ativo</option>
-                        <option value="false">Inativo</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Nível de Acesso</label>
-                    <select onchange="this.handleAccessLevelFilter(event)">
-                        <option value="">Todos</option>
-                        <option value="admin">Administrador</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="pcm">PCM</option>
-                        <option value="almoxarife">Almoxarife</option>
-                        <option value="mecanico">Mecânico</option>
-                        <option value="operador">Operador</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Buscar</label>
-                    <div class="search-input">
-                        <input type="text" 
-                               placeholder="Nome, email, cargo..." 
-                               value="${this.searchTerm}"
-                               onkeyup="this.handleSearch(event)">
-                        <i class="icon-search"></i>
-                    </div>
-                </div>
-                <button class="btn btn-outline" onclick="this.clearFilters()">
-                    <i class="icon-x"></i> Limpar
+                <button class="btn btn-primary" onclick="navigation.navigateTo('usuarios')">
+                    <i class="fas fa-refresh"></i>
+                    Tentar novamente
                 </button>
             </div>
+        `;
+    }
 
-            <div class="page-content">
-                ${this.getStatsHTML()}
-                ${this.getTableHTML()}
-                ${this.getPaginationHTML()}
+    getHTML() {
+        return `
+            <div class="users-page">
+                <!-- Header -->
+                <div class="page-header">
+                    <div class="page-title">
+                        <i class="fas fa-user-cog"></i>
+                        <div>
+                            <h1>Usuários</h1>
+                            <p>Gerencie os usuários do sistema</p>
+                        </div>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline" id="refresh-data">
+                            <i class="fas fa-sync-alt"></i>
+                            Atualizar
+                        </button>
+                        <button class="btn btn-outline" id="export-data">
+                            <i class="fas fa-download"></i>
+                            Exportar
+                        </button>
+                        <button class="btn btn-primary" id="create-user" ${!auth.hasPermission('admin') ? 'style="display: none;"' : ''}>
+                            <i class="fas fa-plus"></i>
+                            Novo Usuário
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Estatísticas rápidas -->
+                <div class="quick-stats">
+                    <div class="stat-card stat-card-info">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-total">0</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-success">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-ativos">0</div>
+                            <div class="stat-label">Ativos</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-danger">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-inativos">0</div>
+                            <div class="stat-label">Inativos</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-warning">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-admins">0</div>
+                            <div class="stat-label">Administradores</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Container -->
+                <div class="grid-container">
+                    <div id="users-grid" class="ag-theme-alpine" style="height: 600px; width: 100%;"></div>
+                </div>
             </div>
         `;
     }
 
-    getStatsHTML() {
-        const total = this.data.length;
-        const ativos = this.data.filter(item => item.ativo === true).length;
-        const inativos = this.data.filter(item => item.ativo === false).length;
-        const admins = this.data.filter(item => item.nivel_acesso === 'admin').length;
+    setupGrid(container) {
+        const gridContainer = container.querySelector('#users-grid');
         
-        return `
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--success-light);">
-                        <i class="icon-user-check" style="color: var(--success);"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number">${ativos}</div>
-                        <div class="stat-label">Ativos</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--danger-light);">
-                        <i class="icon-user-x" style="color: var(--danger);"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number">${inativos}</div>
-                        <div class="stat-label">Inativos</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--warning-light);">
-                        <i class="icon-shield" style="color: var(--warning);"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number">${admins}</div>
-                        <div class="stat-label">Administradores</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--primary-light);">
-                        <i class="icon-users" style="color: var(--primary);"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number">${total}</div>
-                        <div class="stat-label">Total</div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+        const columnDefs = [
+            {
+                headerName: 'Usuário',
+                field: 'nome',
+                minWidth: 200,
+                cellRenderer: (params) => {
+                    const avatar = params.data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(params.value || '')}&background=random`;
+                    return `
+                        <div class="user-cell">
+                            <img src="${avatar}" alt="${params.value}" class="user-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(params.value || '')}&background=random'">
+                            <div class="user-info">
+                                <div class="user-name">${params.value || ''}</div>
+                                <div class="user-email">${params.data.email || ''}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                headerName: 'Perfil',
+                field: 'perfil',
+                minWidth: 120,
+                cellRenderer: (params) => {
+                    const perfilMap = {
+                        'admin': '<span class="role-badge role-admin">Administrador</span>',
+                        'pcm': '<span class="role-badge role-pcm">PCM</span>',
+                        'mecanico': '<span class="role-badge role-mechanic">Mecânico</span>',
+                        'almoxarife': '<span class="role-badge role-warehouse">Almoxarife</span>',
+                        'operador': '<span class="role-badge role-operator">Operador</span>',
+                        'visualizador': '<span class="role-badge role-viewer">Visualizador</span>'
+                    };
+                    return perfilMap[params.value] || params.value;
+                },
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: ['admin', 'pcm', 'mecanico', 'almoxarife', 'operador', 'visualizador'],
+                    valueFormatter: (params) => {
+                        const perfilMap = {
+                            'admin': 'Administrador',
+                            'pcm': 'PCM',
+                            'mecanico': 'Mecânico',
+                            'almoxarife': 'Almoxarife',
+                            'operador': 'Operador',
+                            'visualizador': 'Visualizador'
+                        };
+                        return perfilMap[params.value] || params.value;
+                    }
+                }
+            },
+            {
+                headerName: 'Status',
+                field: 'ativo',
+                minWidth: 100,
+                cellRenderer: (params) => {
+                    return params.value 
+                        ? '<span class="status-badge status-success">Ativo</span>'
+                        : '<span class="status-badge status-danger">Inativo</span>';
+                },
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: [true, false],
+                    valueFormatter: (params) => params.value ? 'Ativo' : 'Inativo'
+                }
+            },
+            {
+                headerName: 'Telefone',
+                field: 'telefone',
+                minWidth: 130
+            },
+            {
+                headerName: 'Departamento',
+                field: 'departamento',
+                minWidth: 150
+            },
+            {
+                headerName: 'Último Acesso',
+                field: 'ultimo_acesso',
+                minWidth: 150,
+                cellRenderer: (params) => {
+                    if (!params.value) return '-';
+                    return AGGridConfig.formatters.datetime(params);
+                },
+                filter: 'agDateColumnFilter'
+            },
+            {
+                headerName: 'Criado em',
+                field: 'created_at',
+                minWidth: 130,
+                cellRenderer: AGGridConfig.formatters.date,
+                filter: 'agDateColumnFilter',
+                hide: true
+            },
+            {
+                headerName: 'Ações',
+                field: 'actions',
+                minWidth: 150,
+                maxWidth: 150,
+                sortable: false,
+                filter: false,
+                resizable: false,
+                pinned: 'right',
+                cellRenderer: (params) => {
+                    const canEdit = auth.hasPermission('admin');
+                    const canDelete = auth.hasPermission('admin') && params.data.id !== auth.getCurrentUser()?.id;
+                    
+                    let html = '<div class="ag-actions">';
+                    
+                    html += `<button class="btn-action btn-view" onclick="usersPage.viewUser(${params.data.id})" title="Visualizar">
+                        <i class="fas fa-eye"></i>
+                    </button>`;
+                    
+                    if (canEdit) {
+                        html += `<button class="btn-action btn-edit" onclick="usersPage.editUser(${params.data.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>`;
+                        
+                        html += `<button class="btn-action btn-key" onclick="usersPage.resetPassword(${params.data.id})" title="Redefinir Senha">
+                            <i class="fas fa-key"></i>
+                        </button>`;
+                    }
+                    
+                    if (canDelete) {
+                        html += `<button class="btn-action btn-delete" onclick="usersPage.deleteUser(${params.data.id})" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>`;
+                    }
+                    
+                    html += '</div>';
+                    return html;
+                }
+            }
+        ];
 
-    getTableHTML() {
-        if (this.filteredData.length === 0) {
-            return `
-                <div class="empty-state">
-                    <div class="empty-icon">👤</div>
-                    <h3>Nenhum usuário encontrado</h3>
-                    <p>Tente ajustar os filtros ou adicionar novos usuários</p>
-                </div>
-            `;
-        }
-
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        const pageData = this.filteredData.slice(startIndex, endIndex);
-
-        return `
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Email</th>
-                            <th>Cargo</th>
-                            <th>Nível de Acesso</th>
-                            <th>Status</th>
-                            <th>Último Login</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${pageData.map(item => this.getTableRowHTML(item)).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    }
-
-    getTableRowHTML(item) {
-        const statusBadge = item.ativo === true ? 
-            '<span class="badge badge-success">Ativo</span>' : 
-            '<span class="badge badge-secondary">Inativo</span>';
-
-        const accessLevelBadges = {
-            'admin': '<span class="badge badge-danger">Administrador</span>',
-            'supervisor': '<span class="badge badge-warning">Supervisor</span>',
-            'pcm': '<span class="badge badge-info">PCM</span>',
-            'almoxarife': '<span class="badge badge-primary">Almoxarife</span>',
-            'mecanico': '<span class="badge badge-success">Mecânico</span>',
-            'operador': '<span class="badge badge-secondary">Operador</span>'
+        const gridOptions = {
+            ...AGGridConfig.getDefaultOptions(),
+            columnDefs: columnDefs,
+            rowData: this.data,
+            onGridReady: (params) => {
+                this.gridApi = params.api;
+                this.gridColumnApi = params.columnApi;
+                this.updateStats();
+                
+                // Auto-size columns
+                params.api.sizeColumnsToFit();
+            },
+            onSelectionChanged: () => {
+                this.updateSelectionInfo();
+            },
+            onFilterChanged: () => {
+                this.updateStats();
+            },
+            // Configurações específicas
+            rowSelection: 'multiple',
+            suppressRowClickSelection: true,
+            enableRangeSelection: true,
+            enableCharts: true,
+            sideBar: {
+                toolPanels: [
+                    {
+                        id: 'columns',
+                        labelDefault: 'Colunas',
+                        labelKey: 'columns',
+                        iconKey: 'columns',
+                        toolPanel: 'agColumnsToolPanel'
+                    },
+                    {
+                        id: 'filters',
+                        labelDefault: 'Filtros',
+                        labelKey: 'filters',
+                        iconKey: 'filter',
+                        toolPanel: 'agFiltersToolPanel'
+                    }
+                ],
+                defaultToolPanel: 'columns'
+            }
         };
 
-        return `
-            <tr>
-                <td>
-                    <div class="user-info">
-                        <div class="user-avatar">
-                            <i class="icon-user"></i>
-                        </div>
-                        <div class="user-details">
-                            <strong>${item.nome_completo || item.username || '-'}</strong>
-                            <small>${item.username || '-'}</small>
-                        </div>
-                    </div>
-                </td>
-                <td>${item.email || '-'}</td>
-                <td>${item.cargo || '-'}</td>
-                <td>${accessLevelBadges[item.nivel_acesso] || '<span class="badge badge-secondary">Não definido</span>'}</td>
-                <td>${statusBadge}</td>
-                <td>${Utils.formatDateTime(item.ultimo_login) || 'Nunca'}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-sm btn-outline" onclick="this.viewItem(${item.id})" title="Visualizar">
-                            <i class="icon-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline" onclick="this.editItem(${item.id})" title="Editar">
-                            <i class="icon-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline" onclick="this.resetPassword(${item.id})" title="Resetar Senha">
-                            <i class="icon-key"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline ${item.ativo ? 'btn-warning' : 'btn-success'}" 
-                                onclick="this.toggleStatus(${item.id})" 
-                                title="${item.ativo ? 'Desativar' : 'Ativar'}">
-                            <i class="icon-${item.ativo ? 'user-x' : 'user-check'}"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline btn-danger" onclick="this.deleteItem(${item.id})" title="Excluir">
-                            <i class="icon-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
+        this.grid = AGGridConfig.createGrid(gridContainer, gridOptions);
     }
 
-    getPaginationHTML() {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        
-        if (totalPages <= 1) return '';
+    setupEvents(container) {
+        // Botão de refresh
+        const refreshBtn = container.querySelector('#refresh-data');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refresh());
+        }
 
-        return `
-            <div class="pagination-container">
-                <div class="pagination-info">
-                    Mostrando ${((this.currentPage - 1) * this.itemsPerPage) + 1} a ${Math.min(this.currentPage * this.itemsPerPage, this.filteredData.length)} de ${this.filteredData.length} registros
-                </div>
-                <div class="pagination">
-                    <button class="btn btn-sm btn-outline" 
-                            onclick="this.goToPage(${this.currentPage - 1})"
-                            ${this.currentPage === 1 ? 'disabled' : ''}>
-                        <i class="icon-chevron-left"></i>
-                    </button>
-                    
-                    ${Array.from({length: Math.min(5, totalPages)}, (_, i) => {
-                        const page = i + 1;
-                        const isActive = page === this.currentPage;
-                        return `
-                            <button class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline'}"
-                                    onclick="this.goToPage(${page})">
-                                ${page}
-                            </button>
-                        `;
-                    }).join('')}
-                    
-                    <button class="btn btn-sm btn-outline" 
-                            onclick="this.goToPage(${this.currentPage + 1})"
-                            ${this.currentPage === totalPages ? 'disabled' : ''}>
-                        <i class="icon-chevron-right"></i>
-                    </button>
-                </div>
-                <select class="form-select" onchange="this.changeItemsPerPage(event)">
-                    <option value="10" ${this.itemsPerPage === 10 ? 'selected' : ''}>10 por página</option>
-                    <option value="25" ${this.itemsPerPage === 25 ? 'selected' : ''}>25 por página</option>
-                    <option value="50" ${this.itemsPerPage === 50 ? 'selected' : ''}>50 por página</option>
-                </select>
-            </div>
-        `;
-    }
+        // Botão de exportar
+        const exportBtn = container.querySelector('#export-data');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportData());
+        }
 
-    bindEvents() {
-        // Bind dos eventos será feito via onclick nos elementos HTML
-    }
-
-    handleSearch(event) {
-        this.searchTerm = event.target.value.toLowerCase();
-        this.applyFilters();
-    }
-
-    handleStatusFilter(event) {
-        this.statusFilter = event.target.value;
-        this.applyFilters();
-    }
-
-    handleAccessLevelFilter(event) {
-        this.accessLevelFilter = event.target.value;
-        this.applyFilters();
-    }
-
-    applyFilters() {
-        this.filteredData = this.data.filter(item => {
-            const searchMatch = !this.searchTerm || 
-                (item.nome_completo && item.nome_completo.toLowerCase().includes(this.searchTerm)) ||
-                (item.username && item.username.toLowerCase().includes(this.searchTerm)) ||
-                (item.email && item.email.toLowerCase().includes(this.searchTerm)) ||
-                (item.cargo && item.cargo.toLowerCase().includes(this.searchTerm));
-
-            const statusMatch = !this.statusFilter || item.ativo.toString() === this.statusFilter;
-            const accessLevelMatch = !this.accessLevelFilter || item.nivel_acesso === this.accessLevelFilter;
-
-            return searchMatch && statusMatch && accessLevelMatch;
-        });
-
-        this.currentPage = 1;
-        this.updateContent();
-    }
-
-    clearFilters() {
-        this.searchTerm = '';
-        this.statusFilter = '';
-        this.accessLevelFilter = '';
-        this.filteredData = [...this.data];
-        this.currentPage = 1;
-        this.updateContent();
-    }
-
-    goToPage(page) {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        if (page >= 1 && page <= totalPages) {
-            this.currentPage = page;
-            this.updateContent();
+        // Botão de novo usuário
+        const createBtn = container.querySelector('#create-user');
+        if (createBtn) {
+            createBtn.addEventListener('click', () => this.showCreateModal());
         }
     }
 
-    changeItemsPerPage(event) {
-        this.itemsPerPage = parseInt(event.target.value);
-        this.currentPage = 1;
-        this.updateContent();
-    }
-
-    updateContent() {
-        const container = document.querySelector('.page-content');
-        if (container) {
-            container.innerHTML = `
-                ${this.getStatsHTML()}
-                ${this.getTableHTML()}
-                ${this.getPaginationHTML()}
-            `;
-        }
-    }
-
-    async refreshData() {
+    async refresh() {
         try {
             await this.loadData();
-            this.applyFilters();
-            Utils.showNotification('Dados atualizados com sucesso!', 'success');
+            if (this.gridApi) {
+                this.gridApi.setRowData(this.data);
+                this.updateStats();
+            }
+            Utils.showToast('Dados atualizados com sucesso', 'success');
         } catch (error) {
-            Utils.showNotification('Erro ao atualizar dados', 'error');
+            console.error('Erro ao atualizar dados:', error);
+            Utils.showToast('Erro ao atualizar dados', 'error');
         }
     }
 
-    openCreateModal() {
-        const modalContent = `
-            <form id="user-form" class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Nome Completo *</label>
-                    <input type="text" name="nome" class="form-input" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">E-mail *</label>
-                    <input type="email" name="email" class="form-input" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Senha *</label>
-                    <input type="password" name="senha" class="form-input" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Confirmar Senha *</label>
-                    <input type="password" name="confirmar_senha" class="form-input" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Cargo</label>
-                    <input type="text" name="cargo" class="form-input">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Nível de Acesso *</label>
-                    <select name="nivel_acesso" class="form-select" required>
-                        <option value="">Selecione um nível</option>
-                        <option value="admin">Administrador</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="pcm">PCM</option>
-                        <option value="almoxarife">Almoxarife</option>
-                        <option value="mecanico">Mecânico</option>
-                        <option value="operador">Operador</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Status *</label>
-                    <select name="ativo" class="form-select" required>
-                        <option value="true">Ativo</option>
-                        <option value="false">Inativo</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Telefone</label>
-                    <input type="tel" name="telefone" class="form-input">
-                </div>
-            </form>
-        `;
-
-        const modal = Modal.show({
-            title: 'Novo Usuário',
-            content: modalContent,
-            size: 'lg'
-        });
-
-        // Adicionar botões no footer
-        const footer = document.createElement('div');
-        footer.className = 'modal-footer';
-        footer.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
-            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
-        `;
-        modal.querySelector('.modal-body').appendChild(footer);
-
-        // Event listeners
-        modal.addEventListener('click', async (e) => {
-            if (e.target.dataset.action === 'cancel') {
-                Modal.close(modal);
-            } else if (e.target.dataset.action === 'save') {
-                await this.saveUser(modal);
-            }
-        });
-    }
-
-    viewItem(id) {
-        const item = this.data.find(item => item.id === id);
-        if (item) {
-            this.showViewModal(item);
+    exportData() {
+        if (this.gridApi) {
+            this.gridApi.exportDataAsCsv({
+                fileName: `usuarios_${new Date().toISOString().split('T')[0]}.csv`,
+                columnSeparator: ';'
+            });
         }
     }
 
-    editItem(id) {
-        const item = this.data.find(item => item.id === id);
-        if (item) {
-            this.openEditModal(item);
-        }
-    }
+    updateStats() {
+        const stats = {
+            total: this.data.length,
+            ativos: this.data.filter(user => user.ativo).length,
+            inativos: this.data.filter(user => !user.ativo).length,
+            admins: this.data.filter(user => user.perfil === 'admin').length
+        };
 
-    openEditModal(user) {
-        const modalContent = `
-            <form id="user-form" class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Nome Completo *</label>
-                    <input type="text" name="nome" class="form-input" value="${user.nome_completo || ''}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">E-mail *</label>
-                    <input type="email" name="email" class="form-input" value="${user.email || ''}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Nova Senha</label>
-                    <input type="password" name="senha" class="form-input" placeholder="Deixe em branco para manter a atual">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Confirmar Nova Senha</label>
-                    <input type="password" name="confirmar_senha" class="form-input" placeholder="Deixe em branco para manter a atual">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Cargo</label>
-                    <input type="text" name="cargo" class="form-input" value="${user.cargo || ''}">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Nível de Acesso *</label>
-                    <select name="nivel_acesso" class="form-select" required>
-                        <option value="">Selecione um nível</option>
-                        <option value="admin" ${user.nivel_acesso === 'admin' ? 'selected' : ''}>Administrador</option>
-                        <option value="supervisor" ${user.nivel_acesso === 'supervisor' ? 'selected' : ''}>Supervisor</option>
-                        <option value="pcm" ${user.nivel_acesso === 'pcm' ? 'selected' : ''}>PCM</option>
-                        <option value="almoxarife" ${user.nivel_acesso === 'almoxarife' ? 'selected' : ''}>Almoxarife</option>
-                        <option value="mecanico" ${user.nivel_acesso === 'mecanico' ? 'selected' : ''}>Mecânico</option>
-                        <option value="operador" ${user.nivel_acesso === 'operador' ? 'selected' : ''}>Operador</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Status *</label>
-                    <select name="ativo" class="form-select" required>
-                        <option value="true" ${user.ativo ? 'selected' : ''}>Ativo</option>
-                        <option value="false" ${!user.ativo ? 'selected' : ''}>Inativo</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Telefone</label>
-                    <input type="tel" name="telefone" class="form-input" value="${user.telefone || ''}">
-                </div>
-            </form>
-        `;
-
-        const modal = Modal.show({
-            title: 'Editar Usuário',
-            content: modalContent,
-            size: 'lg'
-        });
-
-        // Adicionar botões no footer
-        const footer = document.createElement('div');
-        footer.className = 'modal-footer';
-        footer.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
-            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
-        `;
-        modal.querySelector('.modal-body').appendChild(footer);
-
-        // Event listeners
-        modal.addEventListener('click', async (e) => {
-            if (e.target.dataset.action === 'cancel') {
-                Modal.close(modal);
-            } else if (e.target.dataset.action === 'save') {
-                await this.updateUser(modal, user.id);
-            }
-        });
-    }
-
-    async saveUser(modal) {
-        try {
-            const form = modal.querySelector('#user-form');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-
-            // Validação básica
-            if (!data.nome || !data.email || !data.senha || !data.nivel_acesso) {
-                Toast.error('Preencha todos os campos obrigatórios');
-                return;
-            }
-
-            if (data.senha !== data.confirmar_senha) {
-                Toast.error('As senhas não coincidem');
-                return;
-            }
-
-            // Remover campo de confirmação
-            delete data.confirmar_senha;
-
-            // Converter ativo para boolean
-            data.ativo = data.ativo === 'true';
-
-            Loading.show('Salvando usuário...');
-
-            await API.users.create(data);
+        // Se há filtros aplicados, usar dados filtrados
+        if (this.gridApi) {
+            const filteredData = [];
+            this.gridApi.forEachNodeAfterFilter(node => {
+                filteredData.push(node.data);
+            });
             
-            Loading.hide();
-            Modal.close(modal);
-            Toast.success('Usuário criado com sucesso!');
-            
-            // Recarregar dados
-            await this.refreshData();
+            if (filteredData.length !== this.data.length) {
+                stats.total = filteredData.length;
+                stats.ativos = filteredData.filter(user => user.ativo).length;
+                stats.inativos = filteredData.filter(user => !user.ativo).length;
+                stats.admins = filteredData.filter(user => user.perfil === 'admin').length;
+            }
+        }
 
-        } catch (error) {
-            Loading.hide();
-            console.error('Erro ao salvar usuário:', error);
-            Toast.error('Erro ao salvar usuário: ' + (error.message || 'Erro desconhecido'));
+        document.getElementById('stat-total').textContent = stats.total;
+        document.getElementById('stat-ativos').textContent = stats.ativos;
+        document.getElementById('stat-inativos').textContent = stats.inativos;
+        document.getElementById('stat-admins').textContent = stats.admins;
+    }
+
+    updateSelectionInfo() {
+        if (this.gridApi) {
+            const selectedRows = this.gridApi.getSelectedRows();
+            console.log('Usuários selecionados:', selectedRows.length);
         }
     }
 
-    async updateUser(modal, userId) {
-        try {
-            const form = modal.querySelector('#user-form');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-
-            // Validação básica
-            if (!data.nome || !data.email || !data.nivel_acesso) {
-                Toast.error('Preencha todos os campos obrigatórios');
-                return;
-            }
-
-            // Validar senhas se foram preenchidas
-            if (data.senha || data.confirmar_senha) {
-                if (data.senha !== data.confirmar_senha) {
-                    Toast.error('As senhas não coincidem');
-                    return;
-                }
-            } else {
-                // Remover campos de senha se estão vazios
-                delete data.senha;
-            }
-
-            // Remover campo de confirmação
-            delete data.confirmar_senha;
-
-            // Converter ativo para boolean
-            data.ativo = data.ativo === 'true';
-
-            Loading.show('Atualizando usuário...');
-
-            await API.users.update(userId, data);
-            
-            Loading.hide();
-            Modal.close(modal);
-            Toast.success('Usuário atualizado com sucesso!');
-            
-            // Recarregar dados
-            await this.refreshData();
-
-        } catch (error) {
-            Loading.hide();
-            console.error('Erro ao atualizar usuário:', error);
-            Toast.error('Erro ao atualizar usuário: ' + (error.message || 'Erro desconhecido'));
+    // Métodos de ação
+    viewUser(id) {
+        const user = this.data.find(user => user.id === id);
+        if (user) {
+            this.showViewModal(user);
         }
     }
 
-    async deleteItem(userId) {
-        const user = this.data.find(u => u.id === userId);
+    editUser(id) {
+        const user = this.data.find(user => user.id === id);
+        if (user) {
+            this.showEditModal(user);
+        }
+    }
+
+    async resetPassword(id) {
+        const user = this.data.find(user => user.id === id);
         if (!user) return;
 
-        try {
-            const confirmed = await Modal.confirm(
-                `Tem certeza que deseja excluir o usuário "${user.nome_completo || user.username}"?`,
-                'Confirmar Exclusão'
-            );
+        const confirmed = await Utils.showConfirm(
+            'Redefinir Senha',
+            `Tem certeza que deseja redefinir a senha do usuário "${user.nome}"?`,
+            'Redefinir',
+            'Cancelar'
+        );
 
-            if (!confirmed) return;
-
-            Loading.show('Excluindo usuário...');
-
-            await API.users.delete(userId);
-            
-            Loading.hide();
-            Toast.success('Usuário excluído com sucesso!');
-            
-            // Recarregar dados
-            await this.refreshData();
-
-        } catch (error) {
-            Loading.hide();
-            console.error('Erro ao excluir usuário:', error);
-            Toast.error('Erro ao excluir usuário: ' + (error.message || 'Erro desconhecido'));
+        if (confirmed) {
+            try {
+                const newPassword = await API.users.resetPassword(id);
+                Utils.showAlert(
+                    'Senha Redefinida',
+                    `Nova senha para ${user.nome}: <strong>${newPassword}</strong><br><br>Anote esta senha, ela não será exibida novamente.`,
+                    'info'
+                );
+            } catch (error) {
+                console.error('Erro ao redefinir senha:', error);
+                Utils.showToast('Erro ao redefinir senha', 'error');
+            }
         }
+    }
+
+    async deleteUser(id) {
+        const user = this.data.find(user => user.id === id);
+        if (!user) return;
+
+        const confirmed = await Utils.showConfirm(
+            'Confirmar Exclusão',
+            `Tem certeza que deseja excluir o usuário "${user.nome}"?`,
+            'Excluir',
+            'Cancelar'
+        );
+
+        if (confirmed) {
+            try {
+                await API.users.delete(id);
+                await this.refresh();
+                Utils.showToast('Usuário excluído com sucesso', 'success');
+            } catch (error) {
+                console.error('Erro ao excluir usuário:', error);
+                Utils.showToast('Erro ao excluir usuário', 'error');
+            }
+        }
+    }
+
+    showCreateModal() {
+        const modal = new UserModal();
+        modal.show({
+            title: 'Novo Usuário',
+            user: null,
+            onSave: async (data) => {
+                try {
+                    await API.users.create(data);
+                    await this.refresh();
+                    Utils.showToast('Usuário criado com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao criar usuário:', error);
+                    Utils.showToast('Erro ao criar usuário', 'error');
+                }
+            }
+        });
+    }
+
+    showEditModal(user) {
+        const modal = new UserModal();
+        modal.show({
+            title: 'Editar Usuário',
+            user: user,
+            onSave: async (data) => {
+                try {
+                    await API.users.update(user.id, data);
+                    await this.refresh();
+                    Utils.showToast('Usuário atualizado com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao atualizar usuário:', error);
+                    Utils.showToast('Erro ao atualizar usuário', 'error');
+                }
+            }
+        });
     }
 
     showViewModal(user) {
-        const modalContent = `
-            <div class="user-details">
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>Nome:</label>
-                        <span>${user.nome_completo || user.username || '-'}</span>
+        const modal = new UserViewModal();
+        modal.show(user);
+    }
+}
+
+// Modal de Usuário
+class UserModal {
+    show(options) {
+        this.options = options;
+        this.render();
+    }
+
+    render() {
+        const { title, user } = this.options;
+        const isEdit = !!user;
+
+        const modalHTML = `
+            <div class="modal-overlay" id="user-modal">
+                <div class="modal-container modal-lg">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <div class="detail-item">
-                        <label>E-mail:</label>
-                        <span>${user.email || '-'}</span>
+                    <div class="modal-body">
+                        <form id="user-form" class="form-grid">
+                            <div class="form-group">
+                                <label for="nome">Nome Completo *</label>
+                                <input type="text" id="nome" name="nome" class="form-input" required 
+                                       value="${user?.nome || ''}" placeholder="Nome completo do usuário">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">E-mail *</label>
+                                <input type="email" id="email" name="email" class="form-input" required 
+                                       value="${user?.email || ''}" placeholder="email@exemplo.com">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="perfil">Perfil *</label>
+                                <select id="perfil" name="perfil" class="form-select" required>
+                                    <option value="">Selecione o perfil</option>
+                                    <option value="admin" ${user?.perfil === 'admin' ? 'selected' : ''}>Administrador</option>
+                                    <option value="pcm" ${user?.perfil === 'pcm' ? 'selected' : ''}>PCM</option>
+                                    <option value="mecanico" ${user?.perfil === 'mecanico' ? 'selected' : ''}>Mecânico</option>
+                                    <option value="almoxarife" ${user?.perfil === 'almoxarife' ? 'selected' : ''}>Almoxarife</option>
+                                    <option value="operador" ${user?.perfil === 'operador' ? 'selected' : ''}>Operador</option>
+                                    <option value="visualizador" ${user?.perfil === 'visualizador' ? 'selected' : ''}>Visualizador</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="telefone">Telefone</label>
+                                <input type="tel" id="telefone" name="telefone" class="form-input" 
+                                       value="${user?.telefone || ''}" placeholder="(11) 99999-9999">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="departamento">Departamento</label>
+                                <input type="text" id="departamento" name="departamento" class="form-input" 
+                                       value="${user?.departamento || ''}" placeholder="Departamento">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="cargo">Cargo</label>
+                                <input type="text" id="cargo" name="cargo" class="form-input" 
+                                       value="${user?.cargo || ''}" placeholder="Cargo">
+                            </div>
+                            
+                            ${!isEdit ? `
+                            <div class="form-group">
+                                <label for="senha">Senha *</label>
+                                <input type="password" id="senha" name="senha" class="form-input" required 
+                                       placeholder="Senha do usuário" minlength="6">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="confirmar_senha">Confirmar Senha *</label>
+                                <input type="password" id="confirmar_senha" name="confirmar_senha" class="form-input" required 
+                                       placeholder="Confirme a senha" minlength="6">
+                            </div>
+                            ` : ''}
+                            
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="ativo" name="ativo" ${user?.ativo !== false ? 'checked' : ''}>
+                                    <span class="checkbox-custom"></span>
+                                    Usuário ativo
+                                </label>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pode_alterar_senha" name="pode_alterar_senha" ${user?.pode_alterar_senha !== false ? 'checked' : ''}>
+                                    <span class="checkbox-custom"></span>
+                                    Pode alterar própria senha
+                                </label>
+                            </div>
+                        </form>
                     </div>
-                    <div class="detail-item">
-                        <label>Cargo:</label>
-                        <span>${user.cargo || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Nível de Acesso:</label>
-                        <span class="badge badge-info">${this.getAccessLevelLabel(user.nivel_acesso)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Status:</label>
-                        <span class="badge badge-${user.ativo ? 'success' : 'error'}">${user.ativo ? 'Ativo' : 'Inativo'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Telefone:</label>
-                        <span>${user.telefone || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Criado em:</label>
-                        <span>${user.created_at ? Utils.formatDate(user.created_at) : '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Último acesso:</label>
-                        <span>${user.ultimo_login ? Utils.formatDate(user.ultimo_login) : 'Nunca'}</span>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Cancelar
+                        </button>
+                        <button type="submit" form="user-form" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            ${isEdit ? 'Atualizar' : 'Criar'} Usuário
+                        </button>
                     </div>
                 </div>
             </div>
         `;
 
-        const modal = Modal.show({
-            title: `Detalhes do Usuário: ${user.nome_completo || user.username}`,
-            content: modalContent,
-            size: 'lg'
-        });
-
-        // Adicionar botões no footer
-        const footer = document.createElement('div');
-        footer.className = 'modal-footer';
-        footer.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-action="close">Fechar</button>
-            ${auth.hasPermission('admin') ? `
-                <button type="button" class="btn btn-warning" data-action="edit">Editar</button>
-                <button type="button" class="btn btn-danger" data-action="delete">Excluir</button>
-            ` : ''}
-        `;
-        modal.querySelector('.modal-body').appendChild(footer);
-
-        // Event listeners
-        modal.addEventListener('click', async (e) => {
-            if (e.target.dataset.action === 'close') {
-                Modal.close(modal);
-            } else if (e.target.dataset.action === 'edit') {
-                Modal.close(modal);
-                this.openEditModal(user);
-            } else if (e.target.dataset.action === 'delete') {
-                Modal.close(modal);
-                await this.deleteItem(user.id);
-            }
+        document.getElementById('modals-container').innerHTML = modalHTML;
+        
+        // Configurar eventos
+        const form = document.getElementById('user-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSubmit(form);
         });
     }
 
-    getAccessLevelLabel(level) {
-        const labels = {
-            'admin': 'Administrador',
-            'supervisor': 'Supervisor',
-            'pcm': 'PCM',
-            'almoxarife': 'Almoxarife',
-            'mecanico': 'Mecânico',
-            'operador': 'Operador'
-        };
-        return labels[level] || level;
-    }
-
-    resetPassword(id) {
-        const item = this.data.find(item => item.id === id);
-        if (item && confirm(`Deseja resetar a senha do usuário "${item.nome_completo || item.username}"?`)) {
-            Utils.showNotification(`Senha resetada para: ${item.nome_completo || item.username}`, 'success');
+    handleSubmit(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Converter checkboxes
+        data.ativo = form.querySelector('#ativo').checked;
+        data.pode_alterar_senha = form.querySelector('#pode_alterar_senha').checked;
+        
+        // Validações
+        if (!data.nome.trim()) {
+            Utils.showToast('Nome é obrigatório', 'error');
+            return;
         }
-    }
-
-    toggleStatus(id) {
-        const item = this.data.find(item => item.id === id);
-        if (item) {
-            const action = item.ativo ? 'desativar' : 'ativar';
-            if (confirm(`Deseja ${action} o usuário "${item.nome_completo || item.username}"?`)) {
-                Utils.showNotification(`Usuário ${action}do: ${item.nome_completo || item.username}`, 'success');
+        
+        if (!data.email.trim()) {
+            Utils.showToast('E-mail é obrigatório', 'error');
+            return;
+        }
+        
+        if (!data.perfil) {
+            Utils.showToast('Perfil é obrigatório', 'error');
+            return;
+        }
+        
+        // Validação de senha para novos usuários
+        if (!this.options.user) {
+            if (!data.senha || data.senha.length < 6) {
+                Utils.showToast('Senha deve ter pelo menos 6 caracteres', 'error');
+                return;
+            }
+            
+            if (data.senha !== data.confirmar_senha) {
+                Utils.showToast('Senhas não conferem', 'error');
+                return;
             }
         }
+
+        // Remover confirmação de senha antes de enviar
+        delete data.confirmar_senha;
+
+        this.options.onSave(data);
     }
 
-    deleteItem(id) {
-        const item = this.data.find(item => item.id === id);
-        if (item && confirm(`Deseja realmente excluir o usuário "${item.nome_completo || item.username}"?`)) {
-            Utils.showNotification(`Excluindo: ${item.nome_completo || item.username}`, 'info');
+    hide() {
+        const modal = document.getElementById('user-modal');
+        if (modal) {
+            modal.remove();
         }
     }
 }
 
-window.UsersPage = UsersPage;
+// Modal de Visualização
+class UserViewModal {
+    show(user) {
+        this.render(user);
+    }
+
+    render(user) {
+        const modalHTML = `
+            <div class="modal-overlay" id="user-view-modal">
+                <div class="modal-container modal-lg">
+                    <div class="modal-header">
+                        <h3>Detalhes do Usuário</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="user-details">
+                            <div class="user-header">
+                                <img src="${user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nome || '')}&background=random`}" 
+                                     alt="${user.nome}" class="user-avatar-large">
+                                <div class="user-header-info">
+                                    <h4>${user.nome}</h4>
+                                    <p>${user.email}</p>
+                                    <div class="user-badges">
+                                        ${this.getRoleBadge(user.perfil)}
+                                        ${user.ativo 
+                                            ? '<span class="status-badge status-success">Ativo</span>'
+                                            : '<span class="status-badge status-danger">Inativo</span>'
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Informações Pessoais</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Nome Completo:</label>
+                                        <span>${user.nome || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>E-mail:</label>
+                                        <span>${user.email || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Telefone:</label>
+                                        <span>${user.telefone || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Departamento:</label>
+                                        <span>${user.departamento || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Cargo:</label>
+                                        <span>${user.cargo || '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Informações do Sistema</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Perfil:</label>
+                                        <span>${this.getRoleBadge(user.perfil)}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Status:</label>
+                                        <span>${user.ativo 
+                                            ? '<span class="status-badge status-success">Ativo</span>'
+                                            : '<span class="status-badge status-danger">Inativo</span>'
+                                        }</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Pode Alterar Senha:</label>
+                                        <span>${AGGridConfig.formatters.boolean({value: user.pode_alterar_senha})}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Último Acesso:</label>
+                                        <span>${user.ultimo_acesso ? AGGridConfig.formatters.datetime({value: user.ultimo_acesso}) : 'Nunca'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Criado em:</label>
+                                        <span>${AGGridConfig.formatters.datetime({value: user.created_at})}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Fechar
+                        </button>
+                        ${auth.hasPermission('admin') ? 
+                            `<button type="button" class="btn btn-primary" onclick="usersPage.editUser(${user.id}); this.closest('.modal-overlay').remove();">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modals-container').innerHTML = modalHTML;
+    }
+
+    getRoleBadge(perfil) {
+        const perfilMap = {
+            'admin': '<span class="role-badge role-admin">Administrador</span>',
+            'pcm': '<span class="role-badge role-pcm">PCM</span>',
+            'mecanico': '<span class="role-badge role-mechanic">Mecânico</span>',
+            'almoxarife': '<span class="role-badge role-warehouse">Almoxarife</span>',
+            'operador': '<span class="role-badge role-operator">Operador</span>',
+            'visualizador': '<span class="role-badge role-viewer">Visualizador</span>'
+        };
+        return perfilMap[perfil] || perfil;
+    }
+}
+
+// Instância global
+let usersPage = null;
+
+// Registrar página
+window.pages = window.pages || {};
+window.pages.usuarios = {
+    render: async (container) => {
+        usersPage = new UsersPage();
+        await usersPage.render(container);
+    }
+};
 

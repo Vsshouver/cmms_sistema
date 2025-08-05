@@ -1,12 +1,10 @@
-// Página de Estoque
+// Página de Estoque com AG-Grid
 class InventoryPage {
     constructor() {
+        this.gridApi = null;
+        this.gridColumnApi = null;
         this.data = [];
-        this.filteredData = [];
-        this.currentFilters = {};
-        this.currentSort = { field: 'nome', direction: 'asc' };
-        this.currentPage = 1;
-        this.itemsPerPage = 15;
+        this.itemGroups = [];
     }
 
     async render(container) {
@@ -16,15 +14,16 @@ class InventoryPage {
 
             // Carregar dados
             await this.loadData();
+            await this.loadItemGroups();
 
             // Renderizar conteúdo
             container.innerHTML = this.getHTML();
 
+            // Configurar AG-Grid
+            this.setupGrid(container);
+
             // Configurar eventos
             this.setupEvents(container);
-
-            // Aplicar filtros iniciais
-            this.applyFilters();
 
         } catch (error) {
             console.error('Erro ao carregar estoque:', error);
@@ -36,12 +35,20 @@ class InventoryPage {
         try {
             const response = await API.inventory.getAll();
             this.data = Array.isArray(response) ? response : (response.data || []);
-            this.filteredData = [...this.data];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             this.data = [];
-            this.filteredData = [];
             throw error;
+        }
+    }
+
+    async loadItemGroups() {
+        try {
+            const response = await API.itemGroups.getAll();
+            this.itemGroups = Array.isArray(response) ? response : (response.data || []);
+        } catch (error) {
+            console.error('Erro ao carregar grupos de item:', error);
+            this.itemGroups = [];
         }
     }
 
@@ -80,7 +87,7 @@ class InventoryPage {
                     <div class="page-title">
                         <i class="fas fa-box"></i>
                         <div>
-                            <h1>Estoque de Peças</h1>
+                            <h1>Estoque</h1>
                             <p>Gerencie o estoque de peças e materiais</p>
                         </div>
                     </div>
@@ -89,66 +96,39 @@ class InventoryPage {
                             <i class="fas fa-sync-alt"></i>
                             Atualizar
                         </button>
-                        <button class="btn btn-outline" id="export-data" ${!auth.hasPermission('almoxarife') ? 'style="display: none;"' : ''}>
+                        <button class="btn btn-outline" id="export-data">
                             <i class="fas fa-download"></i>
                             Exportar
                         </button>
-                        <button class="btn btn-primary" id="create-item" ${!auth.hasPermission('almoxarife') ? 'style="display: none;"' : ''}>
+                        <button class="btn btn-outline" id="movement-history">
+                            <i class="fas fa-history"></i>
+                            Movimentações
+                        </button>
+                        <button class="btn btn-primary" id="create-item" ${!auth.hasPermission('admin') ? 'style="display: none;"' : ''}>
                             <i class="fas fa-plus"></i>
                             Nova Peça
                         </button>
                     </div>
                 </div>
 
-                <!-- Filtros -->
-                <div class="filters-section">
-                    <div class="filters-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">Grupo</label>
-                            <select id="filter-grupo" class="filter-select">
-                                <option value="">Todos os grupos</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label class="filter-label">Status</label>
-                            <select id="filter-status" class="filter-select">
-                                <option value="">Todos</option>
-                                <option value="disponivel">Disponível</option>
-                                <option value="baixo_estoque">Baixo Estoque</option>
-                                <option value="sem_estoque">Sem Estoque</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label class="filter-label">Local</label>
-                            <select id="filter-local" class="filter-select">
-                                <option value="">Todos os locais</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label class="filter-label">Buscar</label>
-                            <div class="search-input">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="search-input" placeholder="Código, nome, descrição...">
-                            </div>
-                        </div>
-                        <div class="filter-actions">
-                            <button class="btn btn-outline btn-sm" id="clear-filters">
-                                <i class="fas fa-times"></i>
-                                Limpar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Estatísticas rápidas -->
                 <div class="quick-stats">
+                    <div class="stat-card stat-card-info">
+                        <div class="stat-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-total">0</div>
+                            <div class="stat-label">Total de Itens</div>
+                        </div>
+                    </div>
                     <div class="stat-card stat-card-success">
                         <div class="stat-icon">
                             <i class="fas fa-check-circle"></i>
                         </div>
                         <div class="stat-content">
-                            <div class="stat-value" id="stat-disponiveis">0</div>
-                            <div class="stat-label">Disponíveis</div>
+                            <div class="stat-value" id="stat-disponivel">0</div>
+                            <div class="stat-label">Disponível</div>
                         </div>
                     </div>
                     <div class="stat-card stat-card-warning">
@@ -156,8 +136,8 @@ class InventoryPage {
                             <i class="fas fa-exclamation-triangle"></i>
                         </div>
                         <div class="stat-content">
-                            <div class="stat-value" id="stat-baixo-estoque">0</div>
-                            <div class="stat-label">Baixo Estoque</div>
+                            <div class="stat-value" id="stat-baixo">0</div>
+                            <div class="stat-label">Estoque Baixo</div>
                         </div>
                     </div>
                     <div class="stat-card stat-card-danger">
@@ -165,92 +145,233 @@ class InventoryPage {
                             <i class="fas fa-times-circle"></i>
                         </div>
                         <div class="stat-content">
-                            <div class="stat-value" id="stat-sem-estoque">0</div>
-                            <div class="stat-label">Sem Estoque</div>
-                        </div>
-                    </div>
-                    <div class="stat-card stat-card-info">
-                        <div class="stat-icon">
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="stat-valor-total">R$ 0</div>
-                            <div class="stat-label">Valor Total</div>
+                            <div class="stat-value" id="stat-zerado">0</div>
+                            <div class="stat-label">Zerado</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tabela -->
-                <div class="data-table-container">
-                    <div class="data-table-header">
-                        <div class="data-table-info">
-                            <span id="table-info">Mostrando 0 de 0 itens</span>
-                        </div>
-                        <div class="data-table-controls">
-                            <select id="items-per-page" class="form-select form-select-sm">
-                                <option value="15">15 por página</option>
-                                <option value="30">30 por página</option>
-                                <option value="50">50 por página</option>
-                                <option value="100">100 por página</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th data-sort="codigo">
-                                        Código
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="nome">
-                                        Nome/Descrição
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="grupo_nome">
-                                        Grupo
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="quantidade_atual">
-                                        Estoque
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="unidade_medida">
-                                        Unidade
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="preco_unitario">
-                                        Preço Unit.
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="valor_total">
-                                        Valor Total
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="local_nome">
-                                        Local
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body">
-                                <!-- Dados serão inseridos aqui -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Paginação -->
-                    <div class="pagination-container">
-                        <div class="pagination" id="pagination">
-                            <!-- Botões de paginação serão inseridos aqui -->
-                        </div>
-                    </div>
+                <!-- Grid Container -->
+                <div class="grid-container">
+                    <div id="inventory-grid" class="ag-theme-alpine" style="height: 600px; width: 100%;"></div>
                 </div>
             </div>
         `;
+    }
+
+    setupGrid(container) {
+        const gridContainer = container.querySelector('#inventory-grid');
+        
+        const columnDefs = [
+            {
+                headerName: 'Peça',
+                field: 'nome',
+                minWidth: 200,
+                cellRenderer: (params) => {
+                    return `
+                        <div class="item-cell">
+                            <div class="item-name">${params.value || ''}</div>
+                            <div class="item-code">${params.data.codigo || ''}</div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                headerName: 'Grupo',
+                field: 'grupo_nome',
+                minWidth: 150,
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: this.itemGroups.map(group => group.nome)
+                }
+            },
+            {
+                headerName: 'Unidade',
+                field: 'unidade',
+                minWidth: 100,
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: ['UN', 'KG', 'L', 'M', 'M²', 'M³', 'PC', 'CX', 'GL']
+                }
+            },
+            {
+                headerName: 'Quantidade',
+                field: 'quantidade',
+                minWidth: 120,
+                type: 'numericColumn',
+                cellRenderer: (params) => {
+                    const quantidade = params.value || 0;
+                    const minimo = params.data.quantidade_minima || 0;
+                    
+                    let className = 'quantity-normal';
+                    if (quantidade === 0) {
+                        className = 'quantity-zero';
+                    } else if (quantidade <= minimo) {
+                        className = 'quantity-low';
+                    }
+                    
+                    return `<span class="${className}">${quantidade}</span>`;
+                },
+                filter: 'agNumberColumnFilter'
+            },
+            {
+                headerName: 'Mínimo',
+                field: 'quantidade_minima',
+                minWidth: 100,
+                type: 'numericColumn',
+                filter: 'agNumberColumnFilter'
+            },
+            {
+                headerName: 'Máximo',
+                field: 'quantidade_maxima',
+                minWidth: 100,
+                type: 'numericColumn',
+                filter: 'agNumberColumnFilter'
+            },
+            {
+                headerName: 'Valor Unit.',
+                field: 'valor_unitario',
+                minWidth: 120,
+                type: 'numericColumn',
+                cellRenderer: AGGridConfig.formatters.currency,
+                filter: 'agNumberColumnFilter'
+            },
+            {
+                headerName: 'Valor Total',
+                field: 'valor_total',
+                minWidth: 120,
+                type: 'numericColumn',
+                cellRenderer: AGGridConfig.formatters.currency,
+                valueGetter: (params) => {
+                    const quantidade = params.data.quantidade || 0;
+                    const valorUnitario = params.data.valor_unitario || 0;
+                    return quantidade * valorUnitario;
+                },
+                filter: 'agNumberColumnFilter'
+            },
+            {
+                headerName: 'Localização',
+                field: 'localizacao',
+                minWidth: 150
+            },
+            {
+                headerName: 'Status',
+                field: 'status',
+                minWidth: 100,
+                cellRenderer: (params) => {
+                    const quantidade = params.data.quantidade || 0;
+                    const minimo = params.data.quantidade_minima || 0;
+                    
+                    if (quantidade === 0) {
+                        return '<span class="status-badge status-danger">Zerado</span>';
+                    } else if (quantidade <= minimo) {
+                        return '<span class="status-badge status-warning">Baixo</span>';
+                    } else {
+                        return '<span class="status-badge status-success">Disponível</span>';
+                    }
+                },
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: ['Disponível', 'Baixo', 'Zerado'],
+                    valueFormatter: (params) => params.value
+                }
+            },
+            {
+                headerName: 'Última Movimentação',
+                field: 'ultima_movimentacao',
+                minWidth: 150,
+                cellRenderer: AGGridConfig.formatters.date,
+                filter: 'agDateColumnFilter'
+            },
+            {
+                headerName: 'Ações',
+                field: 'actions',
+                minWidth: 180,
+                maxWidth: 180,
+                sortable: false,
+                filter: false,
+                resizable: false,
+                pinned: 'right',
+                cellRenderer: (params) => {
+                    const canEdit = auth.hasPermission('admin') || auth.hasPermission('edit');
+                    const canDelete = auth.hasPermission('admin');
+                    const canMove = auth.hasPermission('almoxarife') || auth.hasPermission('admin');
+                    
+                    let html = '<div class="ag-actions">';
+                    
+                    html += `<button class="btn-action btn-view" onclick="inventoryPage.viewItem(${params.data.id})" title="Visualizar">
+                        <i class="fas fa-eye"></i>
+                    </button>`;
+                    
+                    if (canMove) {
+                        html += `<button class="btn-action btn-move" onclick="inventoryPage.showMovementModal(${params.data.id})" title="Movimentar">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>`;
+                    }
+                    
+                    if (canEdit) {
+                        html += `<button class="btn-action btn-edit" onclick="inventoryPage.editItem(${params.data.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>`;
+                    }
+                    
+                    if (canDelete) {
+                        html += `<button class="btn-action btn-delete" onclick="inventoryPage.deleteItem(${params.data.id})" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>`;
+                    }
+                    
+                    html += '</div>';
+                    return html;
+                }
+            }
+        ];
+
+        const gridOptions = {
+            ...AGGridConfig.getDefaultOptions(),
+            columnDefs: columnDefs,
+            rowData: this.data,
+            onGridReady: (params) => {
+                this.gridApi = params.api;
+                this.gridColumnApi = params.columnApi;
+                this.updateStats();
+                
+                // Auto-size columns
+                params.api.sizeColumnsToFit();
+            },
+            onSelectionChanged: () => {
+                this.updateSelectionInfo();
+            },
+            onFilterChanged: () => {
+                this.updateStats();
+            },
+            // Configurações específicas
+            rowSelection: 'multiple',
+            suppressRowClickSelection: true,
+            enableRangeSelection: true,
+            enableCharts: true,
+            sideBar: {
+                toolPanels: [
+                    {
+                        id: 'columns',
+                        labelDefault: 'Colunas',
+                        labelKey: 'columns',
+                        iconKey: 'columns',
+                        toolPanel: 'agColumnsToolPanel'
+                    },
+                    {
+                        id: 'filters',
+                        labelDefault: 'Filtros',
+                        labelKey: 'filters',
+                        iconKey: 'filter',
+                        toolPanel: 'agFiltersToolPanel'
+                    }
+                ],
+                defaultToolPanel: 'columns'
+            }
+        };
+
+        this.grid = AGGridConfig.createGrid(gridContainer, gridOptions);
     }
 
     setupEvents(container) {
@@ -266,479 +387,620 @@ class InventoryPage {
             exportBtn.addEventListener('click', () => this.exportData());
         }
 
+        // Botão de movimentações
+        const movementBtn = container.querySelector('#movement-history');
+        if (movementBtn) {
+            movementBtn.addEventListener('click', () => navigation.navigateTo('movimentacoes'));
+        }
+
         // Botão de nova peça
         const createBtn = container.querySelector('#create-item');
         if (createBtn) {
             createBtn.addEventListener('click', () => this.showCreateModal());
         }
-
-        // Filtros
-        const grupoFilter = container.querySelector('#filter-grupo');
-        const statusFilter = container.querySelector('#filter-status');
-        const localFilter = container.querySelector('#filter-local');
-        const searchInput = container.querySelector('#search-input');
-        const clearFiltersBtn = container.querySelector('#clear-filters');
-
-        if (grupoFilter) {
-            grupoFilter.addEventListener('change', () => this.applyFilters());
-        }
-        if (statusFilter) {
-            statusFilter.addEventListener('change', () => this.applyFilters());
-        }
-        if (localFilter) {
-            localFilter.addEventListener('change', () => this.applyFilters());
-        }
-        if (searchInput) {
-            searchInput.addEventListener('input', Utils.debounce(() => this.applyFilters(), 300));
-        }
-        if (clearFiltersBtn) {
-            clearFiltersBtn.addEventListener('click', () => this.clearFilters());
-        }
-
-        // Ordenação
-        const sortHeaders = container.querySelectorAll('th[data-sort]');
-        sortHeaders.forEach(header => {
-            header.addEventListener('click', () => {
-                const field = header.dataset.sort;
-                this.toggleSort(field);
-            });
-        });
-
-        // Items per page
-        const itemsPerPageSelect = container.querySelector('#items-per-page');
-        if (itemsPerPageSelect) {
-            itemsPerPageSelect.addEventListener('change', (e) => {
-                this.itemsPerPage = parseInt(e.target.value);
-                this.currentPage = 1;
-                this.updateTable();
-            });
-        }
-    }
-
-    async loadFiltersData() {
-        try {
-            // Carregar grupos de item
-            const grupos = await API.itemGroups.getAll();
-            const grupoFilter = document.querySelector('#filter-grupo');
-            
-            if (grupoFilter) {
-                grupoFilter.innerHTML = '<option value="">Todos os grupos</option>';
-                grupos.forEach(grupo => {
-                    const option = document.createElement('option');
-                    option.value = grupo.id;
-                    option.textContent = grupo.nome;
-                    grupoFilter.appendChild(option);
-                });
-            }
-
-            // Carregar locais de estoque
-            const locais = await API.stockLocations.getAll();
-            const localFilter = document.querySelector('#filter-local');
-            
-            if (localFilter) {
-                localFilter.innerHTML = '<option value="">Todos os locais</option>';
-                locais.forEach(local => {
-                    const option = document.createElement('option');
-                    option.value = local.id;
-                    option.textContent = local.nome;
-                    localFilter.appendChild(option);
-                });
-            }
-
-        } catch (error) {
-            console.error('Erro ao carregar dados dos filtros:', error);
-        }
-    }
-
-    applyFilters() {
-        const grupoFilter = document.querySelector('#filter-grupo')?.value || '';
-        const statusFilter = document.querySelector('#filter-status')?.value || '';
-        const localFilter = document.querySelector('#filter-local')?.value || '';
-        const searchTerm = document.querySelector('#search-input')?.value.toLowerCase() || '';
-
-        this.currentFilters = {
-            grupo: grupoFilter,
-            status: statusFilter,
-            local: localFilter,
-            search: searchTerm
-        };
-
-        this.filteredData = this.data.filter(item => {
-            // Filtro de grupo
-            if (grupoFilter && item.grupo_item_id != grupoFilter) {
-                return false;
-            }
-
-            // Filtro de status
-            if (statusFilter) {
-                const itemStatus = this.getItemStatus(item);
-                if (itemStatus !== statusFilter) {
-                    return false;
-                }
-            }
-
-            // Filtro de local
-            if (localFilter && item.estoque_local_id != localFilter) {
-                return false;
-            }
-
-            // Filtro de busca
-            if (searchTerm) {
-                const searchFields = [
-                    item.codigo,
-                    item.nome,
-                    item.descricao,
-                    item.grupo_nome
-                ].filter(field => field).join(' ').toLowerCase();
-
-                if (!searchFields.includes(searchTerm)) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-
-        this.currentPage = 1;
-        this.sortData();
-        this.updateTable();
-        this.updateStats();
-    }
-
-    clearFilters() {
-        document.querySelector('#filter-grupo').value = '';
-        document.querySelector('#filter-status').value = '';
-        document.querySelector('#filter-local').value = '';
-        document.querySelector('#search-input').value = '';
-        
-        this.currentFilters = {};
-        this.filteredData = [...this.data];
-        this.currentPage = 1;
-        this.updateTable();
-        this.updateStats();
-    }
-
-    toggleSort(field) {
-        if (this.currentSort.field === field) {
-            this.currentSort.direction = this.currentSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            this.currentSort.field = field;
-            this.currentSort.direction = 'asc';
-        }
-
-        this.sortData();
-        this.updateTable();
-        this.updateSortIcons();
-    }
-
-    sortData() {
-        this.filteredData.sort((a, b) => {
-            const field = this.currentSort.field;
-            const direction = this.currentSort.direction;
-            
-            let aValue = a[field];
-            let bValue = b[field];
-
-            // Tratamento especial para números
-            if (field === 'quantidade_atual' || field === 'preco_unitario' || field === 'valor_total') {
-                aValue = parseFloat(aValue) || 0;
-                bValue = parseFloat(bValue) || 0;
-            }
-
-            // Tratamento para valores nulos
-            if (aValue === null || aValue === undefined) aValue = '';
-            if (bValue === null || bValue === undefined) bValue = '';
-
-            if (direction === 'asc') {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
-        });
-    }
-
-    updateSortIcons() {
-        // Remover todas as classes de ordenação
-        document.querySelectorAll('th[data-sort] i').forEach(icon => {
-            icon.className = 'fas fa-sort';
-        });
-
-        // Adicionar classe para o campo atual
-        const currentHeader = document.querySelector(`th[data-sort="${this.currentSort.field}"] i`);
-        if (currentHeader) {
-            currentHeader.className = `fas fa-sort-${this.currentSort.direction === 'asc' ? 'up' : 'down'}`;
-        }
-    }
-
-    updateTable() {
-        const tbody = document.querySelector('#table-body');
-        if (!tbody) return;
-
-        // Calcular paginação
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        const pageData = this.filteredData.slice(startIndex, endIndex);
-
-        // Renderizar linhas
-        tbody.innerHTML = pageData.length === 0 ? `
-            <tr>
-                <td colspan="10" class="text-center py-8">
-                    <div class="empty-state">
-                        <i class="fas fa-box text-gray-400 text-4xl mb-4"></i>
-                        <p class="text-gray-600">Nenhum item encontrado no estoque</p>
-                    </div>
-                </td>
-            </tr>
-        ` : pageData.map(item => this.getTableRowHTML(item)).join('');
-
-        // Atualizar informações da tabela
-        this.updateTableInfo();
-        this.updatePagination();
-    }
-
-    getTableRowHTML(item) {
-        const status = this.getItemStatus(item);
-        const valorTotal = (item.quantidade_atual || 0) * (item.preco_unitario || 0);
-        
-        return `
-            <tr>
-                <td>
-                    <span class="font-mono font-semibold">${item.codigo}</span>
-                </td>
-                <td>
-                    <div class="item-info">
-                        <span class="font-medium">${item.nome}</span>
-                        ${item.descricao ? `<small class="text-gray-500 block">${item.descricao}</small>` : ''}
-                    </div>
-                </td>
-                <td>
-                    <span class="badge badge-outline">${item.grupo_nome || 'Sem grupo'}</span>
-                </td>
-                <td>
-                    <div class="stock-info">
-                        <span class="stock-quantity ${status === 'sem_estoque' ? 'text-red-600' : status === 'baixo_estoque' ? 'text-yellow-600' : 'text-green-600'}">
-                            ${Utils.formatNumber(item.quantidade_atual || 0)}
-                        </span>
-                        ${item.estoque_minimo ? `
-                            <small class="text-gray-500 block">Mín: ${Utils.formatNumber(item.estoque_minimo)}</small>
-                        ` : ''}
-                    </div>
-                </td>
-                <td>
-                    <span class="badge badge-light">${item.unidade_medida || 'UN'}</span>
-                </td>
-                <td>
-                    <span class="font-mono">R$ ${Utils.formatCurrency(item.preco_unitario || 0)}</span>
-                </td>
-                <td>
-                    <span class="font-mono font-semibold">R$ ${Utils.formatCurrency(valorTotal)}</span>
-                </td>
-                <td>
-                    <div class="location-info">
-                        <i class="fas fa-map-marker-alt text-blue-500"></i>
-                        <span>${item.local_nome || 'Não definido'}</span>
-                    </div>
-                </td>
-                <td>
-                    <span class="status-badge status-${status}">
-                        ${this.formatItemStatus(status)}
-                    </span>
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn-icon btn-icon-primary" onclick="inventoryPage.viewDetails(${item.id})" title="Ver detalhes">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        ${auth.hasPermission('almoxarife') ? `
-                            <button class="btn-icon btn-icon-secondary" onclick="inventoryPage.editItem(${item.id})" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon btn-icon-warning" onclick="inventoryPage.showMovementModal(${item.id})" title="Movimentar">
-                                <i class="fas fa-exchange-alt"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-
-    getItemStatus(item) {
-        const quantidade = item.quantidade_atual || 0;
-        const minimo = item.estoque_minimo || 0;
-
-        if (quantidade === 0) {
-            return 'sem_estoque';
-        } else if (minimo > 0 && quantidade <= minimo) {
-            return 'baixo_estoque';
-        } else {
-            return 'disponivel';
-        }
-    }
-
-    formatItemStatus(status) {
-        const statusMap = {
-            'disponivel': 'Disponível',
-            'baixo_estoque': 'Baixo Estoque',
-            'sem_estoque': 'Sem Estoque'
-        };
-        
-        return statusMap[status] || status;
-    }
-
-    updateTableInfo() {
-        const tableInfo = document.querySelector('#table-info');
-        if (tableInfo) {
-            const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
-            const endIndex = Math.min(startIndex + this.itemsPerPage - 1, this.filteredData.length);
-            
-            tableInfo.textContent = this.filteredData.length === 0 
-                ? 'Nenhum item encontrado'
-                : `Mostrando ${startIndex} a ${endIndex} de ${this.filteredData.length} itens`;
-        }
-    }
-
-    updatePagination() {
-        const paginationContainer = document.querySelector('#pagination');
-        if (!paginationContainer) return;
-
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-
-        let paginationHTML = '';
-
-        // Botão anterior
-        paginationHTML += `
-            <button class="pagination-btn ${this.currentPage === 1 ? 'disabled' : ''}" 
-                    onclick="inventoryPage.goToPage(${this.currentPage - 1})" 
-                    ${this.currentPage === 1 ? 'disabled' : ''}>
-                <i class="fas fa-chevron-left"></i>
-            </button>
-        `;
-
-        // Botões de página
-        const startPage = Math.max(1, this.currentPage - 2);
-        const endPage = Math.min(totalPages, this.currentPage + 2);
-
-        if (startPage > 1) {
-            paginationHTML += `<button class="pagination-btn" onclick="inventoryPage.goToPage(1)">1</button>`;
-            if (startPage > 2) {
-                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
-            }
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            paginationHTML += `
-                <button class="pagination-btn ${i === this.currentPage ? 'active' : ''}" 
-                        onclick="inventoryPage.goToPage(${i})">
-                    ${i}
-                </button>
-            `;
-        }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
-            }
-            paginationHTML += `<button class="pagination-btn" onclick="inventoryPage.goToPage(${totalPages})">${totalPages}</button>`;
-        }
-
-        // Botão próximo
-        paginationHTML += `
-            <button class="pagination-btn ${this.currentPage === totalPages ? 'disabled' : ''}" 
-                    onclick="inventoryPage.goToPage(${this.currentPage + 1})" 
-                    ${this.currentPage === totalPages ? 'disabled' : ''}>
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        `;
-
-        paginationContainer.innerHTML = paginationHTML;
-    }
-
-    updateStats() {
-        const stats = {
-            disponiveis: this.data.filter(item => this.getItemStatus(item) === 'disponivel').length,
-            baixoEstoque: this.data.filter(item => this.getItemStatus(item) === 'baixo_estoque').length,
-            semEstoque: this.data.filter(item => this.getItemStatus(item) === 'sem_estoque').length,
-            valorTotal: this.data.reduce((total, item) => {
-                return total + ((item.quantidade_atual || 0) * (item.preco_unitario || 0));
-            }, 0)
-        };
-
-        document.querySelector('#stat-disponiveis').textContent = stats.disponiveis;
-        document.querySelector('#stat-baixo-estoque').textContent = stats.baixoEstoque;
-        document.querySelector('#stat-sem-estoque').textContent = stats.semEstoque;
-        document.querySelector('#stat-valor-total').textContent = `R$ ${Utils.formatCurrency(stats.valorTotal)}`;
-    }
-
-    goToPage(page) {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        if (page >= 1 && page <= totalPages) {
-            this.currentPage = page;
-            this.updateTable();
-        }
     }
 
     async refresh() {
         try {
-            const refreshBtn = document.querySelector('#refresh-data');
-            if (refreshBtn) {
-                const icon = refreshBtn.querySelector('i');
-                icon.classList.add('fa-spin');
-                refreshBtn.disabled = true;
-            }
-
             await this.loadData();
-            await this.loadFiltersData();
-            this.applyFilters();
-            Toast.success('Dados atualizados');
-
+            if (this.gridApi) {
+                this.gridApi.setRowData(this.data);
+                this.updateStats();
+            }
+            Utils.showToast('Dados atualizados com sucesso', 'success');
         } catch (error) {
             console.error('Erro ao atualizar dados:', error);
-            Toast.error('Erro ao atualizar dados');
-        } finally {
-            const refreshBtn = document.querySelector('#refresh-data');
-            if (refreshBtn) {
-                const icon = refreshBtn.querySelector('i');
-                icon.classList.remove('fa-spin');
-                refreshBtn.disabled = false;
-            }
+            Utils.showToast('Erro ao atualizar dados', 'error');
         }
     }
 
     exportData() {
-        // TODO: Implementar exportação de dados
-        Toast.info('Exportação em desenvolvimento');
+        if (this.gridApi) {
+            this.gridApi.exportDataAsCsv({
+                fileName: `estoque_${new Date().toISOString().split('T')[0]}.csv`,
+                columnSeparator: ';'
+            });
+        }
     }
 
-    showCreateModal() {
-        // TODO: Implementar modal de criação de item
-        Toast.info('Modal de criação em desenvolvimento');
+    updateStats() {
+        let stats = {
+            total: this.data.length,
+            disponivel: 0,
+            baixo: 0,
+            zerado: 0
+        };
+
+        this.data.forEach(item => {
+            const quantidade = item.quantidade || 0;
+            const minimo = item.quantidade_minima || 0;
+            
+            if (quantidade === 0) {
+                stats.zerado++;
+            } else if (quantidade <= minimo) {
+                stats.baixo++;
+            } else {
+                stats.disponivel++;
+            }
+        });
+
+        // Se há filtros aplicados, usar dados filtrados
+        if (this.gridApi) {
+            const filteredData = [];
+            this.gridApi.forEachNodeAfterFilter(node => {
+                filteredData.push(node.data);
+            });
+            
+            if (filteredData.length !== this.data.length) {
+                stats = {
+                    total: filteredData.length,
+                    disponivel: 0,
+                    baixo: 0,
+                    zerado: 0
+                };
+
+                filteredData.forEach(item => {
+                    const quantidade = item.quantidade || 0;
+                    const minimo = item.quantidade_minima || 0;
+                    
+                    if (quantidade === 0) {
+                        stats.zerado++;
+                    } else if (quantidade <= minimo) {
+                        stats.baixo++;
+                    } else {
+                        stats.disponivel++;
+                    }
+                });
+            }
+        }
+
+        document.getElementById('stat-total').textContent = stats.total;
+        document.getElementById('stat-disponivel').textContent = stats.disponivel;
+        document.getElementById('stat-baixo').textContent = stats.baixo;
+        document.getElementById('stat-zerado').textContent = stats.zerado;
     }
 
-    viewDetails(id) {
-        // TODO: Implementar visualização de detalhes
-        Toast.info('Visualização de detalhes em desenvolvimento');
+    updateSelectionInfo() {
+        if (this.gridApi) {
+            const selectedRows = this.gridApi.getSelectedRows();
+            console.log('Itens selecionados:', selectedRows.length);
+        }
+    }
+
+    // Métodos de ação
+    viewItem(id) {
+        const item = this.data.find(item => item.id === id);
+        if (item) {
+            this.showViewModal(item);
+        }
     }
 
     editItem(id) {
-        // TODO: Implementar edição de item
-        Toast.info('Edição de item em desenvolvimento');
+        const item = this.data.find(item => item.id === id);
+        if (item) {
+            this.showEditModal(item);
+        }
+    }
+
+    async deleteItem(id) {
+        const item = this.data.find(item => item.id === id);
+        if (!item) return;
+
+        const confirmed = await Utils.showConfirm(
+            'Confirmar Exclusão',
+            `Tem certeza que deseja excluir a peça "${item.nome}"?`,
+            'Excluir',
+            'Cancelar'
+        );
+
+        if (confirmed) {
+            try {
+                await API.inventory.delete(id);
+                await this.refresh();
+                Utils.showToast('Peça excluída com sucesso', 'success');
+            } catch (error) {
+                console.error('Erro ao excluir peça:', error);
+                Utils.showToast('Erro ao excluir peça', 'error');
+            }
+        }
+    }
+
+    showCreateModal() {
+        const modal = new InventoryItemModal();
+        modal.show({
+            title: 'Nova Peça',
+            item: null,
+            itemGroups: this.itemGroups,
+            onSave: async (data) => {
+                try {
+                    await API.inventory.create(data);
+                    await this.refresh();
+                    Utils.showToast('Peça criada com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao criar peça:', error);
+                    Utils.showToast('Erro ao criar peça', 'error');
+                }
+            }
+        });
+    }
+
+    showEditModal(item) {
+        const modal = new InventoryItemModal();
+        modal.show({
+            title: 'Editar Peça',
+            item: item,
+            itemGroups: this.itemGroups,
+            onSave: async (data) => {
+                try {
+                    await API.inventory.update(item.id, data);
+                    await this.refresh();
+                    Utils.showToast('Peça atualizada com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao atualizar peça:', error);
+                    Utils.showToast('Erro ao atualizar peça', 'error');
+                }
+            }
+        });
+    }
+
+    showViewModal(item) {
+        const modal = new InventoryItemViewModal();
+        modal.show(item);
     }
 
     showMovementModal(id) {
-        // TODO: Implementar modal de movimentação
-        Toast.info('Modal de movimentação em desenvolvimento');
+        const item = this.data.find(item => item.id === id);
+        if (item) {
+            const modal = new InventoryMovementModal();
+            modal.show({
+                item: item,
+                onSave: async (data) => {
+                    try {
+                        await API.inventory.movement(id, data);
+                        await this.refresh();
+                        Utils.showToast('Movimentação registrada com sucesso', 'success');
+                        modal.hide();
+                    } catch (error) {
+                        console.error('Erro ao registrar movimentação:', error);
+                        Utils.showToast('Erro ao registrar movimentação', 'error');
+                    }
+                }
+            });
+        }
     }
 }
 
-// Instância global para uso nos event handlers
-const inventoryPage = new InventoryPage();
+// Modal de Item de Estoque
+class InventoryItemModal {
+    show(options) {
+        this.options = options;
+        this.render();
+    }
 
-// Exportar para uso global
-window.InventoryPage = InventoryPage;
+    render() {
+        const { title, item, itemGroups } = this.options;
+        const isEdit = !!item;
+
+        const modalHTML = `
+            <div class="modal-overlay" id="inventory-item-modal">
+                <div class="modal-container modal-lg">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="inventory-item-form" class="form-grid">
+                            <div class="form-group">
+                                <label for="nome">Nome *</label>
+                                <input type="text" id="nome" name="nome" class="form-input" required 
+                                       value="${item?.nome || ''}" placeholder="Nome da peça">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="codigo">Código</label>
+                                <input type="text" id="codigo" name="codigo" class="form-input" 
+                                       value="${item?.codigo || ''}" placeholder="Código da peça">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="grupo_item_id">Grupo *</label>
+                                <select id="grupo_item_id" name="grupo_item_id" class="form-select" required>
+                                    <option value="">Selecione o grupo</option>
+                                    ${itemGroups.map(group => 
+                                        `<option value="${group.id}" ${item?.grupo_item_id == group.id ? 'selected' : ''}>
+                                            ${group.nome}
+                                        </option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="unidade">Unidade *</label>
+                                <select id="unidade" name="unidade" class="form-select" required>
+                                    <option value="">Selecione a unidade</option>
+                                    <option value="UN" ${item?.unidade === 'UN' ? 'selected' : ''}>Unidade (UN)</option>
+                                    <option value="KG" ${item?.unidade === 'KG' ? 'selected' : ''}>Quilograma (KG)</option>
+                                    <option value="L" ${item?.unidade === 'L' ? 'selected' : ''}>Litro (L)</option>
+                                    <option value="M" ${item?.unidade === 'M' ? 'selected' : ''}>Metro (M)</option>
+                                    <option value="M²" ${item?.unidade === 'M²' ? 'selected' : ''}>Metro Quadrado (M²)</option>
+                                    <option value="M³" ${item?.unidade === 'M³' ? 'selected' : ''}>Metro Cúbico (M³)</option>
+                                    <option value="PC" ${item?.unidade === 'PC' ? 'selected' : ''}>Peça (PC)</option>
+                                    <option value="CX" ${item?.unidade === 'CX' ? 'selected' : ''}>Caixa (CX)</option>
+                                    <option value="GL" ${item?.unidade === 'GL' ? 'selected' : ''}>Galão (GL)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="quantidade">Quantidade Atual</label>
+                                <input type="number" id="quantidade" name="quantidade" class="form-input" 
+                                       value="${item?.quantidade || 0}" min="0" step="0.01">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="quantidade_minima">Quantidade Mínima</label>
+                                <input type="number" id="quantidade_minima" name="quantidade_minima" class="form-input" 
+                                       value="${item?.quantidade_minima || 0}" min="0" step="0.01">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="quantidade_maxima">Quantidade Máxima</label>
+                                <input type="number" id="quantidade_maxima" name="quantidade_maxima" class="form-input" 
+                                       value="${item?.quantidade_maxima || 0}" min="0" step="0.01">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="valor_unitario">Valor Unitário (R$)</label>
+                                <input type="number" id="valor_unitario" name="valor_unitario" class="form-input" 
+                                       value="${item?.valor_unitario || 0}" min="0" step="0.01">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="localizacao">Localização</label>
+                                <input type="text" id="localizacao" name="localizacao" class="form-input" 
+                                       value="${item?.localizacao || ''}" placeholder="Ex: Prateleira A1">
+                            </div>
+                            
+                            <div class="form-group form-group-full">
+                                <label for="descricao">Descrição</label>
+                                <textarea id="descricao" name="descricao" class="form-textarea" rows="3" 
+                                          placeholder="Descrição da peça">${item?.descricao || ''}</textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Cancelar
+                        </button>
+                        <button type="submit" form="inventory-item-form" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            ${isEdit ? 'Atualizar' : 'Criar'} Peça
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modals-container').innerHTML = modalHTML;
+        
+        // Configurar eventos
+        const form = document.getElementById('inventory-item-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSubmit(form);
+        });
+    }
+
+    handleSubmit(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Validações
+        if (!data.nome.trim()) {
+            Utils.showToast('Nome é obrigatório', 'error');
+            return;
+        }
+        
+        if (!data.grupo_item_id) {
+            Utils.showToast('Grupo é obrigatório', 'error');
+            return;
+        }
+        
+        if (!data.unidade) {
+            Utils.showToast('Unidade é obrigatória', 'error');
+            return;
+        }
+
+        this.options.onSave(data);
+    }
+
+    hide() {
+        const modal = document.getElementById('inventory-item-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+}
+
+// Modal de Visualização
+class InventoryItemViewModal {
+    show(item) {
+        this.render(item);
+    }
+
+    render(item) {
+        const modalHTML = `
+            <div class="modal-overlay" id="inventory-item-view-modal">
+                <div class="modal-container modal-lg">
+                    <div class="modal-header">
+                        <h3>Detalhes da Peça</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="item-details">
+                            <div class="detail-section">
+                                <h4>Informações Básicas</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Nome:</label>
+                                        <span>${item.nome || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Código:</label>
+                                        <span>${item.codigo || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Grupo:</label>
+                                        <span>${item.grupo_nome || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Unidade:</label>
+                                        <span>${item.unidade || '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Estoque</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Quantidade Atual:</label>
+                                        <span class="quantity-value">${item.quantidade || 0}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Quantidade Mínima:</label>
+                                        <span>${item.quantidade_minima || 0}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Quantidade Máxima:</label>
+                                        <span>${item.quantidade_maxima || 0}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Status:</label>
+                                        <span>${this.getStatusBadge(item)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Valores</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Valor Unitário:</label>
+                                        <span>${AGGridConfig.formatters.currency({value: item.valor_unitario})}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Valor Total:</label>
+                                        <span>${AGGridConfig.formatters.currency({value: (item.quantidade || 0) * (item.valor_unitario || 0)})}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Localização:</label>
+                                        <span>${item.localizacao || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Última Movimentação:</label>
+                                        <span>${item.ultima_movimentacao ? AGGridConfig.formatters.date({value: item.ultima_movimentacao}) : '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${item.descricao ? `
+                            <div class="detail-section">
+                                <h4>Descrição</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item detail-item-full">
+                                        <span>${item.descricao}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Fechar
+                        </button>
+                        ${auth.hasPermission('admin') || auth.hasPermission('edit') ? 
+                            `<button type="button" class="btn btn-primary" onclick="inventoryPage.editItem(${item.id}); this.closest('.modal-overlay').remove();">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modals-container').innerHTML = modalHTML;
+    }
+
+    getStatusBadge(item) {
+        const quantidade = item.quantidade || 0;
+        const minimo = item.quantidade_minima || 0;
+        
+        if (quantidade === 0) {
+            return '<span class="status-badge status-danger">Zerado</span>';
+        } else if (quantidade <= minimo) {
+            return '<span class="status-badge status-warning">Baixo</span>';
+        } else {
+            return '<span class="status-badge status-success">Disponível</span>';
+        }
+    }
+}
+
+// Modal de Movimentação
+class InventoryMovementModal {
+    show(options) {
+        this.options = options;
+        this.render();
+    }
+
+    render() {
+        const { item } = this.options;
+
+        const modalHTML = `
+            <div class="modal-overlay" id="inventory-movement-modal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Movimentar Estoque</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="item-info">
+                            <h4>${item.nome}</h4>
+                            <p>Quantidade atual: <strong>${item.quantidade || 0} ${item.unidade}</strong></p>
+                        </div>
+                        
+                        <form id="inventory-movement-form">
+                            <div class="form-group">
+                                <label for="tipo_movimentacao">Tipo de Movimentação *</label>
+                                <select id="tipo_movimentacao" name="tipo_movimentacao" class="form-select" required>
+                                    <option value="">Selecione o tipo</option>
+                                    <option value="entrada">Entrada</option>
+                                    <option value="saida">Saída</option>
+                                    <option value="ajuste">Ajuste</option>
+                                    <option value="transferencia">Transferência</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="quantidade">Quantidade *</label>
+                                <input type="number" id="quantidade" name="quantidade" class="form-input" 
+                                       step="0.01" min="0.01" required placeholder="Quantidade a movimentar">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="motivo">Motivo *</label>
+                                <select id="motivo" name="motivo" class="form-select" required>
+                                    <option value="">Selecione o motivo</option>
+                                    <option value="compra">Compra</option>
+                                    <option value="devolucao">Devolução</option>
+                                    <option value="uso_manutencao">Uso em Manutenção</option>
+                                    <option value="perda">Perda</option>
+                                    <option value="avaria">Avaria</option>
+                                    <option value="inventario">Inventário</option>
+                                    <option value="transferencia">Transferência</option>
+                                    <option value="outros">Outros</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="observacoes">Observações</label>
+                                <textarea id="observacoes" name="observacoes" class="form-textarea" rows="3" 
+                                          placeholder="Observações sobre a movimentação"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Cancelar
+                        </button>
+                        <button type="submit" form="inventory-movement-form" class="btn btn-primary">
+                            <i class="fas fa-exchange-alt"></i>
+                            Registrar Movimentação
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modals-container').innerHTML = modalHTML;
+        
+        // Configurar eventos
+        const form = document.getElementById('inventory-movement-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSubmit(form);
+        });
+    }
+
+    handleSubmit(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Validações
+        if (!data.tipo_movimentacao) {
+            Utils.showToast('Tipo de movimentação é obrigatório', 'error');
+            return;
+        }
+        
+        if (!data.quantidade || parseFloat(data.quantidade) <= 0) {
+            Utils.showToast('Quantidade deve ser maior que zero', 'error');
+            return;
+        }
+        
+        if (!data.motivo) {
+            Utils.showToast('Motivo é obrigatório', 'error');
+            return;
+        }
+
+        this.options.onSave(data);
+    }
+
+    hide() {
+        const modal = document.getElementById('inventory-movement-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+}
+
+// Instância global
+let inventoryPage = null;
+
+// Registrar página
+window.pages = window.pages || {};
+window.pages.estoque = {
+    render: async (container) => {
+        inventoryPage = new InventoryPage();
+        await inventoryPage.render(container);
+    }
+};
 

@@ -1,12 +1,12 @@
-// Página de Ordens de Serviço
+// Página de Ordens de Serviço com AG-Grid
 class WorkOrdersPage {
     constructor() {
+        this.gridApi = null;
+        this.gridColumnApi = null;
         this.data = [];
-        this.filteredData = [];
-        this.currentFilters = {};
-        this.currentSort = { field: 'data_abertura', direction: 'desc' };
-        this.currentPage = 1;
-        this.itemsPerPage = 10;
+        this.equipments = [];
+        this.mechanics = [];
+        this.maintenanceTypes = [];
     }
 
     async render(container) {
@@ -16,18 +16,16 @@ class WorkOrdersPage {
 
             // Carregar dados
             await this.loadData();
+            await this.loadRelatedData();
 
             // Renderizar conteúdo
             container.innerHTML = this.getHTML();
 
+            // Configurar AG-Grid
+            this.setupGrid(container);
+
             // Configurar eventos
             this.setupEvents(container);
-
-            // Disponibilizar instância global para handlers inline
-            window.workOrdersPage = this;
-
-            // Aplicar filtros iniciais
-            this.applyFilters();
 
         } catch (error) {
             console.error('Erro ao carregar ordens de serviço:', error);
@@ -38,16 +36,29 @@ class WorkOrdersPage {
     async loadData() {
         try {
             const response = await API.workOrders.getAll();
-            this.data = Array.isArray(response)
-                ? response
+            this.data = Array.isArray(response) 
+                ? response 
                 : (response.ordens_servico || response.data || []);
-
-            this.filteredData = [...this.data];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             this.data = [];
-            this.filteredData = [];
             throw error;
+        }
+    }
+
+    async loadRelatedData() {
+        try {
+            const [equipments, mechanics, maintenanceTypes] = await Promise.all([
+                API.equipments.getAll(),
+                API.mechanics.getAll(),
+                API.maintenanceTypes.getAll()
+            ]);
+
+            this.equipments = Array.isArray(equipments) ? equipments : (equipments.data || []);
+            this.mechanics = Array.isArray(mechanics) ? mechanics : (mechanics.data || []);
+            this.maintenanceTypes = Array.isArray(maintenanceTypes) ? maintenanceTypes : (maintenanceTypes.data || []);
+        } catch (error) {
+            console.error('Erro ao carregar dados relacionados:', error);
         }
     }
 
@@ -95,6 +106,10 @@ class WorkOrdersPage {
                             <i class="fas fa-sync-alt"></i>
                             Atualizar
                         </button>
+                        <button class="btn btn-outline" id="export-data">
+                            <i class="fas fa-download"></i>
+                            Exportar
+                        </button>
                         <button class="btn btn-primary" id="create-work-order" ${!auth.hasPermission('pcm') ? 'style="display: none;"' : ''}>
                             <i class="fas fa-plus"></i>
                             Nova OS
@@ -102,152 +117,310 @@ class WorkOrdersPage {
                     </div>
                 </div>
 
-                <!-- Filtros -->
-                <div class="filters-section">
-                    <div class="filters-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">Status</label>
-                            <select id="filter-status" class="filter-select">
-                                <option value="">Todos</option>
-                                <option value="aberta">Aberta</option>
-                                <option value="em_execucao">Em Execução</option>
-                                <option value="aguardando_pecas">Aguardando Peças</option>
-                                <option value="concluida">Concluída</option>
-                                <option value="cancelada">Cancelada</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label class="filter-label">Prioridade</label>
-                            <select id="filter-prioridade" class="filter-select">
-                                <option value="">Todas</option>
-                                <option value="baixa">Baixa</option>
-                                <option value="media">Média</option>
-                                <option value="alta">Alta</option>
-                                <option value="critica">Crítica</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label class="filter-label">Buscar</label>
-                            <div class="search-input">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="search-input" placeholder="Número OS, equipamento, descrição...">
-                            </div>
-                        </div>
-                        <div class="filter-actions">
-                            <button class="btn btn-outline btn-sm" id="clear-filters">
-                                <i class="fas fa-times"></i>
-                                Limpar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Estatísticas rápidas -->
                 <div class="quick-stats">
-                    <div class="stat-card stat-card-warning">
-                        <div class="stat-icon">
-                            <i class="fas fa-folder-open"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="stat-abertas">0</div>
-                            <div class="stat-label">Abertas</div>
-                        </div>
-                    </div>
                     <div class="stat-card stat-card-info">
                         <div class="stat-icon">
-                            <i class="fas fa-cog"></i>
+                            <i class="fas fa-clock"></i>
                         </div>
                         <div class="stat-content">
-                            <div class="stat-value" id="stat-execucao">0</div>
-                            <div class="stat-label">Em Execução</div>
+                            <div class="stat-value" id="stat-pendentes">0</div>
+                            <div class="stat-label">Pendentes</div>
                         </div>
                     </div>
-                    <div class="stat-card stat-card-danger">
+                    <div class="stat-card stat-card-warning">
                         <div class="stat-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
+                            <i class="fas fa-play"></i>
                         </div>
                         <div class="stat-content">
-                            <div class="stat-value" id="stat-criticas">0</div>
-                            <div class="stat-label">Críticas</div>
+                            <div class="stat-value" id="stat-andamento">0</div>
+                            <div class="stat-label">Em Andamento</div>
                         </div>
                     </div>
                     <div class="stat-card stat-card-success">
                         <div class="stat-icon">
-                            <i class="fas fa-check-circle"></i>
+                            <i class="fas fa-check"></i>
                         </div>
                         <div class="stat-content">
                             <div class="stat-value" id="stat-concluidas">0</div>
-                            <div class="stat-label">Concluídas (Mês)</div>
+                            <div class="stat-label">Concluídas</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-danger">
+                        <div class="stat-icon">
+                            <i class="fas fa-times"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-canceladas">0</div>
+                            <div class="stat-label">Canceladas</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tabela -->
-                <div class="data-table-container">
-                    <div class="data-table-header">
-                        <div class="data-table-info">
-                            <span id="table-info">Mostrando 0 de 0 registros</span>
-                        </div>
-                        <div class="data-table-controls">
-                            <select id="items-per-page" class="form-select form-select-sm">
-                                <option value="10">10 por página</option>
-                                <option value="25">25 por página</option>
-                                <option value="50">50 por página</option>
-                                <option value="100">100 por página</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th data-sort="numero_os">
-                                        Número OS
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="equipamento_nome">
-                                        Equipamento
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="tipo_manutencao">
-                                        Tipo
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="prioridade">
-                                        Prioridade
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="status">
-                                        Status
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="data_abertura">
-                                        Data Abertura
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th data-sort="mecanico_nome">
-                                        Mecânico
-                                        <i class="fas fa-sort"></i>
-                                    </th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body">
-                                <!-- Dados serão inseridos aqui -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Paginação -->
-                    <div class="pagination-container">
-                        <div class="pagination" id="pagination">
-                            <!-- Botões de paginação serão inseridos aqui -->
-                        </div>
-                    </div>
+                <!-- Grid Container -->
+                <div class="grid-container">
+                    <div id="work-orders-grid" class="ag-theme-alpine" style="height: 600px; width: 100%;"></div>
                 </div>
             </div>
         `;
+    }
+
+    setupGrid(container) {
+        const gridContainer = container.querySelector('#work-orders-grid');
+        
+        const columnDefs = [
+            {
+                headerName: 'OS',
+                field: 'numero',
+                minWidth: 100,
+                maxWidth: 120,
+                cellRenderer: (params) => {
+                    const priority = params.data.prioridade || 'normal';
+                    const priorityClass = {
+                        'baixa': 'priority-low',
+                        'normal': 'priority-normal',
+                        'alta': 'priority-high',
+                        'critica': 'priority-critical'
+                    }[priority] || 'priority-normal';
+                    
+                    return `
+                        <div class="os-cell">
+                            <div class="os-number">${params.value || ''}</div>
+                            <div class="os-priority ${priorityClass}"></div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                headerName: 'Equipamento',
+                field: 'equipamento_nome',
+                minWidth: 200,
+                cellRenderer: (params) => {
+                    return `
+                        <div class="equipment-cell">
+                            <div class="equipment-name">${params.value || ''}</div>
+                            <div class="equipment-code">${params.data.equipamento_codigo || ''}</div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                headerName: 'Tipo',
+                field: 'tipo_manutencao_nome',
+                minWidth: 120,
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: this.maintenanceTypes.map(type => type.nome)
+                }
+            },
+            {
+                headerName: 'Status',
+                field: 'status',
+                minWidth: 120,
+                cellRenderer: (params) => {
+                    const statusMap = {
+                        'pendente': '<span class="status-badge status-info">Pendente</span>',
+                        'andamento': '<span class="status-badge status-warning">Em Andamento</span>',
+                        'concluida': '<span class="status-badge status-success">Concluída</span>',
+                        'cancelada': '<span class="status-badge status-danger">Cancelada</span>',
+                        'pausada': '<span class="status-badge status-secondary">Pausada</span>'
+                    };
+                    return statusMap[params.value] || params.value;
+                },
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: ['pendente', 'andamento', 'concluida', 'cancelada', 'pausada'],
+                    valueFormatter: (params) => {
+                        const statusMap = {
+                            'pendente': 'Pendente',
+                            'andamento': 'Em Andamento',
+                            'concluida': 'Concluída',
+                            'cancelada': 'Cancelada',
+                            'pausada': 'Pausada'
+                        };
+                        return statusMap[params.value] || params.value;
+                    }
+                }
+            },
+            {
+                headerName: 'Prioridade',
+                field: 'prioridade',
+                minWidth: 100,
+                cellRenderer: (params) => {
+                    const priorityMap = {
+                        'baixa': '<span class="priority-badge priority-low">Baixa</span>',
+                        'normal': '<span class="priority-badge priority-normal">Normal</span>',
+                        'alta': '<span class="priority-badge priority-high">Alta</span>',
+                        'critica': '<span class="priority-badge priority-critical">Crítica</span>'
+                    };
+                    return priorityMap[params.value] || params.value;
+                },
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: ['baixa', 'normal', 'alta', 'critica'],
+                    valueFormatter: (params) => {
+                        const priorityMap = {
+                            'baixa': 'Baixa',
+                            'normal': 'Normal',
+                            'alta': 'Alta',
+                            'critica': 'Crítica'
+                        };
+                        return priorityMap[params.value] || params.value;
+                    }
+                }
+            },
+            {
+                headerName: 'Mecânico',
+                field: 'mecanico_nome',
+                minWidth: 150,
+                filter: 'agSetColumnFilter',
+                filterParams: {
+                    values: this.mechanics.map(mechanic => mechanic.nome)
+                }
+            },
+            {
+                headerName: 'Data Abertura',
+                field: 'data_abertura',
+                minWidth: 130,
+                cellRenderer: AGGridConfig.formatters.date,
+                filter: 'agDateColumnFilter'
+            },
+            {
+                headerName: 'Data Prevista',
+                field: 'data_prevista',
+                minWidth: 130,
+                cellRenderer: AGGridConfig.formatters.date,
+                filter: 'agDateColumnFilter'
+            },
+            {
+                headerName: 'Data Conclusão',
+                field: 'data_conclusao',
+                minWidth: 130,
+                cellRenderer: AGGridConfig.formatters.date,
+                filter: 'agDateColumnFilter'
+            },
+            {
+                headerName: 'Descrição',
+                field: 'descricao',
+                minWidth: 200,
+                cellRenderer: (params) => {
+                    const text = params.value || '';
+                    const truncated = text.length > 50 ? text.substring(0, 50) + '...' : text;
+                    return `<span title="${text}">${truncated}</span>`;
+                }
+            },
+            {
+                headerName: 'Ações',
+                field: 'actions',
+                minWidth: 150,
+                maxWidth: 150,
+                sortable: false,
+                filter: false,
+                resizable: false,
+                pinned: 'right',
+                cellRenderer: (params) => {
+                    const canEdit = auth.hasPermission('pcm') || auth.hasPermission('edit');
+                    const canDelete = auth.hasPermission('admin');
+                    const canExecute = auth.hasPermission('mecanico') || auth.hasPermission('pcm');
+                    
+                    let html = '<div class="ag-actions">';
+                    
+                    html += `<button class="btn-action btn-view" onclick="workOrdersPage.viewWorkOrder(${params.data.id})" title="Visualizar">
+                        <i class="fas fa-eye"></i>
+                    </button>`;
+                    
+                    if (canEdit && params.data.status !== 'concluida' && params.data.status !== 'cancelada') {
+                        html += `<button class="btn-action btn-edit" onclick="workOrdersPage.editWorkOrder(${params.data.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>`;
+                    }
+                    
+                    if (canExecute && params.data.status === 'pendente') {
+                        html += `<button class="btn-action btn-play" onclick="workOrdersPage.startWorkOrder(${params.data.id})" title="Iniciar">
+                            <i class="fas fa-play"></i>
+                        </button>`;
+                    }
+                    
+                    if (canExecute && params.data.status === 'andamento') {
+                        html += `<button class="btn-action btn-check" onclick="workOrdersPage.completeWorkOrder(${params.data.id})" title="Concluir">
+                            <i class="fas fa-check"></i>
+                        </button>`;
+                    }
+                    
+                    if (canDelete && params.data.status === 'pendente') {
+                        html += `<button class="btn-action btn-delete" onclick="workOrdersPage.deleteWorkOrder(${params.data.id})" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>`;
+                    }
+                    
+                    html += '</div>';
+                    return html;
+                }
+            }
+        ];
+
+        const gridOptions = {
+            ...AGGridConfig.getDefaultOptions(),
+            columnDefs: columnDefs,
+            rowData: this.data,
+            onGridReady: (params) => {
+                this.gridApi = params.api;
+                this.gridColumnApi = params.columnApi;
+                this.updateStats();
+                
+                // Auto-size columns
+                params.api.sizeColumnsToFit();
+            },
+            onSelectionChanged: () => {
+                this.updateSelectionInfo();
+            },
+            onFilterChanged: () => {
+                this.updateStats();
+            },
+            // Configurações específicas
+            rowSelection: 'multiple',
+            suppressRowClickSelection: true,
+            enableRangeSelection: true,
+            enableCharts: true,
+            sideBar: {
+                toolPanels: [
+                    {
+                        id: 'columns',
+                        labelDefault: 'Colunas',
+                        labelKey: 'columns',
+                        iconKey: 'columns',
+                        toolPanel: 'agColumnsToolPanel'
+                    },
+                    {
+                        id: 'filters',
+                        labelDefault: 'Filtros',
+                        labelKey: 'filters',
+                        iconKey: 'filter',
+                        toolPanel: 'agFiltersToolPanel'
+                    }
+                ],
+                defaultToolPanel: 'columns'
+            },
+            // Ordenação padrão por data de abertura (mais recentes primeiro)
+            sortingOrder: ['desc', 'asc'],
+            defaultColDef: {
+                ...AGGridConfig.getDefaultOptions().defaultColDef,
+                sortable: true,
+                filter: true,
+                resizable: true
+            }
+        };
+
+        this.grid = AGGridConfig.createGrid(gridContainer, gridOptions);
+        
+        // Aplicar ordenação inicial
+        setTimeout(() => {
+            if (this.gridApi) {
+                this.gridApi.applyColumnState({
+                    state: [{ colId: 'data_abertura', sort: 'desc' }]
+                });
+            }
+        }, 100);
     }
 
     setupEvents(container) {
@@ -257,678 +430,563 @@ class WorkOrdersPage {
             refreshBtn.addEventListener('click', () => this.refresh());
         }
 
+        // Botão de exportar
+        const exportBtn = container.querySelector('#export-data');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportData());
+        }
+
         // Botão de nova OS
         const createBtn = container.querySelector('#create-work-order');
         if (createBtn) {
             createBtn.addEventListener('click', () => this.showCreateModal());
         }
-
-        // Filtros
-        const statusFilter = container.querySelector('#filter-status');
-        const prioridadeFilter = container.querySelector('#filter-prioridade');
-        const searchInput = container.querySelector('#search-input');
-        const clearFiltersBtn = container.querySelector('#clear-filters');
-
-        if (statusFilter) {
-            statusFilter.addEventListener('change', () => this.applyFilters());
-        }
-        if (prioridadeFilter) {
-            prioridadeFilter.addEventListener('change', () => this.applyFilters());
-        }
-        if (searchInput) {
-            searchInput.addEventListener('input', Utils.debounce(() => this.applyFilters(), 300));
-        }
-        if (clearFiltersBtn) {
-            clearFiltersBtn.addEventListener('click', () => this.clearFilters());
-        }
-
-        // Ordenação
-        const sortHeaders = container.querySelectorAll('th[data-sort]');
-        sortHeaders.forEach(header => {
-            header.addEventListener('click', () => {
-                const field = header.dataset.sort;
-                this.toggleSort(field);
-            });
-        });
-
-        // Items per page
-        const itemsPerPageSelect = container.querySelector('#items-per-page');
-        if (itemsPerPageSelect) {
-            itemsPerPageSelect.addEventListener('change', (e) => {
-                this.itemsPerPage = parseInt(e.target.value);
-                this.currentPage = 1;
-                this.updateTable();
-            });
-        }
-    }
-
-    applyFilters() {
-        const statusFilter = document.querySelector('#filter-status')?.value || '';
-        const prioridadeFilter = document.querySelector('#filter-prioridade')?.value || '';
-        const searchTerm = document.querySelector('#search-input')?.value.toLowerCase() || '';
-
-        this.currentFilters = {
-            status: statusFilter,
-            prioridade: prioridadeFilter,
-            search: searchTerm
-        };
-
-        this.filteredData = this.data.filter(item => {
-            // Filtro de status
-            if (statusFilter && item.status !== statusFilter) {
-                return false;
-            }
-
-            // Filtro de prioridade
-            if (prioridadeFilter && item.prioridade !== prioridadeFilter) {
-                return false;
-            }
-
-            // Filtro de busca
-            if (searchTerm) {
-                const searchFields = [
-                    item.numero_os,
-                    item.equipamento_nome,
-                    item.descricao_problema,
-                    item.mecanico_nome
-                ].filter(field => field).join(' ').toLowerCase();
-
-                if (!searchFields.includes(searchTerm)) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-
-        this.currentPage = 1;
-        this.updateTable();
-        this.updateStats();
-    }
-
-    clearFilters() {
-        document.querySelector('#filter-status').value = '';
-        document.querySelector('#filter-prioridade').value = '';
-        document.querySelector('#search-input').value = '';
-        
-        this.currentFilters = {};
-        this.filteredData = [...this.data];
-        this.currentPage = 1;
-        this.updateTable();
-        this.updateStats();
-    }
-
-    toggleSort(field) {
-        if (this.currentSort.field === field) {
-            this.currentSort.direction = this.currentSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            this.currentSort.field = field;
-            this.currentSort.direction = 'asc';
-        }
-
-        this.sortData();
-        this.updateTable();
-        this.updateSortIcons();
-    }
-
-    sortData() {
-        this.filteredData.sort((a, b) => {
-            const field = this.currentSort.field;
-            const direction = this.currentSort.direction;
-            
-            let aValue = a[field];
-            let bValue = b[field];
-
-            // Tratamento especial para datas
-            if (field.includes('data_')) {
-                aValue = new Date(aValue || 0);
-                bValue = new Date(bValue || 0);
-            }
-
-            // Tratamento para valores nulos
-            if (aValue === null || aValue === undefined) aValue = '';
-            if (bValue === null || bValue === undefined) bValue = '';
-
-            if (direction === 'asc') {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
-        });
-    }
-
-    updateSortIcons() {
-        // Remover todas as classes de ordenação
-        document.querySelectorAll('th[data-sort] i').forEach(icon => {
-            icon.className = 'fas fa-sort';
-        });
-
-        // Adicionar classe para o campo atual
-        const currentHeader = document.querySelector(`th[data-sort="${this.currentSort.field}"] i`);
-        if (currentHeader) {
-            currentHeader.className = `fas fa-sort-${this.currentSort.direction === 'asc' ? 'up' : 'down'}`;
-        }
-    }
-
-    updateTable() {
-        const tbody = document.querySelector('#table-body');
-        if (!tbody) return;
-
-        // Calcular paginação
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        const pageData = this.filteredData.slice(startIndex, endIndex);
-
-        // Renderizar linhas
-        tbody.innerHTML = pageData.length === 0 ? `
-            <tr>
-                <td colspan="8" class="text-center py-8">
-                    <div class="empty-state">
-                        <i class="fas fa-clipboard-list text-gray-400 text-4xl mb-4"></i>
-                        <p class="text-gray-600">Nenhuma ordem de serviço encontrada</p>
-                    </div>
-                </td>
-            </tr>
-        ` : pageData.map(item => this.getTableRowHTML(item)).join('');
-
-        // Atualizar informações da tabela
-        this.updateTableInfo();
-        this.updatePagination();
-    }
-
-    getTableRowHTML(item) {
-        return `
-            <tr>
-                <td>
-                    <span class="font-mono font-semibold">${item.numero_os}</span>
-                </td>
-                <td>
-                    <div class="equipment-info">
-                        <span class="font-medium">${item.equipamento_nome || 'N/A'}</span>
-                        <small class="text-gray-500 block">${item.equipamento_modelo || ''}</small>
-                    </div>
-                </td>
-                <td>
-                    <span class="badge badge-outline">${item.tipo_manutencao || item.tipo || 'N/A'}</span>
-                </td>
-                <td>
-                    <span class="priority-badge priority-${item.prioridade}">
-                        ${Utils.formatPriority(item.prioridade)}
-                    </span>
-                </td>
-                <td>
-                    <span class="status-badge status-${item.status}">
-                        ${Utils.formatStatus(item.status)}
-                    </span>
-                </td>
-                <td>
-                    <div class="date-info">
-                        <span>${Utils.formatDate(item.data_abertura)}</span>
-                        <small class="text-gray-500 block">${Utils.formatTime(item.data_abertura)}</small>
-                    </div>
-                </td>
-                <td>
-                    ${item.mecanico_nome ? `
-                        <div class="mechanic-info">
-                            <i class="fas fa-user-hard-hat text-blue-500"></i>
-                            <span>${item.mecanico_nome}</span>
-                        </div>
-                    ` : '<span class="text-gray-400">Não atribuído</span>'}
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn-icon btn-icon-primary" onclick="workOrdersPage.viewDetails(${item.id})" title="Ver detalhes">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        ${auth.hasPermission('pcm') ? `
-                            <button class="btn-icon btn-icon-secondary" onclick="workOrdersPage.editWorkOrder(${item.id})" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        ` : ''}
-                        ${item.status === 'concluida' ? `
-                            <button class="btn-icon btn-icon-success" onclick="workOrdersPage.printWorkOrder(${item.id})" title="Imprimir">
-                                <i class="fas fa-print"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-
-    updateTableInfo() {
-        const tableInfo = document.querySelector('#table-info');
-        if (tableInfo) {
-            const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
-            const endIndex = Math.min(startIndex + this.itemsPerPage - 1, this.filteredData.length);
-            
-            tableInfo.textContent = this.filteredData.length === 0 
-                ? 'Nenhum registro encontrado'
-                : `Mostrando ${startIndex} a ${endIndex} de ${this.filteredData.length} registros`;
-        }
-    }
-
-    updatePagination() {
-        const paginationContainer = document.querySelector('#pagination');
-        if (!paginationContainer) return;
-
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-
-        let paginationHTML = '';
-
-        // Botão anterior
-        paginationHTML += `
-            <button class="pagination-btn ${this.currentPage === 1 ? 'disabled' : ''}" 
-                    onclick="workOrdersPage.goToPage(${this.currentPage - 1})" 
-                    ${this.currentPage === 1 ? 'disabled' : ''}>
-                <i class="fas fa-chevron-left"></i>
-            </button>
-        `;
-
-        // Botões de página
-        const startPage = Math.max(1, this.currentPage - 2);
-        const endPage = Math.min(totalPages, this.currentPage + 2);
-
-        if (startPage > 1) {
-            paginationHTML += `<button class="pagination-btn" onclick="workOrdersPage.goToPage(1)">1</button>`;
-            if (startPage > 2) {
-                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
-            }
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            paginationHTML += `
-                <button class="pagination-btn ${i === this.currentPage ? 'active' : ''}" 
-                        onclick="workOrdersPage.goToPage(${i})">
-                    ${i}
-                </button>
-            `;
-        }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
-            }
-            paginationHTML += `<button class="pagination-btn" onclick="workOrdersPage.goToPage(${totalPages})">${totalPages}</button>`;
-        }
-
-        // Botão próximo
-        paginationHTML += `
-            <button class="pagination-btn ${this.currentPage === totalPages ? 'disabled' : ''}" 
-                    onclick="workOrdersPage.goToPage(${this.currentPage + 1})" 
-                    ${this.currentPage === totalPages ? 'disabled' : ''}>
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        `;
-
-        paginationContainer.innerHTML = paginationHTML;
-    }
-
-    updateStats() {
-        const stats = {
-            abertas: this.data.filter(item => item.status === 'aberta').length,
-            execucao: this.data.filter(item => item.status === 'em_execucao').length,
-            criticas: this.data.filter(item => item.prioridade === 'critica' && item.status !== 'concluida').length,
-            concluidas: this.data.filter(item => {
-                if (item.status !== 'concluida') return false;
-                const dataEncerramento = new Date(item.data_encerramento);
-                const agora = new Date();
-                const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
-                return dataEncerramento >= inicioMes;
-            }).length
-        };
-
-        document.querySelector('#stat-abertas').textContent = stats.abertas;
-        document.querySelector('#stat-execucao').textContent = stats.execucao;
-        document.querySelector('#stat-criticas').textContent = stats.criticas;
-        document.querySelector('#stat-concluidas').textContent = stats.concluidas;
-    }
-
-    goToPage(page) {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        if (page >= 1 && page <= totalPages) {
-            this.currentPage = page;
-            this.updateTable();
-        }
     }
 
     async refresh() {
         try {
-            const refreshBtn = document.querySelector('#refresh-data');
-            if (refreshBtn) {
-                const icon = refreshBtn.querySelector('i');
-                icon.classList.add('fa-spin');
-                refreshBtn.disabled = true;
-            }
-
             await this.loadData();
-            this.applyFilters();
-            Toast.success('Dados atualizados');
-
+            if (this.gridApi) {
+                this.gridApi.setRowData(this.data);
+                this.updateStats();
+            }
+            Utils.showToast('Dados atualizados com sucesso', 'success');
         } catch (error) {
             console.error('Erro ao atualizar dados:', error);
-            Toast.error('Erro ao atualizar dados');
-        } finally {
-            const refreshBtn = document.querySelector('#refresh-data');
-            if (refreshBtn) {
-                const icon = refreshBtn.querySelector('i');
-                icon.classList.remove('fa-spin');
-                refreshBtn.disabled = false;
-            }
+            Utils.showToast('Erro ao atualizar dados', 'error');
         }
     }
 
-    async showCreateModal() {
-    try {
-        // Carregar equipamentos, tipos de manutenção e mecânicos
-        const equipResponse = await API.equipments.getAll();
-        const maintenanceTypes = await API.maintenanceTypes.getAll();
-        const mechanicsResponse = await API.mechanics.getAll();
-
-        const equipments = equipResponse.equipamentos || equipResponse.data || [];
-        const types = maintenanceTypes.tipos_manutencao || maintenanceTypes.data || [];
-        const mechanics = mechanicsResponse.mecanicos || mechanicsResponse.data || [];
-
-        // Criar overlay e modal
-        const overlay = document.createElement('div');
-        overlay.className = 'custom-modal-overlay';
-        const modal = document.createElement('div');
-        modal.className = 'custom-modal';
-        modal.innerHTML = `
-            <h2>Criar Ordem de Serviço</h2>
-            <form id="newWorkOrderForm">
-
-                <label for="nwo-equipamento_id">Equipamento*</label>
-                <select id="nwo-equipamento_id" name="equipamento_id" required>
-                    <option value="">Selecione...</option>
-                    ${equipments.map(e => `<option value="${e.id}">${e.nome || e.modelo || e.codigo_interno}</option>`).join('')}
-                </select>
-
-                <label for="nwo-tipo">Tipo de Manutenção*</label>
-                <select id="nwo-tipo" name="tipo" required>
-                    <option value="">Selecione...</option>
-                    ${types.map(t => `<option value="${t.id}">${t.nome}</option>`).join('')}
-                </select>
-
-                <label for="nwo-prioridade">Prioridade*</label>
-                <select id="nwo-prioridade" name="prioridade" required>
-                    <option value="">Selecione...</option>
-                    <option value="baixa">Baixa</option>
-                    <option value="media">Média</option>
-                    <option value="alta">Alta</option>
-                    <option value="critica">Crítica</option>
-                </select>
-
-                <label for="nwo-mecanico_id">Mecânico (opcional)</label>
-                <select id="nwo-mecanico_id" name="mecanico_id">
-                    <option value="">Nenhum</option>
-                    ${mechanics.map(m => `<option value="${m.id}">${m.nome_completo || m.nome}</option>`).join('')}
-                </select>
-
-                <label for="nwo-data_prevista">Data Prevista</label>
-                <input type="datetime-local" id="nwo-data_prevista" name="data_prevista" />
-
-                <label for="nwo-descricao_problema">Descrição do Problema*</label>
-                <textarea id="nwo-descricao_problema" name="descricao_problema" rows="3" required></textarea>
-
-                <label for="nwo-observacoes">Observações</label>
-                <textarea id="nwo-observacoes" name="observacoes" rows="2"></textarea>
-
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                    <button type="button" id="cancelNewWorkOrder" class="btn btn-secondary">Cancelar</button>
-                </div>
-            </form>
-        `;
-        overlay.appendChild(modal);
-        (document.getElementById('modals-container') || document.body).appendChild(overlay);
-
-        // Estilos (ou mova para CSS)
-        if (!document.getElementById('workorder-modal-style')) {
-            const style = document.createElement('style');
-            style.id = 'workorder-modal-style';
-            style.textContent = `
-                .custom-modal-overlay {
-                    position: fixed;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    background: rgba(0,0,0,0.5);
-                    z-index: 10000;
-                }
-                .custom-modal {
-                    background: #fff;
-                    padding: 20px;
-                    border-radius: 4px;
-                    width: 450px;
-                    max-height: 80vh;
-                    overflow-y: auto;
-                }
-                .custom-modal form {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-
-        // Cancelar: remover modal
-        modal.querySelector('#cancelNewWorkOrder').addEventListener('click', () => {
-            overlay.remove();
-        });
-
-        // Submissão: enviar à API
-        modal.querySelector('#newWorkOrderForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const payload = {
-                equipamento_id: parseInt(formData.get('equipamento_id')),
-                tipo: formData.get('tipo'),
-                prioridade: formData.get('prioridade'),
-                mecanico_id: formData.get('mecanico_id') ? parseInt(formData.get('mecanico_id')) : null,
-                data_prevista: formData.get('data_prevista') ? new Date(formData.get('data_prevista')).toISOString().slice(0,19).replace('T',' ') : null,
-                descricao_problema: formData.get('descricao_problema'),
-                observacoes: formData.get('observacoes') || null
-            };
-            try {
-                await API.workOrders.create(payload);
-                Toast.success('Ordem de serviço criada com sucesso!');
-                overlay.remove();
-                await this.refresh(); // Atualiza a listagem
-            } catch (error) {
-                Toast.error(error.message || 'Erro ao criar OS.');
-                console.error(error);
-            }
-        });
-    } catch (err) {
-        console.error('Erro ao preparar modal de criação:', err);
-        Toast.error(err.message || 'Erro ao preparar modal.');
-    }
-}
-    async viewDetails(id) {
-        try {
-            const data = await API.workOrders.get(id);
-            const os = data.ordem_servico || data;
-
-            const overlay = document.createElement('div');
-            overlay.className = 'custom-modal-overlay';
-            const modal = document.createElement('div');
-            modal.className = 'custom-modal';
-            modal.innerHTML = `
-                <h2>Detalhes da OS</h2>
-                <div class="workorder-details">
-                    <p><strong>Número:</strong> ${os.numero_os}</p>
-                    <p><strong>Status:</strong> ${Utils.formatStatus(os.status)}</p>
-                    <p><strong>Prioridade:</strong> ${Utils.formatPriority(os.prioridade)}</p>
-                    <p><strong>Equipamento:</strong> ${os.equipamento?.nome || os.equipamento_nome || '-'}</p>
-                    <p><strong>Mecânico:</strong> ${os.mecanico?.nome_completo || os.mecanico_nome || 'Não atribuído'}</p>
-                    <p><strong>Data de Abertura:</strong> ${Utils.formatDate(os.data_abertura)} ${Utils.formatTime(os.data_abertura)}</p>
-                    ${os.data_prevista ? `<p><strong>Data Prevista:</strong> ${Utils.formatDate(os.data_prevista)} ${Utils.formatTime(os.data_prevista)}</p>` : ''}
-                    <p><strong>Descrição:</strong> ${os.descricao_problema || '-'}</p>
-                    ${os.descricao_solucao ? `<p><strong>Solução:</strong> ${os.descricao_solucao}</p>` : ''}
-                </div>
-                <div class="form-actions"><button id="closeWorkOrderDetails" class="btn btn-secondary">Fechar</button></div>
-            `;
-
-            overlay.appendChild(modal);
-            (document.getElementById('modals-container') || document.body).appendChild(overlay);
-
-            modal.querySelector('#closeWorkOrderDetails').addEventListener('click', () => overlay.remove());
-
-            if (!document.getElementById('workorder-modal-style')) {
-                const style = document.createElement('style');
-                style.id = 'workorder-modal-style';
-                style.textContent = `
-                    .custom-modal-overlay {
-                        position: fixed;
-                        top: 0; left: 0; right: 0; bottom: 0;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        background: rgba(0,0,0,0.5);
-                        z-index: 10000;
-                    }
-                    .custom-modal {
-                        background: #fff;
-                        padding: 20px;
-                        border-radius: 4px;
-                        width: 450px;
-                        max-height: 80vh;
-                        overflow-y: auto;
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-        } catch (error) {
-            console.error('Erro ao carregar detalhes da OS:', error);
-            Toast.error(error.message || 'Erro ao carregar detalhes');
-        }
-    }
-
-    async printWorkOrder(id) {
-        try {
-            const blob = await API.workOrders.print(id);
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `OS_${id}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Erro ao gerar PDF da OS:', error);
-            Toast.error(error.message || 'Erro ao gerar PDF');
-        }
-    }
-
-
-    async editWorkOrder(id) {
-        try {
-            // Carregar dados necessários em paralelo
-            const [osResponse, equipResponse, maintenanceTypes, mechanicsResponse] = await Promise.all([
-                API.workOrders.get(id),
-                API.equipments.getAll(),
-                API.maintenanceTypes.getAll(),
-                API.mechanics.getAll()
-            ]);
-
-            const os = osResponse.data || osResponse;
-
-            const equipments = equipResponse.equipamentos || equipResponse.data || [];
-            const types = maintenanceTypes.tipos_manutencao || maintenanceTypes.data || [];
-            const mechanics = mechanicsResponse.mecanicos || mechanicsResponse.data || [];
-            const overlay = document.createElement('div');
-            overlay.className = 'custom-modal-overlay';
-            const modal = document.createElement('div');
-            modal.className = 'custom-modal';
-            modal.innerHTML = `
-                <h2>Editar Ordem de Serviço</h2>
-                <form id="editWorkOrderForm">
-                    <label for="ewo-equipamento_id">Equipamento*</label>
-                    <select id="ewo-equipamento_id" name="equipamento_id" required>
-                        <option value="">Selecione...</option>
-                        ${equipments.map(e => `<option value="${e.id}" ${e.id === os.equipamento_id ? 'selected' : ''}>${e.nome || e.modelo || e.codigo_interno}</option>`).join('')}
-                    </select>
-
-                    <label for="ewo-tipo">Tipo de Manutenção*</label>
-                    <select id="ewo-tipo" name="tipo" required>
-                        <option value="">Selecione...</option>
-                        ${types.map(t => `<option value="${t.id}" ${t.id === (os.tipo_manutencao_id || os.tipo) ? 'selected' : ''}>${t.nome}</option>`).join('')}
-                    </select>
-
-                    <label for="ewo-prioridade">Prioridade*</label>
-                    <select id="ewo-prioridade" name="prioridade" required>
-                        <option value="">Selecione...</option>
-                        <option value="baixa" ${os.prioridade === 'baixa' ? 'selected' : ''}>Baixa</option>
-                        <option value="media" ${os.prioridade === 'media' ? 'selected' : ''}>Média</option>
-                        <option value="alta" ${os.prioridade === 'alta' ? 'selected' : ''}>Alta</option>
-                        <option value="critica" ${os.prioridade === 'critica' ? 'selected' : ''}>Crítica</option>
-                    </select>
-
-                    <label for="ewo-mecanico_id">Mecânico (opcional)</label>
-                    <select id="ewo-mecanico_id" name="mecanico_id">
-                        <option value="">Nenhum</option>
-                        ${mechanics.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${m.nome_completo || m.nome}</option>`).join('')}
-                    </select>
-
-                    <label for="ewo-data_prevista">Data Prevista</label>
-                    <input type="datetime-local" id="ewo-data_prevista" name="data_prevista" value="${os.data_prevista ? new Date(os.data_prevista).toISOString().slice(0,16) : ''}" />
-
-                    <label for="ewo-descricao_problema">Descrição do Problema*</label>
-                    <textarea id="ewo-descricao_problema" name="descricao_problema" rows="3" required>${os.descricao_problema || ''}</textarea>
-
-                    <label for="ewo-observacoes">Observações</label>
-                    <textarea id="ewo-observacoes" name="observacoes" rows="2">${os.observacoes || ''}</textarea>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                        <button type="button" id="cancelEditWorkOrder" class="btn btn-secondary">Cancelar</button>
-                    </div>
-                </form>
-            `;
-
-            overlay.appendChild(modal);
-            (document.getElementById('modals-container') || document.body).appendChild(overlay);
-
-            modal.querySelector('#cancelEditWorkOrder').addEventListener('click', () => overlay.remove());
-
-            modal.querySelector('#editWorkOrderForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const payload = {
-                    equipamento_id: parseInt(formData.get('equipamento_id')),
-                    tipo: formData.get('tipo'),
-                    prioridade: formData.get('prioridade'),
-                    mecanico_id: formData.get('mecanico_id') ? parseInt(formData.get('mecanico_id')) : null,
-                    data_prevista: formData.get('data_prevista') ? new Date(formData.get('data_prevista')).toISOString().slice(0,19).replace('T',' ') : null,
-                    descricao_problema: formData.get('descricao_problema'),
-                    observacoes: formData.get('observacoes') || null
-                };
-                try {
-                    await API.workOrders.update(id, payload);
-                    Toast.success('Ordem de serviço atualizada com sucesso!');
-                    overlay.remove();
-                    await this.refresh();
-                } catch (error) {
-                    console.error(error);
-                    Toast.error(error.message || 'Erro ao atualizar OS.');
-                }
+    exportData() {
+        if (this.gridApi) {
+            this.gridApi.exportDataAsCsv({
+                fileName: `ordens_servico_${new Date().toISOString().split('T')[0]}.csv`,
+                columnSeparator: ';'
             });
-        } catch (err) {
-            console.error('Erro ao preparar modal de edição:', err);
-            Toast.error(err.message || 'Erro ao preparar modal.');
+        }
+    }
+
+    updateStats() {
+        const stats = {
+            pendentes: this.data.filter(item => item.status === 'pendente').length,
+            andamento: this.data.filter(item => item.status === 'andamento').length,
+            concluidas: this.data.filter(item => item.status === 'concluida').length,
+            canceladas: this.data.filter(item => item.status === 'cancelada').length
+        };
+
+        // Se há filtros aplicados, usar dados filtrados
+        if (this.gridApi) {
+            const filteredData = [];
+            this.gridApi.forEachNodeAfterFilter(node => {
+                filteredData.push(node.data);
+            });
+            
+            if (filteredData.length !== this.data.length) {
+                stats.pendentes = filteredData.filter(item => item.status === 'pendente').length;
+                stats.andamento = filteredData.filter(item => item.status === 'andamento').length;
+                stats.concluidas = filteredData.filter(item => item.status === 'concluida').length;
+                stats.canceladas = filteredData.filter(item => item.status === 'cancelada').length;
+            }
+        }
+
+        document.getElementById('stat-pendentes').textContent = stats.pendentes;
+        document.getElementById('stat-andamento').textContent = stats.andamento;
+        document.getElementById('stat-concluidas').textContent = stats.concluidas;
+        document.getElementById('stat-canceladas').textContent = stats.canceladas;
+    }
+
+    updateSelectionInfo() {
+        if (this.gridApi) {
+            const selectedRows = this.gridApi.getSelectedRows();
+            console.log('OSs selecionadas:', selectedRows.length);
+        }
+    }
+
+    // Métodos de ação
+    viewWorkOrder(id) {
+        const workOrder = this.data.find(item => item.id === id);
+        if (workOrder) {
+            this.showViewModal(workOrder);
+        }
+    }
+
+    editWorkOrder(id) {
+        const workOrder = this.data.find(item => item.id === id);
+        if (workOrder) {
+            this.showEditModal(workOrder);
+        }
+    }
+
+    async startWorkOrder(id) {
+        try {
+            await API.workOrders.updateStatus(id, 'andamento');
+            await this.refresh();
+            Utils.showToast('OS iniciada com sucesso', 'success');
+        } catch (error) {
+            console.error('Erro ao iniciar OS:', error);
+            Utils.showToast('Erro ao iniciar OS', 'error');
+        }
+    }
+
+    async completeWorkOrder(id) {
+        const workOrder = this.data.find(item => item.id === id);
+        if (workOrder) {
+            this.showCompleteModal(workOrder);
+        }
+    }
+
+    async deleteWorkOrder(id) {
+        const workOrder = this.data.find(item => item.id === id);
+        if (!workOrder) return;
+
+        const confirmed = await Utils.showConfirm(
+            'Confirmar Exclusão',
+            `Tem certeza que deseja excluir a OS ${workOrder.numero}?`,
+            'Excluir',
+            'Cancelar'
+        );
+
+        if (confirmed) {
+            try {
+                await API.workOrders.delete(id);
+                await this.refresh();
+                Utils.showToast('OS excluída com sucesso', 'success');
+            } catch (error) {
+                console.error('Erro ao excluir OS:', error);
+                Utils.showToast('Erro ao excluir OS', 'error');
+            }
+        }
+    }
+
+    showCreateModal() {
+        const modal = new WorkOrderModal();
+        modal.show({
+            title: 'Nova Ordem de Serviço',
+            workOrder: null,
+            equipments: this.equipments,
+            mechanics: this.mechanics,
+            maintenanceTypes: this.maintenanceTypes,
+            onSave: async (data) => {
+                try {
+                    await API.workOrders.create(data);
+                    await this.refresh();
+                    Utils.showToast('OS criada com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao criar OS:', error);
+                    Utils.showToast('Erro ao criar OS', 'error');
+                }
+            }
+        });
+    }
+
+    showEditModal(workOrder) {
+        const modal = new WorkOrderModal();
+        modal.show({
+            title: 'Editar Ordem de Serviço',
+            workOrder: workOrder,
+            equipments: this.equipments,
+            mechanics: this.mechanics,
+            maintenanceTypes: this.maintenanceTypes,
+            onSave: async (data) => {
+                try {
+                    await API.workOrders.update(workOrder.id, data);
+                    await this.refresh();
+                    Utils.showToast('OS atualizada com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao atualizar OS:', error);
+                    Utils.showToast('Erro ao atualizar OS', 'error');
+                }
+            }
+        });
+    }
+
+    showViewModal(workOrder) {
+        const modal = new WorkOrderViewModal();
+        modal.show(workOrder);
+    }
+
+    showCompleteModal(workOrder) {
+        const modal = new WorkOrderCompleteModal();
+        modal.show({
+            workOrder: workOrder,
+            onComplete: async (data) => {
+                try {
+                    await API.workOrders.complete(workOrder.id, data);
+                    await this.refresh();
+                    Utils.showToast('OS concluída com sucesso', 'success');
+                    modal.hide();
+                } catch (error) {
+                    console.error('Erro ao concluir OS:', error);
+                    Utils.showToast('Erro ao concluir OS', 'error');
+                }
+            }
+        });
+    }
+}
+
+// Modal de Ordem de Serviço
+class WorkOrderModal {
+    show(options) {
+        this.options = options;
+        this.render();
+    }
+
+    render() {
+        const { title, workOrder, equipments, mechanics, maintenanceTypes } = this.options;
+        const isEdit = !!workOrder;
+
+        const modalHTML = `
+            <div class="modal-overlay" id="work-order-modal">
+                <div class="modal-container modal-lg">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="work-order-form" class="form-grid">
+                            <div class="form-group">
+                                <label for="equipamento_id">Equipamento *</label>
+                                <select id="equipamento_id" name="equipamento_id" class="form-select" required>
+                                    <option value="">Selecione o equipamento</option>
+                                    ${equipments.map(equipment => 
+                                        `<option value="${equipment.id}" ${workOrder?.equipamento_id == equipment.id ? 'selected' : ''}>
+                                            ${equipment.nome} - ${equipment.codigo || ''}
+                                        </option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="tipo_manutencao_id">Tipo de Manutenção *</label>
+                                <select id="tipo_manutencao_id" name="tipo_manutencao_id" class="form-select" required>
+                                    <option value="">Selecione o tipo</option>
+                                    ${maintenanceTypes.map(type => 
+                                        `<option value="${type.id}" ${workOrder?.tipo_manutencao_id == type.id ? 'selected' : ''}>
+                                            ${type.nome}
+                                        </option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="prioridade">Prioridade *</label>
+                                <select id="prioridade" name="prioridade" class="form-select" required>
+                                    <option value="baixa" ${workOrder?.prioridade === 'baixa' ? 'selected' : ''}>Baixa</option>
+                                    <option value="normal" ${workOrder?.prioridade === 'normal' || !workOrder ? 'selected' : ''}>Normal</option>
+                                    <option value="alta" ${workOrder?.prioridade === 'alta' ? 'selected' : ''}>Alta</option>
+                                    <option value="critica" ${workOrder?.prioridade === 'critica' ? 'selected' : ''}>Crítica</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="mecanico_id">Mecânico</label>
+                                <select id="mecanico_id" name="mecanico_id" class="form-select">
+                                    <option value="">Selecione o mecânico</option>
+                                    ${mechanics.map(mechanic => 
+                                        `<option value="${mechanic.id}" ${workOrder?.mecanico_id == mechanic.id ? 'selected' : ''}>
+                                            ${mechanic.nome}
+                                        </option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="data_prevista">Data Prevista</label>
+                                <input type="date" id="data_prevista" name="data_prevista" class="form-input" 
+                                       value="${workOrder?.data_prevista ? workOrder.data_prevista.split('T')[0] : ''}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select id="status" name="status" class="form-select">
+                                    <option value="pendente" ${workOrder?.status === 'pendente' || !workOrder ? 'selected' : ''}>Pendente</option>
+                                    <option value="andamento" ${workOrder?.status === 'andamento' ? 'selected' : ''}>Em Andamento</option>
+                                    <option value="pausada" ${workOrder?.status === 'pausada' ? 'selected' : ''}>Pausada</option>
+                                    <option value="concluida" ${workOrder?.status === 'concluida' ? 'selected' : ''}>Concluída</option>
+                                    <option value="cancelada" ${workOrder?.status === 'cancelada' ? 'selected' : ''}>Cancelada</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group form-group-full">
+                                <label for="descricao">Descrição *</label>
+                                <textarea id="descricao" name="descricao" class="form-textarea" rows="3" required 
+                                          placeholder="Descreva o problema ou serviço a ser realizado">${workOrder?.descricao || ''}</textarea>
+                            </div>
+                            
+                            <div class="form-group form-group-full">
+                                <label for="observacoes">Observações</label>
+                                <textarea id="observacoes" name="observacoes" class="form-textarea" rows="2" 
+                                          placeholder="Observações adicionais">${workOrder?.observacoes || ''}</textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Cancelar
+                        </button>
+                        <button type="submit" form="work-order-form" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            ${isEdit ? 'Atualizar' : 'Criar'} OS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modals-container').innerHTML = modalHTML;
+        
+        // Configurar eventos
+        const form = document.getElementById('work-order-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSubmit(form);
+        });
+    }
+
+    handleSubmit(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Validações
+        if (!data.equipamento_id) {
+            Utils.showToast('Equipamento é obrigatório', 'error');
+            return;
+        }
+        
+        if (!data.tipo_manutencao_id) {
+            Utils.showToast('Tipo de manutenção é obrigatório', 'error');
+            return;
+        }
+        
+        if (!data.descricao.trim()) {
+            Utils.showToast('Descrição é obrigatória', 'error');
+            return;
+        }
+
+        this.options.onSave(data);
+    }
+
+    hide() {
+        const modal = document.getElementById('work-order-modal');
+        if (modal) {
+            modal.remove();
         }
     }
 }
 
-// Exportar a classe para uso global
-window.WorkOrdersPage = WorkOrdersPage;
+// Modal de Visualização
+class WorkOrderViewModal {
+    show(workOrder) {
+        this.render(workOrder);
+    }
+
+    render(workOrder) {
+        const modalHTML = `
+            <div class="modal-overlay" id="work-order-view-modal">
+                <div class="modal-container modal-lg">
+                    <div class="modal-header">
+                        <h3>Ordem de Serviço #${workOrder.numero}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="work-order-details">
+                            <div class="detail-section">
+                                <h4>Informações Básicas</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Número:</label>
+                                        <span>${workOrder.numero || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Status:</label>
+                                        <span>${AGGridConfig.formatters.status({value: workOrder.status})}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Prioridade:</label>
+                                        <span>${workOrder.prioridade || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Tipo:</label>
+                                        <span>${workOrder.tipo_manutencao_nome || '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Equipamento e Responsável</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Equipamento:</label>
+                                        <span>${workOrder.equipamento_nome || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Código:</label>
+                                        <span>${workOrder.equipamento_codigo || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Mecânico:</label>
+                                        <span>${workOrder.mecanico_nome || 'Não atribuído'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Datas</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Data de Abertura:</label>
+                                        <span>${AGGridConfig.formatters.datetime({value: workOrder.data_abertura})}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Data Prevista:</label>
+                                        <span>${workOrder.data_prevista ? AGGridConfig.formatters.date({value: workOrder.data_prevista}) : '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Data de Conclusão:</label>
+                                        <span>${workOrder.data_conclusao ? AGGridConfig.formatters.datetime({value: workOrder.data_conclusao}) : '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Descrição e Observações</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item detail-item-full">
+                                        <label>Descrição:</label>
+                                        <span>${workOrder.descricao || '-'}</span>
+                                    </div>
+                                    <div class="detail-item detail-item-full">
+                                        <label>Observações:</label>
+                                        <span>${workOrder.observacoes || '-'}</span>
+                                    </div>
+                                    ${workOrder.solucao ? `
+                                    <div class="detail-item detail-item-full">
+                                        <label>Solução:</label>
+                                        <span>${workOrder.solucao}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Fechar
+                        </button>
+                        ${(auth.hasPermission('pcm') || auth.hasPermission('edit')) && workOrder.status !== 'concluida' && workOrder.status !== 'cancelada' ? 
+                            `<button type="button" class="btn btn-primary" onclick="workOrdersPage.editWorkOrder(${workOrder.id}); this.closest('.modal-overlay').remove();">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modals-container').innerHTML = modalHTML;
+    }
+}
+
+// Modal de Conclusão
+class WorkOrderCompleteModal {
+    show(options) {
+        this.options = options;
+        this.render();
+    }
+
+    render() {
+        const { workOrder } = this.options;
+
+        const modalHTML = `
+            <div class="modal-overlay" id="work-order-complete-modal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Concluir OS #${workOrder.numero}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="work-order-complete-form">
+                            <div class="form-group">
+                                <label for="solucao">Solução Aplicada *</label>
+                                <textarea id="solucao" name="solucao" class="form-textarea" rows="4" required 
+                                          placeholder="Descreva a solução aplicada e os procedimentos realizados"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="tempo_execucao">Tempo de Execução (horas)</label>
+                                <input type="number" id="tempo_execucao" name="tempo_execucao" class="form-input" 
+                                       step="0.5" min="0" placeholder="Ex: 2.5">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="observacoes_conclusao">Observações</label>
+                                <textarea id="observacoes_conclusao" name="observacoes_conclusao" class="form-textarea" rows="2" 
+                                          placeholder="Observações sobre a conclusão"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
+                            Cancelar
+                        </button>
+                        <button type="submit" form="work-order-complete-form" class="btn btn-success">
+                            <i class="fas fa-check"></i>
+                            Concluir OS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modals-container').innerHTML = modalHTML;
+        
+        // Configurar eventos
+        const form = document.getElementById('work-order-complete-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSubmit(form);
+        });
+    }
+
+    handleSubmit(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Validações
+        if (!data.solucao.trim()) {
+            Utils.showToast('Solução aplicada é obrigatória', 'error');
+            return;
+        }
+
+        this.options.onComplete(data);
+    }
+
+    hide() {
+        const modal = document.getElementById('work-order-complete-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+}
+
+// Instância global
+let workOrdersPage = null;
+
+// Registrar página
+window.pages = window.pages || {};
+window.pages['ordens-servico'] = {
+    render: async (container) => {
+        workOrdersPage = new WorkOrdersPage();
+        await workOrdersPage.render(container);
+    }
+};
+
