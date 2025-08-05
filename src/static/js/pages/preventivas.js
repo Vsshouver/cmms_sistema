@@ -487,6 +487,12 @@ class PreventivasPage {
 
     async showCreateModal() {
         try {
+            const container = document.querySelector('#modal-preventiva');
+            if (!container) {
+                console.error('Modal container não encontrado');
+                return;
+            }
+
             const content = `
                 <form id="planForm">
                     <div class="form-grid">
@@ -557,6 +563,8 @@ class PreventivasPage {
                 </form>
             `;
 
+            container.classList.remove('hidden');
+
             let overlay;
             overlay = Modal.show({
                 title: 'Novo Plano de Preventiva',
@@ -564,19 +572,29 @@ class PreventivasPage {
                 size: 'lg',
                 onClose: () => {
                     overlay.querySelector('#planForm')?.reset();
+                    container.classList.add('hidden');
                 }
             });
+            container.appendChild(overlay);
 
             const form = overlay.querySelector('#planForm');
             if (form) {
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     await this.createPlan(new FormData(form));
-                    Modal.close(overlay, () => form.reset());
+                    Modal.close(overlay, () => {
+                        form.reset();
+                        container.classList.add('hidden');
+                    });
                 });
 
                 const cancelBtn = form.querySelector('[data-action="cancel"]');
-                cancelBtn?.addEventListener('click', () => Modal.close(overlay, () => form.reset()));
+                cancelBtn?.addEventListener('click', () => {
+                    Modal.close(overlay, () => {
+                        form.reset();
+                        container.classList.add('hidden');
+                    });
+                });
             }
 
         } catch (error) {
