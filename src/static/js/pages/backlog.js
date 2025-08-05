@@ -579,109 +579,111 @@ class BacklogPage {
             modal.className = 'custom-modal large';
             modal.innerHTML = `
                 <h2>Novo Item de Backlog</h2>
-                <form id="backlogForm">
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label for="item-titulo">Título*</label>
-                            <input type="text" id="item-titulo" name="titulo" required />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-categoria">Categoria*</label>
-                            <select id="item-categoria" name="categoria" required>
-                                <option value="">Selecione...</option>
-                                <option value="manutencao">Manutenção</option>
-                                <option value="melhoria">Melhoria</option>
-                                <option value="projeto">Projeto</option>
-                                <option value="emergencia">Emergência</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-tipo">Tipo*</label>
-                            <select id="item-tipo" name="tipo" required>
-                                <option value="">Selecione...</option>
-                                <option value="preventiva">Preventiva</option>
-                                <option value="corretiva">Corretiva</option>
-                                <option value="preditiva">Preditiva</option>
-                                <option value="upgrade">Upgrade</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-prioridade">Prioridade</label>
-                            <select id="item-prioridade" name="prioridade">
-                                <option value="baixa">Baixa</option>
-                                <option value="media" selected>Média</option>
-                                <option value="alta">Alta</option>
-                                <option value="critica">Crítica</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-urgencia">Urgência</label>
-                            <select id="item-urgencia" name="urgencia">
-                                <option value="baixa">Baixa</option>
-                                <option value="media" selected>Média</option>
-                                <option value="alta">Alta</option>
-                                <option value="critica">Crítica</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-impacto">Impacto</label>
-                            <select id="item-impacto" name="impacto">
-                                <option value="baixo">Baixo</option>
-                                <option value="medio" selected>Médio</option>
-                                <option value="alto">Alto</option>
-                                <option value="critico">Crítico</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-equipamento">Equipamento</label>
-                            <select id="item-equipamento" name="equipamento_id">
-                                <option value="">Selecione...</option>
-                                ${this.equipamentos.map(eq => `<option value="${eq.id}">${eq.codigo_interno} - ${eq.nome}</option>`).join('')}
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-responsavel">Responsável</label>
-                            <input type="text" id="item-responsavel" name="responsavel" />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-esforco">Esforço Estimado (horas)</label>
-                            <input type="number" id="item-esforco" name="esforco_estimado" min="0" step="0.5" />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-custo">Custo Estimado</label>
-                            <input type="number" id="item-custo" name="custo_estimado" min="0" step="0.01" />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="item-data-prevista">Data Prevista</label>
-                            <input type="date" id="item-data-prevista" name="data_prevista" />
+                <form id="backlogForm" class="space-y-6 pb-24">
+                    <div class="bg-white shadow rounded-xl p-6 space-y-4">
+                        <h3 class="text-lg font-semibold mb-4">Dados da Preventiva</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div class="col-span-2 md:col-span-3">
+                                <label class="block text-sm text-gray-600 mb-1" for="item-titulo">Título*</label>
+                                <input type="text" id="item-titulo" name="titulo" required />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-categoria">Categoria*</label>
+                                <select id="item-categoria" name="categoria" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="manutencao">Manutenção</option>
+                                    <option value="melhoria">Melhoria</option>
+                                    <option value="projeto">Projeto</option>
+                                    <option value="emergencia">Emergência</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-tipo">Tipo*</label>
+                                <select id="item-tipo" name="tipo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="preventiva">Preventiva</option>
+                                    <option value="corretiva">Corretiva</option>
+                                    <option value="preditiva">Preditiva</option>
+                                    <option value="upgrade">Upgrade</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-equipamento">Equipamento</label>
+                                <select id="item-equipamento" name="equipamento_id">
+                                    <option value="">Selecione...</option>
+                                    ${this.equipamentos.map(eq => `<option value="${eq.id}">${eq.codigo_interno} - ${eq.nome}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-responsavel">Responsável</label>
+                                <input type="text" id="item-responsavel" name="responsavel" />
+                            </div>
+                            <div class="col-span-2 md:col-span-3">
+                                <label class="block text-sm text-gray-600 mb-1" for="item-descricao">Descrição</label>
+                                <textarea id="item-descricao" name="descricao" rows="3"></textarea>
+                            </div>
+                            <div class="col-span-2 md:col-span-3">
+                                <label class="block text-sm text-gray-600 mb-1" for="item-observacoes">Observações</label>
+                                <textarea id="item-observacoes" name="observacoes" rows="2"></textarea>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group full-width">
-                        <label for="item-descricao">Descrição</label>
-                        <textarea id="item-descricao" name="descricao" rows="3"></textarea>
+                    <div class="bg-white shadow rounded-xl p-6 space-y-4">
+                        <h3 class="text-lg font-semibold mb-4">Intervalos</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-esforco">Esforço Estimado (horas)</label>
+                                <input type="number" id="item-esforco" name="esforco_estimado" min="0" step="0.5" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-custo">Custo Estimado</label>
+                                <input type="number" id="item-custo" name="custo_estimado" min="0" step="0.01" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-data-prevista">Data Prevista</label>
+                                <input type="date" id="item-data-prevista" name="data_prevista" />
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group full-width">
-                        <label for="item-observacoes">Observações</label>
-                        <textarea id="item-observacoes" name="observacoes" rows="2"></textarea>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" onclick="this.closest('.custom-modal-overlay').remove()">Cancelar</button>
-                        <button type="submit">Criar Item</button>
+                    <div class="bg-white shadow rounded-xl p-6 space-y-4">
+                        <h3 class="text-lg font-semibold mb-4">Critérios</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-prioridade">Prioridade</label>
+                                <select id="item-prioridade" name="prioridade">
+                                    <option value="baixa">Baixa</option>
+                                    <option value="media" selected>Média</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="critica">Crítica</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-urgencia">Urgência</label>
+                                <select id="item-urgencia" name="urgencia">
+                                    <option value="baixa">Baixa</option>
+                                    <option value="media" selected>Média</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="critica">Crítica</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1" for="item-impacto">Impacto</label>
+                                <select id="item-impacto" name="impacto">
+                                    <option value="baixo">Baixo</option>
+                                    <option value="medio" selected>Médio</option>
+                                    <option value="alto">Alto</option>
+                                    <option value="critico">Crítico</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </form>
+                <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-end space-x-2">
+                    <button type="button" class="px-4 py-2 rounded-lg border" onclick="this.closest('.custom-modal-overlay').remove()">Cancelar</button>
+                    <button type="submit" form="backlogForm" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Salvar</button>
+                </div>
             `;
 
             overlay.appendChild(modal);
