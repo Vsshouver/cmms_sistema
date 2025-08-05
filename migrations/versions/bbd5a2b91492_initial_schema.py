@@ -52,23 +52,24 @@ def upgrade() -> None:
         sa.UniqueConstraint('codigo'),
         sa.UniqueConstraint('nome')
         )
-    op.create_table('mecanicos',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('nome_completo', sa.String(length=100), nullable=False),
-    sa.Column('cpf', sa.String(length=14), nullable=False),
-    sa.Column('telefone', sa.String(length=20), nullable=True),
-    sa.Column('email', sa.String(length=120), nullable=True),
-    sa.Column('especialidade', sa.String(length=100), nullable=False),
-    sa.Column('nivel_experiencia', sa.String(length=20), nullable=False),
-    sa.Column('salario', sa.Float(), nullable=True),
-    sa.Column('data_admissao', sa.Date(), nullable=False),
-    sa.Column('status', sa.String(length=20), nullable=False),
-    sa.Column('observacoes', sa.Text(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('cpf')
-    )
+    if not sa.inspect(op.get_bind()).has_table("mecanicos"):
+        op.create_table('mecanicos',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('nome_completo', sa.String(length=100), nullable=False),
+        sa.Column('cpf', sa.String(length=14), nullable=False),
+        sa.Column('telefone', sa.String(length=20), nullable=True),
+        sa.Column('email', sa.String(length=120), nullable=True),
+        sa.Column('especialidade', sa.String(length=100), nullable=False),
+        sa.Column('nivel_experiencia', sa.String(length=20), nullable=False),
+        sa.Column('salario', sa.Float(), nullable=True),
+        sa.Column('data_admissao', sa.Date(), nullable=False),
+        sa.Column('status', sa.String(length=20), nullable=False),
+        sa.Column('observacoes', sa.Text(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('cpf')
+        )
     op.create_table('tipos_equipamento',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nome', sa.String(length=100), nullable=False),
