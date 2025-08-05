@@ -188,14 +188,6 @@ const API = {
         delete: (id) => api.delete(`/tipos-manutencao/${id}`)
     },
 
-    items: {
-        getAll: (params) => api.get('/itens', params),
-        get: (id) => api.get(`/itens/${id}`),
-        create: (data) => api.post('/itens', data),
-        update: (id, data) => api.put(`/itens/${id}`, data),
-        delete: (id) => api.delete(`/itens/${id}`)
-    },
-
     inventory: {
         getAll: (params) => api.get('/estoque/pecas', params),
         get: (id) => api.get(`/estoque/pecas/${id}`),

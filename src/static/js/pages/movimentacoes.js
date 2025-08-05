@@ -7,8 +7,6 @@ class MovementsPage {
         this.searchTerm = '';
         this.typeFilter = '';
         this.dateFilter = '';
-        this.itemFilter = '';
-        this.items = [];
     }
 
     async render(container) {
@@ -33,14 +31,6 @@ class MovementsPage {
             this.data = [];
             this.filteredData = [];
             throw error;
-        }
-
-        try {
-            const itemsResponse = await API.items.getAll();
-            this.items = Array.isArray(itemsResponse) ? itemsResponse : (itemsResponse.data || []);
-        } catch (error) {
-            console.error('Erro ao carregar itens:', error);
-            this.items = [];
         }
     }
 
@@ -103,17 +93,10 @@ class MovementsPage {
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>Item</label>
-                    <select onchange="this.handleItemFilter(event)">
-                        <option value="">Todos</option>
-                        ${this.items.map(item => `<option value="${item.id}">${item.nome}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="filter-group">
                     <label>Buscar</label>
                     <div class="search-input">
-                        <input type="text"
-                               placeholder="Item, documento, responsável..."
+                        <input type="text" 
+                               placeholder="Item, documento, responsável..." 
                                value="${this.searchTerm}"
                                onkeyup="this.handleSearch(event)">
                         <i class="icon-search"></i>
@@ -334,11 +317,6 @@ class MovementsPage {
         this.applyFilters();
     }
 
-    handleItemFilter(event) {
-        this.itemFilter = event.target.value;
-        this.applyFilters();
-    }
-
     applyFilters() {
         this.filteredData = this.data.filter(item => {
             const searchMatch = !this.searchTerm || 
@@ -373,11 +351,7 @@ class MovementsPage {
                 }
             }
 
-            const itemMatch = !this.itemFilter ||
-                item.item_id === parseInt(this.itemFilter) ||
-                item.peca_id === parseInt(this.itemFilter);
-
-            return searchMatch && typeMatch && dateMatch && itemMatch;
+            return searchMatch && typeMatch && dateMatch;
         });
 
         this.currentPage = 1;
@@ -388,7 +362,6 @@ class MovementsPage {
         this.searchTerm = '';
         this.typeFilter = '';
         this.dateFilter = '';
-        this.itemFilter = '';
         this.filteredData = [...this.data];
         this.currentPage = 1;
         this.updateContent();

@@ -1,16 +1,15 @@
 
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, func
-from src.db import Base
+from src.db import db
 
-class Item(Base):
+class Item(db.Model):
     __tablename__ = "itens"
 
-    id = Column(Integer, primary_key=True, index=True)
-    codigo = Column(String(50), unique=True, nullable=False)
-    nome = Column(String(255), nullable=False)
-    descricao = Column(Text)
-    unidade_medida = Column(String(20))
-    grupo = Column(String(100))
-    fabricante = Column(String(100))
-    criado_em = Column(TIMESTAMP, default=func.now())
-    atualizado_em = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    codigo = db.Column(db.String(50), unique=True, nullable=False)
+    nome = db.Column(db.String(255), nullable=False)
+    descricao = db.Column(db.Text)
+    unidade_medida = db.Column(db.String(20))
+    grupo = db.Column(db.String(100))
+    fabricante = db.Column(db.String(100))
+    criado_em = db.Column(db.TIMESTAMP, default=db.func.now())
+    atualizado_em = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())
