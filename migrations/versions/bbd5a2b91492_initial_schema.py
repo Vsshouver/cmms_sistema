@@ -39,18 +39,19 @@ def upgrade() -> None:
         sa.UniqueConstraint('codigo'),
         sa.UniqueConstraint('nome')
         )
-    op.create_table('grupos_item',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('nome', sa.String(length=100), nullable=False),
-    sa.Column('codigo', sa.String(length=20), nullable=False),
-    sa.Column('descricao', sa.Text(), nullable=True),
-    sa.Column('ativo', sa.Boolean(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('codigo'),
-    sa.UniqueConstraint('nome')
-    )
+    if not sa.inspect(op.get_bind()).has_table("grupos_item"):
+        op.create_table('grupos_item',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('nome', sa.String(length=100), nullable=False),
+        sa.Column('codigo', sa.String(length=20), nullable=False),
+        sa.Column('descricao', sa.Text(), nullable=True),
+        sa.Column('ativo', sa.Boolean(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('codigo'),
+        sa.UniqueConstraint('nome')
+        )
     op.create_table('mecanicos',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nome_completo', sa.String(length=100), nullable=False),

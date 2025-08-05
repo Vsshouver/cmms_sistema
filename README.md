@@ -68,7 +68,8 @@ Acesse: http://localhost:5000
 
 ## Banco de Dados e Migrações
 
-Este projeto utiliza **Alembic** para controle de versão do banco de dados.
+Este projeto utiliza **Alembic** para controle de versão do banco de dados. O
+schema deve ser gerenciado exclusivamente por ele (não use `db.create_all()`).
 
 - Para criar um novo banco local, execute:
 
@@ -78,8 +79,8 @@ python create_db.py
 
   O script aplicará todas as migrações pendentes.
 
-- Se você já possui um banco criado antes da introdução do Alembic,
-  sincronize o estado atual executando uma vez:
+- Se você já possui um banco com tabelas criadas manualmente ou por versões
+  anteriores, sincronize o estado atual executando uma vez:
 
 ```bash
 alembic stamp head
