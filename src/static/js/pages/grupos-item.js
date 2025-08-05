@@ -60,10 +60,10 @@ class ItemGroupsPage {
                     <p>Gerencie os grupos de classificação de itens</p>
                 </div>
                 <div class="page-actions">
-                    <button class="btn btn-secondary" onclick="this.refreshData()">
+                    <button class="btn btn-secondary" id="refresh-data">
                         <i class="icon-refresh"></i> Atualizar
                     </button>
-                    <button class="btn btn-primary" onclick="this.openCreateModal()">
+                    <button class="btn btn-primary" id="create-group">
                         <i class="icon-plus"></i> Novo Grupo
                     </button>
                 </div>

@@ -60,10 +60,10 @@ class EquipmentTypesPage {
                     <p>Gerencie os tipos de equipamento do sistema</p>
                 </div>
                 <div class="page-actions">
-                    <button class="btn btn-secondary" onclick="this.refreshData()">
+                    <button class="btn btn-secondary" id="refresh-data">
                         <i class="icon-refresh"></i> Atualizar
                     </button>
-                    <button class="btn btn-primary" onclick="this.openCreateModal()">
+                    <button class="btn btn-primary" id="create-type">
                         <i class="icon-plus"></i> Novo Tipo
                     </button>
                 </div>

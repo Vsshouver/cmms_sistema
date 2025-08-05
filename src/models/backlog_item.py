@@ -115,6 +115,8 @@ class BacklogItem(db.Model):
         """Calcula quantos dias o item está pendente"""
         if self.status in ['concluido', 'cancelado']:
             return 0
+        if not self.data_identificacao:
+            return 0
         return (datetime.utcnow() - self.data_identificacao).days
     
     def to_dict(self):

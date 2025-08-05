@@ -62,14 +62,11 @@ class MovementsPage {
                     <p>Acompanhe todas as movimentações de entrada e saída</p>
                 </div>
                 <div class="page-actions">
-                    <button class="btn btn-secondary" onclick="this.refreshData()">
+                    <button class="btn btn-secondary" id="refresh-data">
                         <i class="icon-refresh"></i> Atualizar
                     </button>
-                    <button class="btn btn-success" onclick="this.openEntryModal()">
-                        <i class="icon-plus"></i> Nova Entrada
-                    </button>
-                    <button class="btn btn-warning" onclick="this.openExitModal()">
-                        <i class="icon-minus"></i> Nova Saída
+                    <button class="btn btn-primary" id="create-movement">
+                        <i class="icon-plus"></i> Nova Movimentação
                     </button>
                 </div>
             </div>

@@ -62,10 +62,10 @@ class OilAnalysisPage {
                     <p>Gerencie as análises de óleo dos equipamentos</p>
                 </div>
                 <div class="page-actions">
-                    <button class="btn btn-secondary" onclick="this.refreshData()">
+                    <button class="btn btn-secondary" id="refresh-data">
                         <i class="icon-refresh"></i> Atualizar
                     </button>
-                    <button class="btn btn-primary" onclick="this.openCreateModal()">
+                    <button class="btn btn-primary" id="create-analysis">
                         <i class="icon-plus"></i> Nova Análise
                     </button>
                 </div>
@@ -74,7 +74,7 @@ class OilAnalysisPage {
             <div class="page-filters">
                 <div class="filter-group">
                     <label>Status</label>
-                    <select onchange="this.handleStatusFilter(event)">
+                    <select id="status-filter">
                         <option value="">Todos</option>
                         <option value="pendente">Pendente</option>
                         <option value="em_analise">Em Análise</option>
@@ -84,7 +84,7 @@ class OilAnalysisPage {
                 </div>
                 <div class="filter-group">
                     <label>Equipamento</label>
-                    <select onchange="this.handleEquipmentFilter(event)">
+                    <select id="equipment-filter">
                         <option value="">Todos os equipamentos</option>
                     </select>
                 </div>
@@ -92,9 +92,9 @@ class OilAnalysisPage {
                     <label>Buscar</label>
                     <div class="search-input">
                         <input type="text" 
+                               id="search-input"
                                placeholder="Número da amostra, equipamento..." 
-                               value="${this.searchTerm}"
-                               onkeyup="this.handleSearch(event)">
+                               value="${this.searchTerm}">
                         <i class="icon-search"></i>
                     </div>
                 </div>
@@ -283,7 +283,33 @@ class OilAnalysisPage {
     }
 
     bindEvents() {
-        // Bind dos eventos será feito via onclick nos elementos HTML
+        // Botão de refresh
+        const refreshBtn = document.getElementById('refresh-data');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refreshData());
+        }
+
+        // Botão de criar
+        const createBtn = document.getElementById('create-analysis');
+        if (createBtn) {
+            createBtn.addEventListener('click', () => this.openCreateModal());
+        }
+
+        // Filtros
+        const statusFilter = document.getElementById('status-filter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', (e) => this.handleStatusFilter(e));
+        }
+
+        const equipmentFilter = document.getElementById('equipment-filter');
+        if (equipmentFilter) {
+            equipmentFilter.addEventListener('change', (e) => this.handleEquipmentFilter(e));
+        }
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', (e) => this.handleSearch(e));
+        }
     }
 
     handleSearch(event) {

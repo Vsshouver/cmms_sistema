@@ -147,7 +147,7 @@ class NavigationManager {
 
     // Carregar página dinamicamente
     async loadPage(pageName) {
-        // Mapear nomes de página para classes
+        // Mapear nomes de página para classes ou funções de renderização
         const pageClasses = {
             'dashboard': 'DashboardPage',
             'ordens-servico': 'WorkOrdersPage',
@@ -171,16 +171,22 @@ class NavigationManager {
             throw new Error(`Página ${pageName} não encontrada`);
         }
 
-        // Verificar se a classe existe
-        if (!window[pageClass]) {
+        // Verificar se a classe existe ou se há uma função de renderização no window.pages
+        if (window.pages && window.pages[pageName]) {
+            // Usar sistema de páginas modular
+            const page = {
+                render: window.pages[pageName].render
+            };
+            this.pages.set(pageName, page);
+            return page;
+        } else if (window[pageClass]) {
+            // Usar classe tradicional
+            const page = new window[pageClass]();
+            this.pages.set(pageName, page);
+            return page;
+        } else {
             throw new Error(`Classe ${pageClass} não carregada`);
         }
-
-        // Instanciar página
-        const page = new window[pageClass]();
-        this.pages.set(pageName, page);
-
-        return page;
     }
 
     // Atualizar navegação ativa
