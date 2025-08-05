@@ -29,6 +29,7 @@ from src.models.backlog_item import BacklogItem
 from alembic import command
 from alembic.config import Config
 from alembic.util import CommandError
+from sqlalchemy import text
 
 def create_database():
     """Criar banco de dados com todas as tabelas."""
@@ -59,6 +60,9 @@ def create_database():
         except CommandError as e:
             if "Can't locate revision identified by" in str(e):
                 print(f"⚠️  Revisão inválida detectada ({e}). Resetando para base...")
+                # Remover tabela de controle de versões antes de reconfigurar
+                with db.engine.begin() as conn:
+                    conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
                 command.stamp(alembic_cfg, 'base')
                 command.upgrade(alembic_cfg, 'head')
             else:
