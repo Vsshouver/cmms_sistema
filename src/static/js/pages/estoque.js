@@ -592,6 +592,9 @@ class InventoryPage {
     }
 }
 
+// Expose the page class globally
+window.InventoryPage = InventoryPage;
+
 // Modal de Item de Estoque
 class InventoryItemModal {
     show(options) {
