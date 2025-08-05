@@ -404,7 +404,7 @@ class InventoryPage {
         try {
             await this.loadData();
             if (this.gridApi) {
-                this.gridApi.setRowData(this.data);
+                this.gridApi.setGridOption('rowData', this.data);
                 this.updateStats();
             }
             Utils.showToast('Dados atualizados com sucesso', 'success');
@@ -591,6 +591,9 @@ class InventoryPage {
         }
     }
 }
+
+// Expose the page class globally
+window.InventoryPage = InventoryPage;
 
 // Modal de Item de Estoque
 class InventoryItemModal {

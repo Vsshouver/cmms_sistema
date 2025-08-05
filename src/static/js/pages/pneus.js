@@ -68,6 +68,10 @@ const TIRES_FORMDATA = (container) => {
 
 const ADD_TIRE = async () => {
     const modal = document.querySelector("#dynamicModal");
+    if (!modal) {
+        console.error("Modal container não encontrado");
+        return;
+    }
     const modalBody = modal.querySelector(".modal-body");
     const modalTitle = modal.querySelector(".modal-title");
     const buttons = modal.querySelectorAll(".modal-footer button");
@@ -166,6 +170,10 @@ const ADD_TIRE = async () => {
 const EDIT_TIRE = async (params) => {
     const rowData = params.node.data;
     const modal = document.querySelector("#dynamicModal");
+    if (!modal) {
+        console.error("Modal container não encontrado");
+        return;
+    }
     const modalBody = modal.querySelector(".modal-body");
     const modalTitle = modal.querySelector(".modal-title");
     const buttons = modal.querySelectorAll(".modal-footer button");
@@ -335,7 +343,8 @@ const updateTiresStats = () => {
 };
 
 const TIRES_GRID_INIT = () => {
-    const gridOptions = {
+    const initGrid = () => {
+        const gridOptions = {
         defaultColDef: {
             resizable: true,
             sortable: true,
@@ -358,11 +367,6 @@ const TIRES_GRID_INIT = () => {
         paginationPageSize: 50,
         tooltipShowDelay: 500,
         tooltipInteraction: true,
-        overlayLoadingTemplate: "",
-        loadingOverlayComponent: "customLoadingOverlay",
-        loadingOverlayComponentParams: {
-            loadingMessage: "Carregando pneus...",
-        },
         animateRows: true,
         onColumnMoved: SAVE_TIRES_COLUMN_STATE,
         onColumnResized: SAVE_TIRES_COLUMN_STATE,
@@ -457,7 +461,7 @@ const TIRES_GRID_INIT = () => {
                 field: "created_at",
                 minWidth: 150,
                 cellRenderer: (params) => {
-                    if (!params.value) return ";
+                    if (!params.value) return "";
                     return new Date(params.value).toLocaleString("pt-BR");
                 }
             }
@@ -475,6 +479,13 @@ const TIRES_GRID_INIT = () => {
     gridDiv.className = "ag-theme-alpine";
 
     tiresGridApi = agGrid.createGrid(gridDiv, gridOptions);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGrid);
+    } else {
+        initGrid();
+    }
 };
 
 class TiresPage {
@@ -634,14 +645,6 @@ class TiresPage {
     }
 }
 
-const tiresPage = new TiresPage();
-
-$(document).ready(() => {
-    if (window.location.hash === '#pneus' || window.location.pathname.includes('pneus')) {
-        const container = document.querySelector('#main-content') || document.querySelector('.content');
-        if (container) {
-            tiresPage.render(container);
-        }
-    }
-});
+// Expose the page class globally
+window.TiresPage = TiresPage;
 

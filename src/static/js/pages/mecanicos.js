@@ -379,7 +379,7 @@ class MechanicsPage {
         try {
             await this.loadData();
             if (this.gridApi) {
-                this.gridApi.setRowData(this.data);
+                this.gridApi.setGridOption('rowData', this.data);
                 this.updateStats();
             }
             Utils.showToast('Dados atualizados com sucesso', 'success');
@@ -834,6 +834,9 @@ class MechanicViewModal {
         return statusMap[status] || status;
     }
 }
+
+// Expose the page class globally
+window.MechanicsPage = MechanicsPage;
 
 // Instância global
 let mechanicsPage = null;

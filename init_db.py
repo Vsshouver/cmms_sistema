@@ -28,7 +28,6 @@ from src.models.os_peca import OS_Peca
 from src.models.analise_oleo import AnaliseOleo
 
 from datetime import datetime, date, timedelta
-from sqlalchemy import text, inspect
 
 def create_app():
     """Criar aplicação Flask para inicialização."""
@@ -51,76 +50,22 @@ def create_app():
 
     return app
 
+def run_migrations():
+    """Apply database migrations."""
+    from alembic import command
+    from alembic.config import Config
+
+    alembic_cfg = Config(os.path.join(current_dir, 'alembic.ini'))
+    command.upgrade(alembic_cfg, 'head')
+
 def ensure_schema():
-    """Garantir que as colunas necessárias existam no banco."""
-    engine = db.engine
-    inspector = inspect(engine)
-
-    # Verificar coluna tipo_equipamento_id em equipamentos
-    cols = [c['name'] for c in inspector.get_columns('equipamentos')]
-    if 'tipo_equipamento_id' not in cols:
-        print("⚙️  Adicionando coluna 'tipo_equipamento_id' em equipamentos...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                'ALTER TABLE equipamentos ADD COLUMN tipo_equipamento_id INTEGER'))
-            conn.commit()
-
-    # Verificar coluna tipo_manutencao_id em ordens_servico
-    cols = [c['name'] for c in inspector.get_columns('ordens_servico')]
-    if 'tipo_manutencao_id' not in cols:
-        print("⚙️  Adicionando coluna 'tipo_manutencao_id' em ordens_servico...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                'ALTER TABLE ordens_servico ADD COLUMN tipo_manutencao_id INTEGER'))
-            conn.commit()
-
-    # Verificar coluna assinatura_responsavel em ordens_servico
-    cols = [c['name'] for c in inspector.get_columns('ordens_servico')]
-    if 'assinatura_responsavel' not in cols:
-        print("⚙️  Adicionando coluna 'assinatura_responsavel' em ordens_servico...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                'ALTER TABLE ordens_servico ADD COLUMN assinatura_responsavel TEXT'))
-            conn.commit()
-
-    # Verificar colunas grupo_item_id e estoque_local_id em pecas
-    cols = [c['name'] for c in inspector.get_columns('pecas')]
-    if 'grupo_item_id' not in cols:
-        print("⚙️  Adicionando coluna 'grupo_item_id' em pecas...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                'ALTER TABLE pecas ADD COLUMN grupo_item_id INTEGER'))
-            conn.commit()
-    if 'estoque_local_id' not in cols:
-        print("⚙️  Adicionando coluna 'estoque_local_id' em pecas...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                'ALTER TABLE pecas ADD COLUMN estoque_local_id INTEGER'))
-            conn.commit()
-    if 'ultimo_preco_avaliacao' not in cols:
-        print("⚙️  Adicionando coluna 'ultimo_preco_avaliacao' em pecas...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                'ALTER TABLE pecas ADD COLUMN ultimo_preco_avaliacao FLOAT'))
-            conn.commit()
-    if 'ultimo_preco_compra' not in cols:
-        print("⚙️  Adicionando coluna 'ultimo_preco_compra' em pecas...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                'ALTER TABLE pecas ADD COLUMN ultimo_preco_compra FLOAT'))
-            conn.commit()
-    if 'ultima_inventariacao_data' not in cols:
-        print("⚙️  Adicionando coluna 'ultima_inventariacao_data' em pecas...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                'ALTER TABLE pecas ADD COLUMN ultima_inventariacao_data TIMESTAMP'))
-            conn.commit()
-    if 'ultima_inventariacao_usuario' not in cols:
-        print("⚙️  Adicionando coluna 'ultima_inventariacao_usuario' em pecas...")
-        with engine.connect() as conn:
-            conn.execute(text(
-                "ALTER TABLE pecas ADD COLUMN ultima_inventariacao_usuario VARCHAR(100)"))
-            conn.commit()
+    """Garantir que o esquema do banco esteja atualizado antes de manipular dados."""
+    try:
+        run_migrations()
+        print("✅ Esquema do banco verificado")
+    except Exception as e:
+        print(f"❌ Falha ao verificar esquema do banco: {e}")
+        raise
 
 def criar_dados_exemplo():
     """Função para criar dados de exemplo no banco"""
@@ -461,15 +406,14 @@ def main():
     try:
         # Criar aplicação Flask
         app = create_app()
-        
+
         with app.app_context():
-            print("🔧 Criando/verificando estrutura do banco de dados...")
-            db.create_all()
-            ensure_schema()
+            print("🔧 Aplicando migrações do banco de dados...")
+            run_migrations()
 
             print("📊 Populando com dados de exemplo...")
             # Usar a função mais completa para garantir compatibilidade
-            criar_dados_exemplo()
+            criar_dados_exemplo_completos()
             
             print("\n" + "=" * 60)
             print("✅ SISTEMA INICIALIZADO COM SUCESSO!")
@@ -637,12 +581,19 @@ def atualizar_dados_existentes():
                 'preventiva': 'Preventiva',
                 'corretiva': 'Corretiva Mecânica'
             }
-            
+
             tipo_nome = tipo_map.get(ordem.tipo, 'Corretiva Mecânica')
             tipo_manutencao = TipoManutencao.query.filter_by(nome=tipo_nome).first()
             if tipo_manutencao:
                 ordem.tipo_manutencao_id = tipo_manutencao.id
-    
+
+    # Definir origem padrão para ordens de serviço existentes
+    ordens_origem = OrdemServico.query.filter(OrdemServico.origem.is_(None)).all()
+    if ordens_origem:
+        print(f"📝 Definindo origem padrão em {len(ordens_origem)} ordens de serviço...")
+        for ordem in ordens_origem:
+            ordem.origem = 'manual'
+
     # Atualizar peças com grupo_item_id
     pecas = Peca.query.filter(Peca.grupo_item_id.is_(None)).all()
     if pecas:
@@ -698,7 +649,7 @@ def criar_dados_exemplo_completos():
 # Manter compatibilidade com a função original
 def criar_dados_exemplo():
     """Função de compatibilidade - chama a função completa"""
-    # Garante que colunas novas existam mesmo quando chamado fora do main()
-    ensure_schema()
+    # Garantir que o esquema esteja atualizado antes de inserir dados
+    run_migrations()
     return criar_dados_exemplo_completos()
 

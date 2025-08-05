@@ -173,6 +173,35 @@ const Utils = {
         }
     },
 
+    // Exibir notificações/toasts
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : type === 'warning' ? 'exclamation-triangle' : 'info'}"></i>
+            ${message}
+        `;
+
+        const container = document.getElementById('toast-container') || (() => {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+            return container;
+        })();
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    },
+
+    // Alias para compatibilidade
+    showNotification(message, type = 'info') {
+        this.showToast(message, type);
+    },
+
     // Obter cor do status
     getStatusColor(status) {
         const colors = {
