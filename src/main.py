@@ -141,10 +141,13 @@ if __name__ == '__main__':
     # Criar tabelas se não existirem e popular dados de exemplo
     with app.app_context():
         db.create_all()
+
+        # Garantir que o esquema esteja atualizado antes de qualquer consulta
+        from init_db import ensure_schema, criar_dados_exemplo
+        ensure_schema()
         print("✅ Tabelas do banco de dados criadas/verificadas")
-        
+
         # Importar e chamar a função de criação de dados de exemplo
-        from init_db import criar_dados_exemplo
         criar_dados_exemplo()
     
     app.run(host='0.0.0.0', port=port, debug=False)
