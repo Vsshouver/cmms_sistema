@@ -58,6 +58,15 @@ def run_migrations():
     alembic_cfg = Config(os.path.join(current_dir, 'alembic.ini'))
     command.upgrade(alembic_cfg, 'head')
 
+def ensure_schema():
+    """Garantir que o esquema do banco esteja atualizado antes de manipular dados."""
+    try:
+        run_migrations()
+        print("✅ Esquema do banco verificado")
+    except Exception as e:
+        print(f"❌ Falha ao verificar esquema do banco: {e}")
+        raise
+
 def criar_dados_exemplo():
     """Função para criar dados de exemplo no banco"""
     print("🔄 Iniciando criação de dados de exemplo...")
