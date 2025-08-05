@@ -74,6 +74,15 @@ def ensure_schema():
                 'ALTER TABLE ordens_servico ADD COLUMN tipo_manutencao_id INTEGER'))
             conn.commit()
 
+    # Verificar coluna origem em ordens_servico
+    cols = [c['name'] for c in inspector.get_columns('ordens_servico')]
+    if 'origem' not in cols:
+        print("⚙️  Adicionando coluna 'origem' em ordens_servico...")
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE ordens_servico ADD COLUMN origem VARCHAR(30)"))
+            conn.commit()
+
     # Verificar coluna assinatura_responsavel em ordens_servico
     cols = [c['name'] for c in inspector.get_columns('ordens_servico')]
     if 'assinatura_responsavel' not in cols:
