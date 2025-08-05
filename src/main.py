@@ -30,6 +30,7 @@ from src.routes.importacao import importacao_bp
 from src.routes.impressao import impressao_bp
 from src.routes.planos_preventiva import planos_preventiva_bp
 from src.routes.backlog import backlog_bp
+from src.routes.item_routes import item_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 
@@ -58,6 +59,7 @@ app.register_blueprint(importacao_bp, url_prefix='/api')
 app.register_blueprint(impressao_bp, url_prefix='/api')
 app.register_blueprint(planos_preventiva_bp, url_prefix='/api')
 app.register_blueprint(backlog_bp, url_prefix='/api')
+app.register_blueprint(item_bp, url_prefix="/api/itens")
 
 # Configurar banco de dados PostgreSQL
 database_url = os.environ.get("DATABASE_URL")
@@ -109,6 +111,7 @@ def api_index():
             "tipos_equipamento": "/api/tipos-equipamento",
             "tipos_manutencao": "/api/tipos-manutencao",
             "grupos_item": "/api/grupos-item",
+            "itens": "/api/itens",
             "analise_oleo": "/api/analise-oleo",
             "importacao": "/api/importacao/pecas",
             "impressao": "/api/ordens-servico/{id}/imprimir"
