@@ -1,7 +1,7 @@
 """create tabela itens
 
 Revision ID: c88aaf0732bc
-Revises: 
+Revises: e5963818dfc8
 Create Date: 2025-08-05 21:11:44.710822
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision: str = 'c88aaf0732bc'
-down_revision: Union[str, Sequence[str], None] = None
+down_revision: Union[str, Sequence[str], None] = 'e5963818dfc8'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
