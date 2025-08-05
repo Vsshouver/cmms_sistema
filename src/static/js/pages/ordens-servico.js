@@ -316,6 +316,95 @@ const DELETE_WORK_ORDER = async (params) => {
     }
 };
 
+const VIEW_WORK_ORDER = async (params) => {
+    const id = params.node.data.id;
+    const modal = document.querySelector('#modal-ordem-servico');
+    if (!modal) return;
+    const modalBody = modal.querySelector('.modal-body');
+    const modalTitle = modal.querySelector('.modal-title');
+    const buttons = modal.querySelectorAll('.modal-footer button');
+
+    try {
+        const response = await fetch(`/api/ordens-servico/${id}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (!response.ok) throw new Error('Erro ao carregar OS');
+        const data = await response.json();
+
+        const template = /*html*/`
+            <div class="space-y-2">
+                <p><strong>Número:</strong> ${data.numero_os}</p>
+                <p><strong>Equipamento:</strong> ${data.equipamento ? `${data.equipamento.nome} (${data.equipamento.codigo_interno})` : ''}</p>
+                <p><strong>Tipo:</strong> ${data.tipo_manutencao ? data.tipo_manutencao.nome : data.tipo}</p>
+                <p><strong>Status:</strong> ${data.status}</p>
+                <p><strong>Mecânico:</strong> ${data.mecanico ? data.mecanico.nome_completo : ''}</p>
+                <p><strong>Data Abertura:</strong> ${data.data_abertura ? new Date(data.data_abertura).toLocaleString('pt-BR') : ''}</p>
+                <p><strong>Data Prevista:</strong> ${data.data_prevista ? new Date(data.data_prevista).toLocaleString('pt-BR') : ''}</p>
+                <p><strong>Descrição:</strong><br>${data.descricao_problema || ''}</p>
+                <div class="mt-4">
+                    <label>Assinatura:</label>
+                    <canvas id="os-signature" style="border:1px solid #ccc;width:100%;height:150px;"></canvas>
+                    <button type="button" class="btn btn-sm btn-outline mt-2" id="clear-signature">Limpar</button>
+                </div>
+            </div>
+        `;
+
+        modalBody.innerHTML = template;
+        modalTitle.textContent = 'Visualizar Ordem de Serviço';
+
+        const [closeBtn, printBtn] = buttons;
+        closeBtn.textContent = 'Fechar';
+        $(printBtn).off('click');
+        printBtn.textContent = 'Imprimir';
+
+        const canvas = modalBody.querySelector('#os-signature');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        canvas.addEventListener('mousedown', e => { drawing = true; ctx.moveTo(e.offsetX, e.offsetY); });
+        canvas.addEventListener('mousemove', e => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); }});
+        ['mouseup','mouseleave'].forEach(ev => canvas.addEventListener(ev, () => drawing = false));
+        modalBody.querySelector('#clear-signature').addEventListener('click', () => ctx.clearRect(0,0,canvas.width,canvas.height));
+
+        $(printBtn).on('click', () => {
+            const signature = canvas.toDataURL();
+            PRINT_WORK_ORDER(data, signature);
+        });
+
+        modal.classList.remove('hidden');
+    } catch (error) {
+        console.error('Erro ao visualizar OS:', error);
+        Utils.showToast('Erro ao carregar OS', 'error');
+    }
+};
+
+const PRINT_WORK_ORDER = (data, signature) => {
+    const win = window.open('', '_blank');
+    const html = `<!DOCTYPE html><html><head><title>OS ${data.numero_os}</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding:20px; }
+            .section { margin-bottom: 8px; }
+            .signature { margin-top:40px; }
+            @media print { .no-print { display:none; } }
+        </style>
+    </head><body>
+        <h1>Ordem de Serviço ${data.numero_os}</h1>
+        <div class="section"><strong>Equipamento:</strong> ${data.equipamento ? `${data.equipamento.nome} (${data.equipamento.codigo_interno})` : ''}</div>
+        <div class="section"><strong>Tipo:</strong> ${data.tipo_manutencao ? data.tipo_manutencao.nome : data.tipo}</div>
+        <div class="section"><strong>Status:</strong> ${data.status}</div>
+        <div class="section"><strong>Mecânico:</strong> ${data.mecanico ? data.mecanico.nome_completo : ''}</div>
+        <div class="section"><strong>Descrição:</strong> ${data.descricao_problema || ''}</div>
+        <div class="signature">
+            ${signature ? `<img src="${signature}" style="width:200px;height:80px;"/>` : '<div style="width:200px;height:80px;border-bottom:1px solid #000;"></div>'}
+            <div>Assinatura</div>
+        </div>
+        <button class="no-print" onclick="window.print()">Imprimir</button>
+    </body></html>`;
+    win.document.write(html);
+    win.document.close();
+};
+
 const loadWorkOrdersRelatedData = async () => {
     try {
         const [equipmentsResponse, mechanicsResponse, maintenanceTypesResponse] = await Promise.all([
@@ -345,33 +434,21 @@ const loadWorkOrdersRelatedData = async () => {
 };
 
 const updateWorkOrdersStats = () => {
+    if (!workOrdersGridApi) return;
+
+    const rows = [];
+    workOrdersGridApi.forEachNodeAfterFilter(node => rows.push(node.data));
+
     const stats = {
-        total: workOrdersData.length,
-        pendentes: workOrdersData.filter(item => item.status === "pendente").length,
-        andamento: workOrdersData.filter(item => item.status === "andamento").length,
-        concluidas: workOrdersData.filter(item => item.status === "concluida").length,
-        canceladas: workOrdersData.filter(item => item.status === "cancelada").length
+        pendentes: rows.filter(item => item.status === "aberta").length,
+        execucao: rows.filter(item => item.status === "em_execucao").length,
+        concluidas: rows.filter(item => item.status === "concluida").length,
+        canceladas: rows.filter(item => item.status === "cancelada").length
     };
 
-    if (workOrdersGridApi) {
-        const filteredData = [];
-        workOrdersGridApi.forEachNodeAfterFilter(node => {
-            filteredData.push(node.data);
-        });
-        
-        if (filteredData.length !== workOrdersData.length) {
-            stats.total = filteredData.length;
-            stats.pendentes = filteredData.filter(item => item.status === "pendente").length;
-            stats.andamento = filteredData.filter(item => item.status === "andamento").length;
-            stats.concluidas = filteredData.filter(item => item.status === "concluida").length;
-            stats.canceladas = filteredData.filter(item => item.status === "cancelada").length;
-        }
-    }
-
     const statElements = {
-        total: document.getElementById("stat-total"),
         pendentes: document.getElementById("stat-pendentes"),
-        andamento: document.getElementById("stat-andamento"),
+        execucao: document.getElementById("stat-execucao"),
         concluidas: document.getElementById("stat-concluidas"),
         canceladas: document.getElementById("stat-canceladas")
     };
@@ -526,6 +603,38 @@ const WORK_ORDERS_GRID_INIT = () => {
                 headerName: "Descrição do Problema",
                 field: "descricao_problema",
                 minWidth: 250
+            },
+            {
+                headerName: "Ações",
+                field: "acoes",
+                minWidth: 150,
+                maxWidth: 160,
+                sortable: false,
+                filter: false,
+                pinned: 'right',
+                cellRenderer: (params) => {
+                    const container = document.createElement('div');
+                    container.className = 'flex gap-1';
+                    container.innerHTML = `
+                        <button class="btn btn-sm btn-outline view-os" title="Visualizar">👁️</button>
+                        <button class="btn btn-sm btn-outline edit-os" title="Editar">✏️</button>
+                        <button class="btn btn-sm btn-outline print-os" title="Imprimir">🖨️</button>
+                    `;
+                    container.querySelector('.view-os').addEventListener('click', (e) => { e.stopPropagation(); VIEW_WORK_ORDER(params); });
+                    container.querySelector('.edit-os').addEventListener('click', (e) => { e.stopPropagation(); EDIT_WORK_ORDER(params); });
+                    container.querySelector('.print-os').addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        try {
+                            const res = await fetch(`/api/ordens-servico/${params.node.data.id}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+                            if (!res.ok) throw new Error();
+                            const data = await res.json();
+                            PRINT_WORK_ORDER(data);
+                        } catch {
+                            Utils.showToast('Erro ao imprimir OS', 'error');
+                        }
+                    });
+                    return container;
+                }
             }
         ],
     };
@@ -641,8 +750,8 @@ class WorkOrdersPage {
                             <i class="fas fa-play"></i>
                         </div>
                         <div class="stat-content">
-                            <div class="stat-value" id="stat-andamento">0</div>
-                            <div class="stat-label">Em Andamento</div>
+                            <div class="stat-value" id="stat-execucao">0</div>
+                            <div class="stat-label">Em Execução</div>
                         </div>
                     </div>
                     <div class="stat-card stat-card-success">
