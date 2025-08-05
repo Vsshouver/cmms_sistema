@@ -634,14 +634,6 @@ class TiresPage {
     }
 }
 
-const tiresPage = new TiresPage();
-
-$(document).ready(() => {
-    if (window.location.hash === '#pneus' || window.location.pathname.includes('pneus')) {
-        const container = document.querySelector('#main-content') || document.querySelector('.content');
-        if (container) {
-            tiresPage.render(container);
-        }
-    }
-});
+// Expose the page class globally
+window.TiresPage = TiresPage;
 

@@ -681,14 +681,6 @@ class WorkOrdersPage {
     }
 }
 
-const workOrdersPage = new WorkOrdersPage();
-
-$(document).ready(() => {
-    if (window.location.hash === '#ordens-servico' || window.location.pathname.includes('ordens-servico')) {
-        const container = document.querySelector('#main-content') || document.querySelector('.content');
-        if (container) {
-            workOrdersPage.render(container);
-        }
-    }
-});
+// Expose the page class globally
+window.WorkOrdersPage = WorkOrdersPage;
 

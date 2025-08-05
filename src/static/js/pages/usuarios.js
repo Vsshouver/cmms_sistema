@@ -636,14 +636,6 @@ class UsersPage {
     }
 }
 
-const usersPage = new UsersPage();
-
-$(document).ready(() => {
-    if (window.location.hash === '#usuarios' || window.location.pathname.includes('usuarios')) {
-        const container = document.querySelector('#main-content') || document.querySelector('.content');
-        if (container) {
-            usersPage.render(container);
-        }
-    }
-});
+// Expose the page class globally
+window.UsersPage = UsersPage;
 

@@ -835,6 +835,9 @@ class MechanicViewModal {
     }
 }
 
+// Expose the page class globally
+window.MechanicsPage = MechanicsPage;
+
 // Instância global
 let mechanicsPage = null;
 

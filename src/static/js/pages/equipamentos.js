@@ -655,17 +655,6 @@ class EquipmentsPage {
     }
 }
 
-// Instância global para compatibilidade
-const equipmentsPage = new EquipmentsPage();
-
-// Inicialização quando o documento estiver pronto
-$(document).ready(() => {
-    // Se estivermos na página de equipamentos, inicializar
-    if (window.location.hash === '#equipamentos' || window.location.pathname.includes('equipamentos')) {
-        const container = document.querySelector('#main-content') || document.querySelector('.content');
-        if (container) {
-            equipmentsPage.render(container);
-        }
-    }
-});
+// Export the class to the global scope
+window.EquipmentsPage = EquipmentsPage;
 
