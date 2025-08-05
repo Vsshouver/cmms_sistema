@@ -68,6 +68,10 @@ const TIRES_FORMDATA = (container) => {
 
 const ADD_TIRE = async () => {
     const modal = document.querySelector("#dynamicModal");
+    if (!modal) {
+        console.error("Modal container não encontrado");
+        return;
+    }
     const modalBody = modal.querySelector(".modal-body");
     const modalTitle = modal.querySelector(".modal-title");
     const buttons = modal.querySelectorAll(".modal-footer button");
@@ -166,6 +170,10 @@ const ADD_TIRE = async () => {
 const EDIT_TIRE = async (params) => {
     const rowData = params.node.data;
     const modal = document.querySelector("#dynamicModal");
+    if (!modal) {
+        console.error("Modal container não encontrado");
+        return;
+    }
     const modalBody = modal.querySelector(".modal-body");
     const modalTitle = modal.querySelector(".modal-title");
     const buttons = modal.querySelectorAll(".modal-footer button");

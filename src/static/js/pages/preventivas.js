@@ -487,12 +487,7 @@ class PreventivasPage {
 
     async showCreateModal() {
         try {
-            const overlay = document.createElement('div');
-            overlay.className = 'custom-modal-overlay';
-            const modal = document.createElement('div');
-            modal.className = 'custom-modal large';
-            modal.innerHTML = `
-                <h2>Novo Plano de Preventiva</h2>
+            const content = `
                 <form id="planForm">
                     <div class="form-grid">
                         <div class="form-group">
@@ -556,21 +551,33 @@ class PreventivasPage {
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" onclick="this.closest('.custom-modal-overlay').remove()">Cancelar</button>
+                        <button type="button" data-action="cancel">Cancelar</button>
                         <button type="submit">Criar Plano</button>
                     </div>
                 </form>
             `;
 
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
-
-            // Event listener para o formulário
-            document.getElementById('planForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await this.createPlan(new FormData(e.target));
-                overlay.remove();
+            let overlay;
+            overlay = Modal.show({
+                title: 'Novo Plano de Preventiva',
+                content,
+                size: 'lg',
+                onClose: () => {
+                    overlay.querySelector('#planForm')?.reset();
+                }
             });
+
+            const form = overlay.querySelector('#planForm');
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await this.createPlan(new FormData(form));
+                    Modal.close(overlay, () => form.reset());
+                });
+
+                const cancelBtn = form.querySelector('[data-action="cancel"]');
+                cancelBtn?.addEventListener('click', () => Modal.close(overlay, () => form.reset()));
+            }
 
         } catch (error) {
             console.error('Erro ao exibir modal de criação:', error);
