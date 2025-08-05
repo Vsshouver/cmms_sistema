@@ -529,3 +529,49 @@ window.Modal = Modal;
 window.Loading = Loading;
 window.DataTable = DataTable;
 
+function openStandardModal({ title = '', content = '', onSave = null }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50';
+
+    const modal = document.createElement('div');
+    modal.className = 'bg-white p-6 rounded-xl shadow-lg w-full max-w-3xl relative';
+
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'absolute top-4 right-4 text-gray-600 hover:text-black cursor-pointer';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', () => document.body.removeChild(overlay));
+    modal.appendChild(closeBtn);
+
+    if (title) {
+        const titleEl = document.createElement('h2');
+        titleEl.className = 'text-xl font-semibold mb-4';
+        titleEl.textContent = title;
+        modal.appendChild(titleEl);
+    }
+
+    const body = document.createElement('div');
+    if (typeof content === 'string') {
+        body.innerHTML = content;
+    } else {
+        body.appendChild(content);
+    }
+    modal.appendChild(body);
+
+    if (onSave) {
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-4';
+        saveBtn.textContent = 'Salvar';
+        saveBtn.addEventListener('click', async () => {
+            await onSave();
+            document.body.removeChild(overlay);
+        });
+        modal.appendChild(saveBtn);
+    }
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    return overlay;
+}
+
+window.openStandardModal = openStandardModal;
+
