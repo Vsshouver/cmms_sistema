@@ -35,6 +35,7 @@ from src.models.analise_oleo import AnaliseOleo  # noqa: F401,E402
 from src.models.usuario import Usuario  # noqa: F401,E402
 from src.models.plano_preventiva import PlanoPreventiva  # noqa: F401,E402
 from src.models.backlog_item import BacklogItem  # noqa: F401,E402
+from src.models.item import Item  # noqa: F401,E402
 
 # Metadata for autogeneration support
 target_metadata = db.metadata
