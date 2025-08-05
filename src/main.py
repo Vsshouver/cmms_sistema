@@ -138,16 +138,16 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"🌐 Servidor CMMS rodando na porta {port}")
 
-    # Aplicar migrações e popular dados de exemplo
+    # Verificar esquema e popular dados de exemplo
     with app.app_context():
-        from alembic import command
-        from alembic.config import Config
+        from init_db import ensure_schema, criar_dados_exemplo
 
-        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), '..', 'alembic.ini'))
-        command.upgrade(alembic_cfg, "head")
-        print("✅ Migrações aplicadas")
+        try:
+            ensure_schema()
+        except Exception as e:
+            print(f"❌ Falha ao verificar esquema do banco: {e}")
+            raise
 
-        from init_db import criar_dados_exemplo
         criar_dados_exemplo()
 
     app.run(host='0.0.0.0', port=port, debug=False)
