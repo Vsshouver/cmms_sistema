@@ -137,17 +137,17 @@ def health_check():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"🌐 Servidor CMMS rodando na porta {port}")
-    
-    # Criar tabelas se não existirem e popular dados de exemplo
+
+    # Aplicar migrações e popular dados de exemplo
     with app.app_context():
-        db.create_all()
+        from alembic import command
+        from alembic.config import Config
 
-        # Garantir que o esquema esteja atualizado antes de qualquer consulta
-        from init_db import ensure_schema, criar_dados_exemplo
-        ensure_schema()
-        print("✅ Tabelas do banco de dados criadas/verificadas")
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), '..', 'alembic.ini'))
+        command.upgrade(alembic_cfg, "head")
+        print("✅ Migrações aplicadas")
 
-        # Importar e chamar a função de criação de dados de exemplo
+        from init_db import criar_dados_exemplo
         criar_dados_exemplo()
-    
+
     app.run(host='0.0.0.0', port=port, debug=False)
