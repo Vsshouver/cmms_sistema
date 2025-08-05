@@ -2,14 +2,11 @@
 class AGGridConfig {
     static init() {
         // Configurar licença do AG-Grid Enterprise
-        // Substitua pela sua licença válida
-        agGrid.LicenseManager.setLicenseKey('YOUR_LICENSE_KEY_HERE');
+        // Substitua "SUA-LICENCA-AQUI" pela licença válida
+        agGrid.LicenseManager.setLicenseKey('SUA-LICENCA-AQUI');
         
         // Configurações globais padrão
         this.defaultGridOptions = {
-            // Configurações de tema
-            theme: 'ag-theme-alpine',
-            
             // Configurações de dados
             rowSelection: 'multiple',
             suppressRowClickSelection: true,
@@ -122,15 +119,27 @@ class AGGridConfig {
     }
     
     static createGrid(container, options = {}) {
+        if (!container) {
+            console.error('Grid container não encontrado');
+            return null;
+        }
+
         const gridOptions = {
             ...this.getDefaultOptions(),
             ...options
         };
-        
+
         // Adicionar classe CSS do tema
         container.className = `${container.className} ag-theme-alpine`.trim();
-        
-        return agGrid.createGrid(container, gridOptions);
+
+        const create = () => agGrid.createGrid(container, gridOptions);
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', create);
+            return null;
+        }
+
+        return create();
     }
     
     // Formatadores comuns

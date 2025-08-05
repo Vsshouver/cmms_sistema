@@ -333,7 +333,8 @@ const updateUsersStats = () => {
 };
 
 const USERS_GRID_INIT = () => {
-    const gridOptions = {
+    const initGrid = () => {
+        const gridOptions = {
         defaultColDef: {
             resizable: true,
             sortable: true,
@@ -356,11 +357,6 @@ const USERS_GRID_INIT = () => {
         paginationPageSize: 50,
         tooltipShowDelay: 500,
         tooltipInteraction: true,
-        overlayLoadingTemplate: "",
-        loadingOverlayComponent: "customLoadingOverlay",
-        loadingOverlayComponentParams: {
-            loadingMessage: "Carregando usuários...",
-        },
         animateRows: true,
         onColumnMoved: SAVE_USERS_COLUMN_STATE,
         onColumnResized: SAVE_USERS_COLUMN_STATE,
@@ -495,6 +491,13 @@ const USERS_GRID_INIT = () => {
     gridDiv.className = "ag-theme-alpine";
 
     usersGridApi = agGrid.createGrid(gridDiv, gridOptions);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGrid);
+    } else {
+        initGrid();
+    }
 };
 
 class UsersPage {
