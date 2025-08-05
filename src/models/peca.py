@@ -17,6 +17,7 @@ class Peca(db.Model):
     preco_unitario = db.Column(db.Float, nullable=True)
     ultimo_preco_avaliacao = db.Column(db.Float, nullable=True)
     ultimo_preco_compra = db.Column(db.Float, nullable=True)
+    data_registro = db.Column(db.DateTime, nullable=True)
     estoque_local_id = db.Column(db.Integer, db.ForeignKey('estoques_local.id'), nullable=True)
     localizacao = db.Column(db.String(100), nullable=True)  # Manter para compatibilidade
     fornecedor = db.Column(db.String(100), nullable=True)
@@ -42,6 +43,7 @@ class Peca(db.Model):
             'preco_unitario': self.preco_unitario,
             'ultimo_preco_avaliacao': self.ultimo_preco_avaliacao,
             'ultimo_preco_compra': self.ultimo_preco_compra,
+            'data_registro': self.data_registro.isoformat() if self.data_registro else None,
             'estoque_local_id': self.estoque_local_id,
             'estoque_local': self.estoque_local_obj.nome if self.estoque_local_obj else None,
             'localizacao': self.localizacao,
