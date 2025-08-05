@@ -36,17 +36,20 @@ def importar_pecas(current_user):
         # Ler arquivo
         try:
             if extensao == 'csv':
-                df = pd.read_csv(io.StringIO(arquivo.read().decode('utf-8')))
+                df = pd.read_csv(io.StringIO(arquivo.read().decode('utf-8')), sep=',', engine='python', on_bad_lines='skip')
             else:
                 df = pd.read_excel(arquivo)
         except Exception as e:
             return jsonify({'error': f'Erro ao ler arquivo: {str(e)}'}), 400
         
         # Validar colunas obrigatórias
-        colunas_obrigatorias = ['numero_item', 'descricao_item', 'grupo_itens', 'unidade_de_medida_de_estoque']
+        colunas_obrigatorias = ['numero_item', 'descricao_item', 'grupo_itens']
         colunas_faltantes = [col for col in colunas_obrigatorias if col not in df.columns]
         if colunas_faltantes:
             return jsonify({'error': f'Colunas obrigatórias faltantes: {", ".join(colunas_faltantes)}'}), 400
+
+        if not any(col in df.columns for col in ['unidade_de_medida_de_estoque', 'unidade_medida_estoque']):
+            return jsonify({'error': 'Coluna de unidade de medida não encontrada'}), 400
         
         # Estatísticas de importação
         total_linhas = len(df)
@@ -66,7 +69,7 @@ def importar_pecas(current_user):
                 numero_item = str(row['numero_item']).strip()
                 descricao_item = str(row['descricao_item']).strip()
                 grupo_nome = str(row['grupo_itens']).strip()
-                unidade = str(row['unidade_de_medida_de_estoque']).strip()
+                unidade = str(row.get('unidade_de_medida_de_estoque') or row.get('unidade_medida_estoque')).strip()
                 
                 # Validar dados obrigatórios
                 if not numero_item or not descricao_item or not grupo_nome or not unidade:
@@ -106,6 +109,9 @@ def importar_pecas(current_user):
                     if 'estoque_baixo' in row and pd.notna(row['estoque_baixo']):
                         peca_existente.min_estoque = int(row['estoque_baixo'])
                     
+                    if 'data_registro' in row and pd.notna(row['data_registro']):
+                        peca_existente.data_registro = pd.to_datetime(row['data_registro'])
+
                     peca_existente.updated_at = datetime.utcnow()
                     atualizados += 1
                     
@@ -130,6 +136,9 @@ def importar_pecas(current_user):
                         nova_peca.ultimo_preco_compra = float(row['ultimo_preco_compra'])
                         nova_peca.preco_unitario = float(row['ultimo_preco_compra'])
                     
+                    if 'data_registro' in row and pd.notna(row['data_registro']):
+                        nova_peca.data_registro = pd.to_datetime(row['data_registro'])
+
                     db.session.add(nova_peca)
                     adicionados += 1
                 

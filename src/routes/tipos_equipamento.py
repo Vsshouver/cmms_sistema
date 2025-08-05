@@ -11,13 +11,15 @@ tipos_equipamento_bp = Blueprint('tipos_equipamento', __name__)
 def get_tipos_equipamento(current_user):
     try:
         # Filtros opcionais
-        ativo = request.args.get('ativo')
+        ativo_param = request.args.get('ativo')
         search = request.args.get('search')
-        
+
         query = TipoEquipamento.query
-        
-        if ativo is not None:
-            query = query.filter_by(ativo=ativo.lower() == 'true')
+
+        if ativo_param is not None:
+            # Aceita representações "true", "1", "false" e "0"
+            ativo_bool = str(ativo_param).lower() in ("true", "1", "t")
+            query = query.filter_by(ativo=ativo_bool)
         if search:
             query = query.filter(TipoEquipamento.nome.contains(search))
         
@@ -58,7 +60,7 @@ def create_tipo_equipamento(current_user):
         tipo = TipoEquipamento(
             nome=data['nome'],
             descricao=data.get('descricao'),
-            ativo=data.get('ativo', True)
+            ativo=str(data.get('ativo', True)).lower() in ('true', '1', 't')
         )
         
         db.session.add(tipo)
