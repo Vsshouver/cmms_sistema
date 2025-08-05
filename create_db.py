@@ -26,6 +26,8 @@ from src.models.analise_oleo import AnaliseOleo
 from src.models.usuario import Usuario
 from src.models.plano_preventiva import PlanoPreventiva
 from src.models.backlog_item import BacklogItem
+from alembic import command
+from alembic.config import Config
 
 def create_database():
     """Criar banco de dados com todas as tabelas."""
@@ -41,20 +43,24 @@ def create_database():
     db_path = os.path.join(current_dir, 'cmms.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
+
     # Inicializar banco
     db.init_app(app)
-    
+
+    # Expor a URL do banco para o Alembic
+    os.environ['DATABASE_URL'] = app.config['SQLALCHEMY_DATABASE_URI']
+    alembic_cfg = Config(os.path.join(current_dir, 'alembic.ini'))
+
     with app.app_context():
-        print("🔧 Criando tabelas...")
-        db.create_all()
-        print(f"✅ Banco de dados criado: {db_path}")
-        
-        # Verificar tabelas criadas
+        print("🔧 Aplicando migrações...")
+        command.upgrade(alembic_cfg, 'head')
+        print(f"✅ Banco de dados criado/atualizado: {db_path}")
+
+        # Verificar tabelas existentes
         from sqlalchemy import inspect
         inspector = inspect(db.engine)
         tables = inspector.get_table_names()
-        print(f"📊 Tabelas criadas: {len(tables)}")
+        print(f"📊 Tabelas existentes: {len(tables)}")
         for table in sorted(tables):
             print(f"  - {table}")
 
