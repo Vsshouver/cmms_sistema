@@ -54,9 +54,24 @@ def run_migrations():
     """Apply database migrations."""
     from alembic import command
     from alembic.config import Config
+    from alembic.util import CommandError
+    from sqlalchemy import text
 
     alembic_cfg = Config(os.path.join(current_dir, 'alembic.ini'))
-    command.upgrade(alembic_cfg, 'head')
+
+    try:
+        command.upgrade(alembic_cfg, 'head')
+    except CommandError as e:
+        # Corrige versões inválidas que possam estar registradas no banco
+        if "Can't locate revision identified by" in str(e):
+            print(f"⚠️  Revisão inválida detectada ({e}). Resetando para base...")
+            # Remover tabela de controle de versões para evitar conflitos
+            with db.engine.begin() as conn:
+                conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+            command.stamp(alembic_cfg, 'base')
+            command.upgrade(alembic_cfg, 'head')
+        else:
+            raise
 
 def ensure_schema():
     """Garantir que o esquema do banco esteja atualizado antes de manipular dados."""
