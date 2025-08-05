@@ -28,6 +28,7 @@ from src.models.plano_preventiva import PlanoPreventiva
 from src.models.backlog_item import BacklogItem
 from alembic import command
 from alembic.config import Config
+from alembic.util import CommandError
 
 def create_database():
     """Criar banco de dados com todas as tabelas."""
@@ -53,7 +54,15 @@ def create_database():
 
     with app.app_context():
         print("🔧 Aplicando migrações...")
-        command.upgrade(alembic_cfg, 'head')
+        try:
+            command.upgrade(alembic_cfg, 'head')
+        except CommandError as e:
+            if "Can't locate revision identified by" in str(e):
+                print(f"⚠️  Revisão inválida detectada ({e}). Resetando para base...")
+                command.stamp(alembic_cfg, 'base')
+                command.upgrade(alembic_cfg, 'head')
+            else:
+                raise
         print(f"✅ Banco de dados criado/atualizado: {db_path}")
 
         # Verificar tabelas existentes
