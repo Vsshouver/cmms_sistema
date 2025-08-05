@@ -335,7 +335,8 @@ const updateTiresStats = () => {
 };
 
 const TIRES_GRID_INIT = () => {
-    const gridOptions = {
+    const initGrid = () => {
+        const gridOptions = {
         defaultColDef: {
             resizable: true,
             sortable: true,
@@ -358,11 +359,6 @@ const TIRES_GRID_INIT = () => {
         paginationPageSize: 50,
         tooltipShowDelay: 500,
         tooltipInteraction: true,
-        overlayLoadingTemplate: "",
-        loadingOverlayComponent: "customLoadingOverlay",
-        loadingOverlayComponentParams: {
-            loadingMessage: "Carregando pneus...",
-        },
         animateRows: true,
         onColumnMoved: SAVE_TIRES_COLUMN_STATE,
         onColumnResized: SAVE_TIRES_COLUMN_STATE,
@@ -475,6 +471,13 @@ const TIRES_GRID_INIT = () => {
     gridDiv.className = "ag-theme-alpine";
 
     tiresGridApi = agGrid.createGrid(gridDiv, gridOptions);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGrid);
+    } else {
+        initGrid();
+    }
 };
 
 class TiresPage {

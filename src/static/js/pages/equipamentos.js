@@ -375,71 +375,67 @@ const updateEquipmentsStats = () => {
 };
 
 const EQUIPMENTS_GRID_INIT = () => {
-    const gridOptions = {
-        defaultColDef: {
-            resizable: true,
-            sortable: true,
-            filter: true,
-            floatingFilter: true,
-        },
-        onGridReady: async () => {
-            const savedColumnPositions = JSON.parse(localStorage.getItem("equipmentsColumnPositions"));
-            equipmentsInitialColumnState = equipmentsGridApi.getColumnState();
+    const initGrid = () => {
+        const gridOptions = {
+            defaultColDef: {
+                resizable: true,
+                sortable: true,
+                filter: true,
+                floatingFilter: true,
+            },
+            onGridReady: async () => {
+                const savedColumnPositions = JSON.parse(localStorage.getItem("equipmentsColumnPositions"));
+                equipmentsInitialColumnState = equipmentsGridApi.getColumnState();
 
-            if (savedColumnPositions) {
-                try {
-                    equipmentsGridApi.applyColumnState({ state: savedColumnPositions, applyOrder: true });
-                } catch (error) {
-                    console.error(error);
+                if (savedColumnPositions) {
+                    try {
+                        equipmentsGridApi.applyColumnState({ state: savedColumnPositions, applyOrder: true });
+                    } catch (error) {
+                        console.error(error);
+                    }
                 }
-            }
-        },
-        pagination: true,
-        paginationPageSize: 50,
-        tooltipShowDelay: 500,
-        tooltipInteraction: true,
-        overlayLoadingTemplate: "",
-        loadingOverlayComponent: 'customLoadingOverlay',
-        loadingOverlayComponentParams: {
-            loadingMessage: "Carregando equipamentos...",
-        },
-        animateRows: true,
-        onColumnMoved: SAVE_EQUIPMENTS_COLUMN_STATE,
-        onColumnResized: SAVE_EQUIPMENTS_COLUMN_STATE,
-        onColumnVisible: SAVE_EQUIPMENTS_COLUMN_STATE,
-        onFilterChanged: updateEquipmentsStats,
-        getContextMenuItems(params) {
-            const options = [
-                {
-                    name: "Editar",
-                    action: () => EDIT_EQUIPAMENTO(params),
-                    icon: /*html*/ `
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    `,
-                },
-                {
-                    name: "Excluir",
-                    action: () => DELETE_EQUIPAMENTO(params),
-                    icon: /*html*/ `
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3,6 5,6 21,6"></polyline>
-                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
-                        </svg>
-                    `,
-                },
-            ];
+            },
+            pagination: true,
+            paginationPageSize: 50,
+            tooltipShowDelay: 500,
+            tooltipInteraction: true,
+            animateRows: true,
+            onColumnMoved: SAVE_EQUIPMENTS_COLUMN_STATE,
+            onColumnResized: SAVE_EQUIPMENTS_COLUMN_STATE,
+            onColumnVisible: SAVE_EQUIPMENTS_COLUMN_STATE,
+            onFilterChanged: updateEquipmentsStats,
+            getContextMenuItems(params) {
+                const options = [
+                    {
+                        name: "Editar",
+                        action: () => EDIT_EQUIPAMENTO(params),
+                        icon: /*html*/ `
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        `,
+                    },
+                    {
+                        name: "Excluir",
+                        action: () => DELETE_EQUIPAMENTO(params),
+                        icon: /*html*/ `
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3,6 5,6 21,6"></polyline>
+                                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
+                            </svg>
+                        `,
+                    },
+                ];
 
-            return [...options, ...params.defaultItems.filter((item) => 
-                !["export", "copy", "paste", "cut", "copyWithHeaders", "copyWithGroupHeaders"].includes(item)
-            )];
-        },
-        columnDefs: [
-            { 
-                headerName: "Código", 
-                field: "codigo_interno",
+                return [...options, ...params.defaultItems.filter((item) =>
+                    !["export", "copy", "paste", "cut", "copyWithHeaders", "copyWithGroupHeaders"].includes(item)
+                )];
+            },
+            columnDefs: [
+                {
+                    headerName: "Código",
+                    field: "codigo_interno",
                 minWidth: 120,
                 maxWidth: 150
             },
@@ -495,20 +491,27 @@ const EQUIPMENTS_GRID_INIT = () => {
                     return new Date(params.value).toLocaleDateString('pt-BR');
                 }
             }
-        ],
+            ],
+        };
+
+        const gridDiv = document.querySelector("#equipments-grid");
+        if (!gridDiv) {
+            console.error('Grid container não encontrado');
+            return;
+        }
+
+        gridDiv.innerHTML = "";
+        gridDiv.style.height = "calc(75vh - 40px)";
+        gridDiv.className = "ag-theme-alpine";
+
+        equipmentsGridApi = agGrid.createGrid(gridDiv, gridOptions);
     };
 
-    const gridDiv = document.querySelector("#equipments-grid");
-    if (!gridDiv) {
-        console.error('Grid container não encontrado');
-        return;
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGrid);
+    } else {
+        initGrid();
     }
-
-    gridDiv.innerHTML = "";
-    gridDiv.style.height = "calc(75vh - 40px)";
-    gridDiv.className = "ag-theme-alpine";
-
-    equipmentsGridApi = agGrid.createGrid(gridDiv, gridOptions);
 };
 
 // Classe para compatibilidade com o sistema existente

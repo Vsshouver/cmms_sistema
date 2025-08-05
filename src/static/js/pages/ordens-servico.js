@@ -378,7 +378,8 @@ const updateWorkOrdersStats = () => {
 };
 
 const WORK_ORDERS_GRID_INIT = () => {
-    const gridOptions = {
+    const initGrid = () => {
+        const gridOptions = {
         defaultColDef: {
             resizable: true,
             sortable: true,
@@ -401,11 +402,6 @@ const WORK_ORDERS_GRID_INIT = () => {
         paginationPageSize: 50,
         tooltipShowDelay: 500,
         tooltipInteraction: true,
-        overlayLoadingTemplate: "",
-        loadingOverlayComponent: "customLoadingOverlay",
-        loadingOverlayComponentParams: {
-            loadingMessage: "Carregando ordens de serviço...",
-        },
         animateRows: true,
         onColumnMoved: SAVE_WORK_ORDERS_COLUMN_STATE,
         onColumnResized: SAVE_WORK_ORDERS_COLUMN_STATE,
@@ -539,6 +535,13 @@ const WORK_ORDERS_GRID_INIT = () => {
     gridDiv.className = "ag-theme-alpine";
 
     workOrdersGridApi = agGrid.createGrid(gridDiv, gridOptions);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGrid);
+    } else {
+        initGrid();
+    }
 };
 
 class WorkOrdersPage {
