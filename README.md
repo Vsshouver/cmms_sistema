@@ -66,6 +66,28 @@ python3 app.py
 ```
 Acesse: http://localhost:5000
 
+## Banco de Dados e Migrações
+
+Este projeto utiliza **Alembic** para controle de versão do banco de dados.
+
+- Para criar um novo banco local, execute:
+
+```bash
+python create_db.py
+```
+
+  O script aplicará todas as migrações pendentes.
+
+- Se você já possui um banco criado antes da introdução do Alembic,
+  sincronize o estado atual executando uma vez:
+
+```bash
+alembic stamp head
+```
+
+  Depois disso, utilize `alembic upgrade head` ou rode novamente
+  `python create_db.py` para aplicar novas migrações.
+
 ## Credenciais de Teste
 
 - **E-mail:** admin@mineracao.com
