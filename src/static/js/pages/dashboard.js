@@ -184,7 +184,7 @@ class DashboardPage {
                         </h3>
                     </div>
                     <div class="card-body">
-                        <div id="os-status-chart"></div>
+                        <div id="os-status-chart" class="chart-container"></div>
                     </div>
                 </div>
 
@@ -197,7 +197,7 @@ class DashboardPage {
                         </h3>
                     </div>
                     <div class="card-body">
-                        <div id="maintenance-types-chart"></div>
+                        <div id="maintenance-types-chart" class="chart-container"></div>
                     </div>
                 </div>
             </div>
