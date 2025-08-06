@@ -259,16 +259,13 @@ class InventoryPage {
                 field: 'status',
                 minWidth: 100,
                 cellRenderer: (params) => {
-                    const quantidade = params.data.quantidade || 0;
-                    const minimo = params.data.quantidade_minima || 0;
-                    
-                    if (quantidade === 0) {
+                    const value = params.value;
+                    if (value === 'Zerado') {
                         return '<span class="status-badge status-danger">Zerado</span>';
-                    } else if (quantidade <= minimo) {
+                    } else if (value === 'Baixo') {
                         return '<span class="status-badge status-warning">Baixo</span>';
-                    } else {
-                        return '<span class="status-badge status-success">Disponível</span>';
                     }
+                    return '<span class="status-badge status-success">Disponível</span>';
                 },
                 filter: 'agSetColumnFilter',
                 filterParams: {
