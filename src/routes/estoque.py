@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from src.db import db
 from src.models.peca import Peca
+from src.models.item import Item
 from src.models.movimentacao_estoque import MovimentacaoEstoque
 from src.models.estoque_local import EstoqueLocal
 from src.utils.auth import token_required, supervisor_or_admin_required, almoxarife_or_above_required
@@ -17,25 +18,43 @@ def get_pecas(current_user):
         baixo_estoque = request.args.get('baixo_estoque')
         search = request.args.get('search')
         
-        query = Peca.query
+        query = db.session.query(Peca, Item).outerjoin(Item, Peca.codigo == Item.numero_item)
         
         if categoria:
-            query = query.filter_by(categoria=categoria)
+            query = query.filter(Peca.categoria == categoria)
         if baixo_estoque == 'true':
             query = query.filter(Peca.quantidade <= Peca.min_estoque)
         if search:
+            search_like = f"%{search}%"
             query = query.filter(
-                Peca.nome.contains(search) |
-                Peca.codigo.contains(search) |
-                Peca.fornecedor.contains(search)
+                db.or_(
+                    Peca.nome.ilike(search_like),
+                    Peca.codigo.ilike(search_like),
+                    Peca.fornecedor.ilike(search_like),
+                    Item.descricao_item.ilike(search_like),
+                    Item.numero_item.ilike(search_like)
+                )
             )
-        
-        pecas = query.all()
-        
-        return jsonify({
-            'pecas': [peca.to_dict() for peca in pecas],
-            'total': len(pecas)
-        }), 200
+
+        results = query.all()
+
+        pecas = []
+        for peca, item in results:
+            peca_dict = peca.to_dict()
+            if item:
+                peca_dict['item'] = {
+                    'numero_item': item.numero_item,
+                    'descricao_item': item.descricao_item,
+                    'grupo_itens': item.grupo_itens,
+                    'unidade_medida': item.unidade_medida,
+                    'ultimo_preco_avaliacao': float(item.ultimo_preco_avaliacao) if item.ultimo_preco_avaliacao is not None else None,
+                    'ultimo_preco_compra': float(item.ultimo_preco_compra) if item.ultimo_preco_compra is not None else None,
+                    'estoque_baixo': item.estoque_baixo,
+                    'data_registro': item.data_registro.isoformat() if item.data_registro else None
+                }
+            pecas.append(peca_dict)
+
+        return jsonify({'pecas': pecas, 'total': len(pecas)}), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
