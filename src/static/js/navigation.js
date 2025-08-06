@@ -32,7 +32,6 @@ class NavigationManager {
         // Event listeners
         this.setupSidebarEvents();
         this.setupMenuToggle();
-        this.setupUserMenu();
 
         // Carregar página inicial
         this.navigateTo('dashboard');
@@ -78,48 +77,6 @@ class NavigationManager {
         } else {
             this.sidebar.classList.remove('open');
             this.sidebar.classList.toggle('closed', !this.isSidebarOpen);
-        }
-    }
-
-    setupUserMenu() {
-        const userBtn = document.querySelector('.user-btn');
-        const userDropdown = document.querySelector('.user-dropdown');
-
-        if (userBtn && userDropdown) {
-            userBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                userDropdown.classList.toggle('show');
-            });
-
-            // Fechar dropdown ao clicar fora do menu
-            document.addEventListener('click', (e) => {
-                if (!userDropdown.contains(e.target) && !userBtn.contains(e.target)) {
-                    userDropdown.classList.remove('show');
-                }
-            });
-
-            // Event listeners do dropdown
-            userDropdown.addEventListener('click', (e) => {
-                const link = e.target.closest('a');
-                if (link) {
-                    e.preventDefault();
-                    const action = link.id;
-                    
-                    switch (action) {
-                        case 'user-profile':
-                            this.showUserProfile();
-                            break;
-                        case 'user-settings':
-                            this.showUserSettings();
-                            break;
-                        case 'logout':
-                            this.handleLogout();
-                            break;
-                    }
-                    
-                    userDropdown.classList.remove('show');
-                }
-            });
         }
     }
 
