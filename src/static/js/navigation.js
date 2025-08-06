@@ -57,7 +57,8 @@ class NavigationManager {
     setupMenuToggle() {
         if (!this.menuToggle) return;
 
-        this.menuToggle.addEventListener('click', () => {
+        this.menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
             this.isSidebarOpen = !this.isSidebarOpen;
             this.updateSidebar();
         });
