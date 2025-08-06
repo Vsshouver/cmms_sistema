@@ -1,4 +1,6 @@
 // Gerenciador de navegação
+const { useState, useEffect } = React;
+
 class NavigationManager {
     constructor() {
         this.currentPage = 'dashboard';
@@ -43,13 +45,6 @@ class NavigationManager {
             if (link && link.dataset.page) {
                 e.preventDefault();
                 this.navigateTo(link.dataset.page);
-            }
-
-            // Grupos expansíveis
-            const groupHeader = e.target.closest('.nav-group-header');
-            if (groupHeader) {
-                const group = groupHeader.parentElement;
-                group.classList.toggle('expanded');
             }
         });
     }
@@ -344,4 +339,48 @@ class NavigationManager {
 
 // Exportar classe para uso global
 window.NavigationManager = NavigationManager;
+
+// Gerenciar expansão dos grupos de navegação com React
+function NavGroupManager() {
+    const [expandedGroups, setExpandedGroups] = useState({});
+
+    useEffect(() => {
+        const groups = document.querySelectorAll('.nav-group');
+        const initialState = {};
+
+        groups.forEach((group, index) => {
+            initialState[index] = group.classList.contains('expanded');
+
+            const header = group.querySelector('.nav-group-header');
+            if (header) {
+                header.onclick = (e) => {
+                    e.stopPropagation();
+                    setExpandedGroups(prev => ({
+                        ...prev,
+                        [index]: !prev[index]
+                    }));
+                };
+            }
+        });
+
+        setExpandedGroups(initialState);
+    }, []);
+
+    useEffect(() => {
+        const groups = document.querySelectorAll('.nav-group');
+        groups.forEach((group, index) => {
+            const expanded = !!expandedGroups[index];
+            group.classList.toggle('expanded', expanded);
+        });
+    }, [expandedGroups]);
+
+    return null;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    const root = ReactDOM.createRoot(rootEl);
+    root.render(React.createElement(NavGroupManager));
+});
 
