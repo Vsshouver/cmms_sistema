@@ -57,8 +57,21 @@ class PreventivasPage {
         }
     }
 
-    openCreateModal() {
-        const content = `
+    async openCreateModal() {
+        try {
+            const [equipamentos, tipos] = await Promise.all([
+                API.equipments.getAll(),
+                API.maintenanceTypes.getAll()
+            ]);
+
+            const equipamentosOptions = (equipamentos.equipamentos || equipamentos.data || [])
+                .map(eq => `<option value="${eq.id}">${eq.nome}</option>`) 
+                .join('');
+            const tiposOptions = (tipos.tipos_manutencao || tipos.data || [])
+                .map(tp => `<option value="${tp.id}">${tp.nome}</option>`) 
+                .join('');
+
+            const content = `
             <h3 class="text-lg font-semibold mb-2">📋 Dados Gerais</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -67,11 +80,15 @@ class PreventivasPage {
                 </div>
                 <div>
                     <label>Equipamento</label>
-                    <input id="plan-equipamento" type="text" class="border p-2 w-full" />
+                    <select id="plan-equipamento" class="border p-2 w-full">
+                        ${equipamentosOptions}
+                    </select>
                 </div>
                 <div>
                     <label>Tipo de Manutenção</label>
-                    <input id="plan-tipo" type="text" class="border p-2 w-full" />
+                    <select id="plan-tipo" class="border p-2 w-full">
+                        ${tiposOptions}
+                    </select>
                 </div>
                 <div>
                     <label>Prioridade</label>
@@ -96,33 +113,37 @@ class PreventivasPage {
             <textarea id="plan-observacoes" class="border p-2 w-full"></textarea>
         `;
 
-        openStandardModal({
-            title: 'Novo Plano de Preventiva',
-            content,
-            onSave: async () => {
-                const data = {
-                    nome: document.getElementById('plan-nome').value,
-                    equipamento: document.getElementById('plan-equipamento').value,
-                    tipo: document.getElementById('plan-tipo').value,
-                    prioridade: document.getElementById('plan-prioridade').value,
-                    descricao: document.getElementById('plan-descricao').value,
-                    intervalo_dias: document.getElementById('plan-intervalo').value,
-                    observacoes: document.getElementById('plan-observacoes').value
-                };
+            openStandardModal({
+                title: 'Novo Plano de Preventiva',
+                content,
+                onSave: async () => {
+                    const data = {
+                        nome: document.getElementById('plan-nome').value,
+                        equipamento_id: document.getElementById('plan-equipamento').value,
+                        tipo_manutencao_id: document.getElementById('plan-tipo').value,
+                        prioridade: document.getElementById('plan-prioridade').value,
+                        descricao: document.getElementById('plan-descricao').value,
+                        intervalo_dias: document.getElementById('plan-intervalo').value,
+                        observacoes: document.getElementById('plan-observacoes').value
+                    };
 
-                try {
-                    await API.preventivePlans.create(data);
-                    if (this.gridApi) {
-                        const updated = await API.preventivePlans.getAll();
-                        this.gridApi.setGridOption('rowData', updated.planos_preventiva || updated.data || []);
+                    try {
+                        await API.preventivePlans.create(data);
+                        if (this.gridApi) {
+                            const updated = await API.preventivePlans.getAll();
+                            this.gridApi.setGridOption('rowData', updated.planos_preventiva || updated.data || []);
+                        }
+                        Toast.success('Plano criado com sucesso');
+                    } catch (error) {
+                        console.error('Erro ao criar plano:', error);
+                        Toast.error('Erro ao salvar plano');
                     }
-                    Toast.success('Plano criado com sucesso');
-                } catch (error) {
-                    console.error('Erro ao criar plano:', error);
-                    Toast.error('Erro ao salvar plano');
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('Erro ao carregar dados para modal:', error);
+            Toast.error('Erro ao carregar dados');
+        }
     }
 }
 
