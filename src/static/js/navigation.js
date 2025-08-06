@@ -6,6 +6,7 @@ class NavigationManager {
         this.sidebar = null;
         this.mainContent = null;
         this.menuToggle = null;
+        this.sidebarState = 'open';
         
         this.init();
     }
@@ -59,8 +60,23 @@ class NavigationManager {
                 if (window.innerWidth <= 1024) {
                     this.sidebar.classList.toggle('open');
                 } else {
-                    this.sidebar.classList.toggle('collapsed');
-                    this.mainContent.classList.toggle('collapsed');
+                    switch (this.sidebarState) {
+                        case 'open':
+                            this.sidebar.classList.add('collapsed');
+                            this.mainContent.classList.add('collapsed');
+                            this.sidebarState = 'collapsed';
+                            break;
+                        case 'collapsed':
+                            this.sidebar.classList.remove('collapsed');
+                            this.mainContent.classList.remove('collapsed');
+                            this.sidebar.classList.add('closed');
+                            this.sidebarState = 'closed';
+                            break;
+                        default:
+                            this.sidebar.classList.remove('closed');
+                            this.sidebarState = 'open';
+                            break;
+                    }
                 }
             });
         }
