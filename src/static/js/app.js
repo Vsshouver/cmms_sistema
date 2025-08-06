@@ -107,6 +107,11 @@ class CMSApp {
                 this.appContainer.style.display = 'grid';
             }
 
+            // Inicializar gerenciador de navegação após autenticação
+            if (!window.navigation) {
+                window.navigation = new NavigationManager();
+            }
+
             // Carregar notificações
             await this.loadNotifications();
 
@@ -198,6 +203,7 @@ class CMSApp {
         // Callback de logout
         auth.onLogout(() => {
             console.log('Logout realizado');
+            window.navigation = null;
             this.showLogin();
         });
     }

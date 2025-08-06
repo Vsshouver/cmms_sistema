@@ -50,20 +50,22 @@ class AuthManager {
     }
 
     // Fazer logout
-    async logout() {
+    async logout(skipServer = false) {
         try {
-            // Tentar fazer logout no servidor
-            await API.auth.logout();
+            // Tentar fazer logout no servidor, caso seja uma ação voluntária
+            if (!skipServer) {
+                await API.auth.logout();
+            }
         } catch (error) {
             console.error('Erro no logout:', error);
         } finally {
             // Limpar dados locais
             this.token = null;
             this.currentUser = null;
-            
+
             // Remover token
             api.setToken(null);
-            
+
             // Executar callbacks de logout
             this.logoutCallbacks.forEach(callback => callback());
         }
