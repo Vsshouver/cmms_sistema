@@ -341,10 +341,6 @@ class NavigationManager {
     }
 }
 
-// Instância global do gerenciador de navegação
-const navigation = new NavigationManager();
-
-// Exportar para uso global
-window.navigation = navigation;
+// Exportar classe para uso global
 window.NavigationManager = NavigationManager;
 

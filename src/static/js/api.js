@@ -43,7 +43,12 @@ class ApiClient {
             // Desloga se o token estiver inválido ou expirado
             if (response.status === 401) {
                 this.setToken(null);
-                window.location.reload();
+                if (typeof auth !== 'undefined' && typeof auth.logout === 'function') {
+                    // Evita chamada ao servidor durante logout forçado
+                    await auth.logout(true);
+                } else if (typeof app !== 'undefined' && typeof app.showLogin === 'function') {
+                    app.showLogin();
+                }
                 return;
             }
 
