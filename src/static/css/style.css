@@ -394,6 +394,14 @@ body {
     width: var(--sidebar-collapsed-width);
 }
 
+.sidebar.closed {
+    transform: translateX(-100%);
+}
+
+.sidebar.closed + .main-content {
+    margin-left: 0;
+}
+
 .sidebar-nav {
     padding: 1rem 0;
 }
