@@ -322,6 +322,14 @@ class TestData {
         ];
     }
 
+    static getItemGroups() {
+        return [
+            { id: 1, nome: 'Lubrificantes' },
+            { id: 2, nome: 'Filtros' },
+            { id: 3, nome: 'Freios' }
+        ];
+    }
+
     static getMechanics() {
         return [
             {
@@ -484,6 +492,35 @@ class TestData {
 
         // Mock do objeto API
         window.API = {
+            auth: {
+                login: async () => {
+                    await delay(300);
+                    return {
+                        token: 'fake-token',
+                        user: {
+                            id: 1,
+                            nome: 'Administrador Sistema',
+                            email: 'admin@empresa.com',
+                            nivel_acesso: 'ADM'
+                        }
+                    };
+                },
+                logout: async () => {
+                    await delay(200);
+                    return { success: true };
+                },
+                me: async () => {
+                    await delay(200);
+                    return {
+                        user: {
+                            id: 1,
+                            nome: 'Administrador Sistema',
+                            email: 'admin@empresa.com',
+                            nivel_acesso: 'ADM'
+                        }
+                    };
+                }
+            },
             equipments: {
                 getAll: async () => {
                     await delay(500);
@@ -547,6 +584,54 @@ class TestData {
                     return { success: true };
                 }
             },
+            inventory: {
+                getAll: async () => {
+                    await delay(450);
+                    return { pecas: TestData.getStockItems() };
+                },
+                create: async (data) => {
+                    await delay(350);
+                    console.log('Criando item de estoque:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(350);
+                    console.log('Atualizando item de estoque:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(300);
+                    console.log('Excluindo item de estoque:', id);
+                    return { success: true };
+                },
+                movement: async (id, data) => {
+                    await delay(300);
+                    console.log('Registrando movimentação do item:', id, data);
+                    return { id, ...data };
+                }
+            },
+            itemGroups: {
+                getAll: async () => {
+                    await delay(300);
+                    const grupos = TestData.getItemGroups();
+                    return { grupos_item: grupos, data: grupos };
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando grupo de item:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando grupo de item:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(200);
+                    console.log('Excluindo grupo de item:', id);
+                    return { success: true };
+                }
+            },
             mechanics: {
                 getAll: async () => {
                     await delay(400);
@@ -599,34 +684,6 @@ class TestData {
         console.log('API de teste configurada com sucesso!');
     }
 
-    // Método para configurar dados de autenticação de teste
-    static setupTestAuth() {
-        window.auth = {
-            isAuthenticated: () => true,
-            getCurrentUser: () => ({
-                id: 1,
-                nome: 'Administrador Sistema',
-                email: 'admin@empresa.com',
-                perfil: 'admin'
-            }),
-            hasPermission: (permission) => {
-                const user = window.auth.getCurrentUser();
-                if (user.perfil === 'admin') return true;
-                
-                const permissions = {
-                    'edit': ['admin', 'pcm'],
-                    'delete': ['admin'],
-                    'create': ['admin', 'pcm'],
-                    'view': ['admin', 'pcm', 'mecanico', 'almoxarife', 'operador', 'visualizador']
-                };
-                
-                return permissions[permission]?.includes(user.perfil) || false;
-            }
-        };
-
-        console.log('Autenticação de teste configurada!');
-    }
-
     // Método para configurar utilitários de teste
     static setupTestUtils() {
         window.Utils = {
@@ -674,7 +731,6 @@ class TestData {
     // Método principal para inicializar todos os dados de teste
     static initialize() {
         this.simulateAPI();
-        this.setupTestAuth();
         this.setupTestUtils();
         
         console.log('Sistema de teste inicializado com sucesso!');
@@ -682,6 +738,7 @@ class TestData {
         console.log('- Equipamentos:', this.getEquipments().length);
         console.log('- Ordens de Serviço:', this.getWorkOrders().length);
         console.log('- Itens de Estoque:', this.getStockItems().length);
+        console.log('- Grupos de Itens:', this.getItemGroups().length);
         console.log('- Mecânicos:', this.getMechanics().length);
         console.log('- Usuários:', this.getUsers().length);
     }
