@@ -77,6 +77,10 @@ class BacklogPage {
                     <label>Prioridade</label>
                     <input id="backlog-prioridade" type="text" class="border p-2 w-full" />
                 </div>
+                <div>
+                    <label>Equipamento</label>
+                    <select id="backlog-equipamento" class="border p-2 w-full"></select>
+                </div>
             </div>
             <h3 class="text-lg font-semibold mb-2 mt-4">💡 Observações</h3>
             <textarea id="backlog-observacoes" class="border p-2 w-full"></textarea>
@@ -91,6 +95,7 @@ class BacklogPage {
                     categoria: document.getElementById('backlog-categoria').value,
                     status: document.getElementById('backlog-status').value,
                     prioridade: document.getElementById('backlog-prioridade').value,
+                    equipamento_id: document.getElementById('backlog-equipamento').value || null,
                     observacoes: document.getElementById('backlog-observacoes').value
                 };
 
@@ -106,6 +111,18 @@ class BacklogPage {
                     Toast.error('Erro ao salvar item');
                 }
             }
+        });
+
+        // Carregar equipamentos
+        API.equipamentos.getAll().then(response => {
+            const equipamentos = response.equipamentos || response.data || [];
+            const select = document.getElementById('backlog-equipamento');
+            if (select) {
+                select.innerHTML = '<option value="">Selecione</option>' +
+                    equipamentos.map(eq => `<option value="${eq.id}">${eq.nome} (${eq.codigo_interno})</option>`).join('');
+            }
+        }).catch(error => {
+            console.error('Erro ao carregar equipamentos:', error);
         });
     }
 }
