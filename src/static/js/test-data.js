@@ -542,25 +542,37 @@ class TestData {
                     return { success: true };
                 }
             },
-            workOrders: {
-                getAll: async () => {
-                    await delay(600);
-                    return TestData.getWorkOrders();
+             workOrders: {
+                 getAll: async () => {
+                     await delay(600);
+                     return TestData.getWorkOrders();
+                 },
+                 create: async (data) => {
+                     await delay(400);
+                     console.log('Criando OS:', data);
+                     return { id: Date.now(), ...data };
+                 },
+                 update: async (id, data) => {
+                     await delay(400);
+                     console.log('Atualizando OS:', id, data);
+                     return { id, ...data };
+                 },
+                 delete: async (id) => {
+                     await delay(300);
+                     console.log('Excluindo OS:', id);
+                     return { success: true };
                 },
-                create: async (data) => {
-                    await delay(400);
-                    console.log('Criando OS:', data);
-                    return { id: Date.now(), ...data };
-                },
-                update: async (id, data) => {
-                    await delay(400);
-                    console.log('Atualizando OS:', id, data);
-                    return { id, ...data };
-                },
-                delete: async (id) => {
+                getMechanicAlerts: async () => {
                     await delay(300);
-                    console.log('Excluindo OS:', id);
-                    return { success: true };
+                    // Considera todas as OS não concluídas como alertas
+                    const alertas = TestData.getWorkOrders().filter(os => os.status !== 'concluida');
+                    return { total_alertas: alertas.length, alertas };
+                }
+            },
+            tires: {
+                getAlerts: async () => {
+                    await delay(300);
+                    return { total_alertas: 0, alertas: [] };
                 }
             },
             stock: {

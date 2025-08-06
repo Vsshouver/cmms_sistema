@@ -1,6 +1,7 @@
 
 document.addEventListener("DOMContentLoaded", function () {
-    const apiUrl = "/api/itens";
+    // Usar a URL base configurada dinamicamente para evitar problemas de mixed content
+    const apiUrl = `${window.API_BASE_URL}/itens/`;
 
     const form = document.getElementById("item-form");
     const tabela = document.getElementById("tabela-itens");
