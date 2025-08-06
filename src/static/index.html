@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- React CDN -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
 </head>
 <body>
     <!-- Loading Screen -->
@@ -85,19 +90,7 @@
                     </button>
                 </div>
                 
-                <div class="user-menu">
-                    <button class="user-btn">
-                        <i class="fas fa-user-circle"></i>
-                        <span id="user-name">Usuário</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="user-dropdown">
-                        <a href="#" id="user-profile"><i class="fas fa-user"></i> Perfil</a>
-                        <a href="#" id="user-settings"><i class="fas fa-cog"></i> Configurações</a>
-                        <hr>
-                        <a href="#" id="logout"><i class="fas fa-sign-out-alt"></i> Sair</a>
-                    </div>
-                </div>
+                <div class="user-menu" id="user-menu-root"></div>
             </div>
         </header>
 
@@ -256,6 +249,9 @@
     <script src="/js/vendor/jquery-3.7.1.min.js"></script>
     <script src="/js/vendor/bootstrap.min.js"></script>
     <script src="/static/js/vendor/ag-grid-enterprise.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ag-charts-community/dist/ag-charts-community.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="/js/ag-grid-config.js"></script>
     <script src="/js/test-data.js"></script>
     <script src="/js/api.js"></script>
@@ -263,6 +259,7 @@
     <script src="/js/utils.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/navigation.js"></script>
+    <script src="/js/userMenu.js"></script>
     <script src="/js/components.js"></script>
     <script src="/js/pages/dashboard.js"></script>
     <script src="/js/pages/ordens-servico.js"></script>
@@ -287,7 +284,7 @@
     <form id="item-form">
         <input type="text" name="numero_item" placeholder="Número do Item" required>
         <input type="text" name="descricao_item" placeholder="Descrição" required>
-        <input type="text" name="grupo_itens" placeholder="Grupo do Item">
+        <select id="grupo_itens" name="grupo_itens"></select>
         <input type="text" name="unidade_medida" placeholder="Unidade de Medida">
         <input type="number" step="0.01" name="ultimo_preco_avaliacao" placeholder="Último Preço Avaliação">
         <input type="number" step="0.01" name="ultimo_preco_compra" placeholder="Último Preço Compra">

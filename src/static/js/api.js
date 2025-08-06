@@ -1,5 +1,6 @@
 // Configuração da API
-const API_BASE_URL = window.location.origin + '/api';
+// Usa o mesmo protocolo da página atual para evitar erros de mixed content
+const API_BASE_URL = `${window.location.protocol}//cmmssistema-production.up.railway.app/api`;
 
 // Cliente HTTP para comunicação com a API
 class ApiClient {
@@ -43,7 +44,12 @@ class ApiClient {
             // Desloga se o token estiver inválido ou expirado
             if (response.status === 401) {
                 this.setToken(null);
-                window.location.reload();
+                if (typeof auth !== 'undefined' && typeof auth.logout === 'function') {
+                    // Evita chamada ao servidor durante logout forçado
+                    await auth.logout(true);
+                } else if (typeof app !== 'undefined' && typeof app.showLogin === 'function') {
+                    app.showLogin();
+                }
                 return;
             }
 

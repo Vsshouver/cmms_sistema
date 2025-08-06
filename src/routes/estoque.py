@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from src.db import db
 from src.models.peca import Peca
+from src.models.item import Item
 from src.models.movimentacao_estoque import MovimentacaoEstoque
 from src.models.estoque_local import EstoqueLocal
 from src.utils.auth import token_required, supervisor_or_admin_required, almoxarife_or_above_required
@@ -17,25 +18,43 @@ def get_pecas(current_user):
         baixo_estoque = request.args.get('baixo_estoque')
         search = request.args.get('search')
         
-        query = Peca.query
+        query = db.session.query(Peca, Item).outerjoin(Item, Peca.codigo == Item.numero_item)
         
         if categoria:
-            query = query.filter_by(categoria=categoria)
+            query = query.filter(Peca.categoria == categoria)
         if baixo_estoque == 'true':
             query = query.filter(Peca.quantidade <= Peca.min_estoque)
         if search:
+            search_like = f"%{search}%"
             query = query.filter(
-                Peca.nome.contains(search) |
-                Peca.codigo.contains(search) |
-                Peca.fornecedor.contains(search)
+                db.or_(
+                    Peca.nome.ilike(search_like),
+                    Peca.codigo.ilike(search_like),
+                    Peca.fornecedor.ilike(search_like),
+                    Item.descricao_item.ilike(search_like),
+                    Item.numero_item.ilike(search_like)
+                )
             )
-        
-        pecas = query.all()
-        
-        return jsonify({
-            'pecas': [peca.to_dict() for peca in pecas],
-            'total': len(pecas)
-        }), 200
+
+        results = query.all()
+
+        pecas = []
+        for peca, item in results:
+            peca_dict = peca.to_dict()
+            if item:
+                peca_dict['item'] = {
+                    'numero_item': item.numero_item,
+                    'descricao_item': item.descricao_item,
+                    'grupo_itens': item.grupo_itens,
+                    'unidade_medida': item.unidade_medida,
+                    'ultimo_preco_avaliacao': float(item.ultimo_preco_avaliacao) if item.ultimo_preco_avaliacao is not None else None,
+                    'ultimo_preco_compra': float(item.ultimo_preco_compra) if item.ultimo_preco_compra is not None else None,
+                    'estoque_baixo': item.estoque_baixo,
+                    'data_registro': item.data_registro.isoformat() if item.data_registro else None
+                }
+            pecas.append(peca_dict)
+
+        return jsonify({'pecas': pecas, 'total': len(pecas)}), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -69,6 +88,10 @@ def create_peca(current_user):
         if Peca.query.filter_by(codigo=data['codigo']).first():
             return jsonify({'error': 'Código da peça já existe'}), 400
         
+        quantidade_minima = data.get('quantidade_minima', data.get('min_estoque', 0))
+        quantidade_maxima = data.get('quantidade_maxima', data.get('max_estoque', 100))
+        valor_unitario = data.get('valor_unitario', data.get('preco_unitario'))
+
         peca = Peca(
             codigo=data['codigo'],
             nome=data['nome'],
@@ -76,9 +99,9 @@ def create_peca(current_user):
             descricao=data.get('descricao'),
             unidade=data['unidade'],
             quantidade=data.get('quantidade', 0),
-            min_estoque=data.get('min_estoque', 0),
-            max_estoque=data.get('max_estoque', 100),
-            preco_unitario=data.get('preco_unitario'),
+            min_estoque=quantidade_minima,
+            max_estoque=quantidade_maxima,
+            preco_unitario=valor_unitario,
             localizacao=data.get('localizacao'),
             fornecedor=data.get('fornecedor'),
             observacoes=data.get('observacoes')
@@ -118,12 +141,12 @@ def update_peca(current_user, peca_id):
             peca.unidade = data['unidade']
         if 'quantidade' in data:
             peca.quantidade = data['quantidade']
-        if 'min_estoque' in data:
-            peca.min_estoque = data['min_estoque']
-        if 'max_estoque' in data:
-            peca.max_estoque = data['max_estoque']
-        if 'preco_unitario' in data:
-            peca.preco_unitario = data['preco_unitario']
+        if 'quantidade_minima' in data or 'min_estoque' in data:
+            peca.min_estoque = data.get('quantidade_minima', data.get('min_estoque'))
+        if 'quantidade_maxima' in data or 'max_estoque' in data:
+            peca.max_estoque = data.get('quantidade_maxima', data.get('max_estoque'))
+        if 'valor_unitario' in data or 'preco_unitario' in data:
+            peca.preco_unitario = data.get('valor_unitario', data.get('preco_unitario'))
         if 'localizacao' in data:
             peca.localizacao = data['localizacao']
         if 'fornecedor' in data:

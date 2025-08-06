@@ -25,6 +25,7 @@ from src.routes.usuarios import usuarios_bp
 from src.routes.tipos_equipamento import tipos_equipamento_bp
 from src.routes.tipos_manutencao import tipos_manutencao_bp
 from src.routes.grupos_item import grupos_item_bp
+from src.routes.item_routes import item_bp
 from src.routes.analise_oleo import analise_oleo_bp
 from src.routes.importacao import importacao_bp
 from src.routes.impressao import impressao_bp
@@ -53,6 +54,7 @@ app.register_blueprint(usuarios_bp, url_prefix='/api')
 app.register_blueprint(tipos_equipamento_bp, url_prefix='/api')
 app.register_blueprint(tipos_manutencao_bp, url_prefix='/api')
 app.register_blueprint(grupos_item_bp, url_prefix='/api')
+app.register_blueprint(item_bp, url_prefix='/api/itens')
 app.register_blueprint(analise_oleo_bp, url_prefix='/api')
 app.register_blueprint(importacao_bp, url_prefix='/api')
 app.register_blueprint(impressao_bp, url_prefix='/api')
@@ -109,6 +111,7 @@ def api_index():
             "tipos_equipamento": "/api/tipos-equipamento",
             "tipos_manutencao": "/api/tipos-manutencao",
             "grupos_item": "/api/grupos-item",
+            "itens": "/api/itens",
             "analise_oleo": "/api/analise-oleo",
             "importacao": "/api/importacao/pecas",
             "impressao": "/api/ordens-servico/{id}/imprimir"

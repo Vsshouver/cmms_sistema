@@ -4,6 +4,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const form = document.getElementById("item-form");
     const tabela = document.getElementById("tabela-itens");
+    const grupoSelect = document.getElementById("grupo_itens");
+
+    function carregarGrupos() {
+        if (!grupoSelect) return;
+        API.itemGroups.getAll()
+            .then(response => {
+                const grupos = response.grupos_item || [];
+                grupoSelect.innerHTML = '<option value="">Selecione um grupo</option>';
+                grupos.forEach(grupo => {
+                    const option = document.createElement('option');
+                    option.value = grupo.nome;
+                    option.textContent = grupo.nome;
+                    option.dataset.id = grupo.id;
+                    grupoSelect.appendChild(option);
+                });
+            })
+            .catch(err => console.error('Erro ao carregar grupos de item:', err));
+    }
 
     function carregarItens() {
         fetch(apiUrl)
@@ -54,5 +72,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    carregarGrupos();
     carregarItens();
 });

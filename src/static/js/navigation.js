@@ -1,4 +1,7 @@
 // Gerenciador de navegação
+(() => {
+var useState = React.useState, useEffect = React.useEffect;
+
 class NavigationManager {
     constructor() {
         this.currentPage = 'dashboard';
@@ -6,6 +9,7 @@ class NavigationManager {
         this.sidebar = null;
         this.mainContent = null;
         this.menuToggle = null;
+        this.isSidebarOpen = true;
         
         this.init();
     }
@@ -29,7 +33,6 @@ class NavigationManager {
         // Event listeners
         this.setupSidebarEvents();
         this.setupMenuToggle();
-        this.setupUserMenu();
 
         // Carregar página inicial
         this.navigateTo('dashboard');
@@ -43,70 +46,38 @@ class NavigationManager {
                 e.preventDefault();
                 this.navigateTo(link.dataset.page);
             }
-
-            // Grupos expansíveis
-            const groupHeader = e.target.closest('.nav-group-header');
-            if (groupHeader) {
-                const group = groupHeader.parentElement;
-                group.classList.toggle('expanded');
-            }
         });
     }
 
     setupMenuToggle() {
-        if (this.menuToggle) {
-            this.menuToggle.addEventListener('click', () => {
-                this.sidebar.classList.toggle('show');
-            });
-        }
+        if (!this.menuToggle) return;
 
-        // Fechar sidebar ao clicar fora (mobile)
+        this.menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.isSidebarOpen = !this.isSidebarOpen;
+            this.updateSidebar();
+        });
+
+        // Fechar sidebar ao clicar fora
         document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
-                if (!this.sidebar.contains(e.target) && !this.menuToggle.contains(e.target)) {
-                    this.sidebar.classList.remove('show');
-                }
+            if (
+                window.innerWidth <= 1024 &&
+                this.isSidebarOpen &&
+                !this.sidebar.contains(e.target) &&
+                !this.menuToggle.contains(e.target)
+            ) {
+                this.isSidebarOpen = false;
+                this.updateSidebar();
             }
         });
     }
 
-    setupUserMenu() {
-        const userBtn = document.querySelector('.user-btn');
-        const userDropdown = document.querySelector('.user-dropdown');
-
-        if (userBtn && userDropdown) {
-            userBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                userDropdown.classList.toggle('show');
-            });
-
-            // Fechar dropdown ao clicar fora
-            document.addEventListener('click', () => {
-                userDropdown.classList.remove('show');
-            });
-
-            // Event listeners do dropdown
-            userDropdown.addEventListener('click', (e) => {
-                const link = e.target.closest('a');
-                if (link) {
-                    e.preventDefault();
-                    const action = link.id;
-                    
-                    switch (action) {
-                        case 'user-profile':
-                            this.showUserProfile();
-                            break;
-                        case 'user-settings':
-                            this.showUserSettings();
-                            break;
-                        case 'logout':
-                            this.handleLogout();
-                            break;
-                    }
-                    
-                    userDropdown.classList.remove('show');
-                }
-            });
+    updateSidebar() {
+        if (window.innerWidth <= 1024) {
+            this.sidebar.classList.toggle('open', this.isSidebarOpen);
+        } else {
+            this.sidebar.classList.remove('open');
+            this.sidebar.classList.toggle('closed', !this.isSidebarOpen);
         }
     }
 
@@ -135,8 +106,9 @@ class NavigationManager {
             this.currentPage = pageName;
 
             // Fechar sidebar no mobile
-            if (window.innerWidth <= 768) {
-                this.sidebar.classList.remove('show');
+            if (window.innerWidth <= 1024) {
+                this.isSidebarOpen = false;
+                this.updateSidebar();
             }
 
         } catch (error) {
@@ -323,10 +295,51 @@ class NavigationManager {
     }
 }
 
-// Instância global do gerenciador de navegação
-const navigation = new NavigationManager();
-
-// Exportar para uso global
-window.navigation = navigation;
+// Exportar classe para uso global
 window.NavigationManager = NavigationManager;
 
+// Gerenciar expansão dos grupos de navegação com React
+function NavGroupManager() {
+    const [expandedGroups, setExpandedGroups] = useState({});
+
+    useEffect(() => {
+        const groups = document.querySelectorAll('.nav-group');
+        const initialState = {};
+
+        groups.forEach((group, index) => {
+            initialState[index] = group.classList.contains('expanded');
+
+            const header = group.querySelector('.nav-group-header');
+            if (header) {
+                header.onclick = (e) => {
+                    e.stopPropagation();
+                    setExpandedGroups(prev => ({
+                        ...prev,
+                        [index]: !prev[index]
+                    }));
+                };
+            }
+        });
+
+        setExpandedGroups(initialState);
+    }, []);
+
+    useEffect(() => {
+        const groups = document.querySelectorAll('.nav-group');
+        groups.forEach((group, index) => {
+            const expanded = !!expandedGroups[index];
+            group.classList.toggle('expanded', expanded);
+        });
+    }, [expandedGroups]);
+
+    return null;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    const root = ReactDOM.createRoot(rootEl);
+    root.render(React.createElement(NavGroupManager));
+});
+
+})();

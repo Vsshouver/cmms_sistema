@@ -34,7 +34,7 @@ class InventoryPage {
     async loadData() {
         try {
             const response = await API.inventory.getAll();
-            this.data = Array.isArray(response) ? response : (response.data || []);
+            this.data = response.pecas || response.data || [];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             this.data = [];
@@ -259,16 +259,13 @@ class InventoryPage {
                 field: 'status',
                 minWidth: 100,
                 cellRenderer: (params) => {
-                    const quantidade = params.data.quantidade || 0;
-                    const minimo = params.data.quantidade_minima || 0;
-                    
-                    if (quantidade === 0) {
+                    const value = params.value;
+                    if (value === 'Zerado') {
                         return '<span class="status-badge status-danger">Zerado</span>';
-                    } else if (quantidade <= minimo) {
+                    } else if (value === 'Baixo') {
                         return '<span class="status-badge status-warning">Baixo</span>';
-                    } else {
-                        return '<span class="status-badge status-success">Disponível</span>';
                     }
+                    return '<span class="status-badge status-success">Disponível</span>';
                 },
                 filter: 'agSetColumnFilter',
                 filterParams: {
@@ -618,8 +615,15 @@ class InventoryItemModal {
                     <div class="modal-body">
                         <form id="inventory-item-form" class="form-grid">
                             <div class="form-group">
+                                <label for="item_id">Item</label>
+                                <select id="item_id" name="item_id" class="form-select">
+                                    <option value="">Selecione o item</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
                                 <label for="nome">Nome *</label>
-                                <input type="text" id="nome" name="nome" class="form-input" required 
+                                <input type="text" id="nome" name="nome" class="form-input" required
                                        value="${item?.nome || ''}" placeholder="Nome da peça">
                             </div>
                             
@@ -708,36 +712,104 @@ class InventoryItemModal {
         `;
 
         document.getElementById('modals-container').innerHTML = modalHTML;
-        
+
+        this.loadItems();
+
         // Configurar eventos
         const form = document.getElementById('inventory-item-form');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleSubmit(form);
         });
+
+        const itemSelect = document.getElementById('item_id');
+        if (itemSelect) {
+            itemSelect.addEventListener('change', () => this.fillFromItem());
+        }
     }
 
     handleSubmit(form) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-        
+
+        if (data.item_id) {
+            data.item_id = parseInt(data.item_id, 10);
+        }
+
         // Validações
         if (!data.nome.trim()) {
             Utils.showToast('Nome é obrigatório', 'error');
             return;
         }
-        
+
         if (!data.grupo_item_id) {
             Utils.showToast('Grupo é obrigatório', 'error');
             return;
         }
-        
+
         if (!data.unidade) {
             Utils.showToast('Unidade é obrigatória', 'error');
             return;
         }
 
         this.options.onSave(data);
+    }
+
+    async loadItems() {
+        try {
+            const response = await fetch('/api/itens');
+            const items = await response.json();
+            const select = document.getElementById('item_id');
+            if (!select) return;
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = `${item.descricao_item} (${item.numero_item})`;
+                option.dataset.codigo = item.numero_item;
+                option.dataset.nome = item.descricao_item;
+                option.dataset.unidade = item.unidade_medida || '';
+                option.dataset.grupo = item.grupo_itens || '';
+                select.appendChild(option);
+            });
+
+            if (this.options.item && this.options.item.codigo) {
+                const current = Array.from(select.options).find(o => o.dataset.codigo === this.options.item.codigo);
+                if (current) {
+                    select.value = current.value;
+                    this.fillFromItem();
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao carregar itens:', error);
+        }
+    }
+
+    fillFromItem() {
+        const select = document.getElementById('item_id');
+        if (!select) return;
+        const option = select.options[select.selectedIndex];
+        if (!option) return;
+
+        const codigo = option.dataset.codigo || '';
+        const nome = option.dataset.nome || '';
+        const unidade = option.dataset.unidade || '';
+        const grupoNome = option.dataset.grupo || '';
+
+        document.getElementById('codigo').value = codigo;
+        document.getElementById('nome').value = nome;
+
+        if (unidade) {
+            document.getElementById('unidade').value = unidade;
+        }
+
+        if (grupoNome) {
+            const groups = this.options.itemGroups || [];
+            const group = groups.find(g => g.nome === grupoNome);
+            if (group) {
+                document.getElementById('grupo_item_id').value = group.id;
+            }
+        }
     }
 
     hide() {

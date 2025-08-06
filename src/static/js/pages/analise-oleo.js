@@ -57,7 +57,18 @@ class OilAnalysisPage {
         }
     }
 
-    openCreateModal() {
+    async openCreateModal() {
+        let equipmentOptions = '';
+        try {
+            const response = await API.equipments.getAll();
+            const equipments = response.equipamentos || response.data || [];
+            equipmentOptions = equipments
+                .map(eq => `<option value="${eq.id}">${eq.nome}</option>`)
+                .join('');
+        } catch (error) {
+            console.error('Erro ao carregar equipamentos:', error);
+        }
+
         const content = `
             <h3 class="text-lg font-semibold mb-2">📋 Dados Gerais</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -67,7 +78,10 @@ class OilAnalysisPage {
                 </div>
                 <div>
                     <label>Equipamento</label>
-                    <input id="oil-equipamento" type="text" class="border p-2 w-full" />
+                    <select id="oil-equipamento" class="border p-2 w-full">
+                        <option value="">Selecione...</option>
+                        ${equipmentOptions}
+                    </select>
                 </div>
                 <div>
                     <label>Data Coleta</label>
@@ -88,7 +102,7 @@ class OilAnalysisPage {
             onSave: async () => {
                 const data = {
                     numero_amostra: document.getElementById('oil-amostra').value,
-                    equipamento: document.getElementById('oil-equipamento').value,
+                    equipamento_id: document.getElementById('oil-equipamento').value,
                     data_coleta: document.getElementById('oil-data').value,
                     status: document.getElementById('oil-status').value,
                     observacoes: document.getElementById('oil-observacoes').value

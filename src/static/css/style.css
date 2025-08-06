@@ -194,7 +194,7 @@ body {
 .app {
     display: flex;
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 /* === HEADER === */
@@ -355,6 +355,10 @@ body {
     z-index: 1001;
 }
 
+.user-dropdown.show {
+    display: block;
+}
+
 .user-dropdown a {
     display: flex;
     align-items: center;
@@ -392,6 +396,14 @@ body {
 
 .sidebar.collapsed {
     width: var(--sidebar-collapsed-width);
+}
+
+.sidebar.closed {
+    transform: translateX(-100%);
+}
+
+.sidebar.closed + .main-content {
+    margin-left: 0;
 }
 
 .sidebar-nav {
@@ -457,12 +469,21 @@ body {
     padding-left: 1rem;
 }
 
+.nav-group .nav-group-items {
+    display: none;
+}
+
+.nav-group.expanded .nav-group-items {
+    display: block;
+}
+
 /* === MAIN CONTENT === */
 .main-content {
     margin-left: var(--sidebar-width);
     margin-top: var(--header-height);
     padding: 2rem;
-    min-height: calc(100vh - var(--header-height));
+    height: calc(100vh - var(--header-height));
+    overflow-y: auto;
     transition: all var(--transition-normal);
     background: var(--gray-50);
 }
@@ -1831,6 +1852,19 @@ body {
 .ag-theme-alpine .ag-paging-button.ag-disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* === CHART CONTAINERS === */
+.chart-container {
+    width: 100%;
+    min-height: 300px;
+    margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        min-height: 250px;
+    }
 }
 
 /* === CHART ENHANCEMENTS === */

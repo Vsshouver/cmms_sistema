@@ -35,7 +35,13 @@ class DashboardPage {
     async loadData() {
         try {
             // Carregar dados do dashboard
-            this.data = await API.dashboard.getStats();
+            const data = await API.dashboard.getStats();
+            this.data = {
+                kpis: data.kpis || {},
+                graficos: data.graficos || {},
+                alertas: data.alertas || [],
+                atividades_recentes: data.atividades_recentes || []
+            };
         } catch (error) {
             console.error('Erro ao carregar dados do dashboard:', error);
             throw error;
@@ -112,36 +118,38 @@ class DashboardPage {
     }
 
     getStatsCardsHTML() {
-        if (!this.data) return '';
+        if (!this.data?.kpis) return '';
+
+        const kpis = this.data.kpis;
 
         const stats = [
             {
                 title: 'Equipamentos Ativos',
-                value: this.data.equipamentos_ativos || 0,
+                value: kpis.equipamentos_ativos || 0,
                 icon: 'fas fa-cogs',
                 color: 'success',
-                change: this.data.equipamentos_change || 0
+                change: kpis.equipamentos_change || 0
             },
             {
                 title: 'OS Abertas',
-                value: this.data.os_abertas || 0,
+                value: kpis.os_abertas || 0,
                 icon: 'fas fa-clipboard-list',
                 color: 'warning',
-                change: this.data.os_abertas_change || 0
+                change: kpis.os_abertas_change || 0
             },
             {
                 title: 'OS Concluídas (Mês)',
-                value: this.data.os_concluidas_mes || 0,
+                value: kpis.os_concluidas_mes ?? kpis.os_concluidas ?? 0,
                 icon: 'fas fa-check-circle',
                 color: 'success',
-                change: this.data.os_concluidas_change || 0
+                change: kpis.os_concluidas_change || 0
             },
             {
                 title: 'Peças em Estoque',
-                value: this.data.pecas_estoque || 0,
+                value: kpis.pecas_estoque ?? kpis.total_pecas ?? 0,
                 icon: 'fas fa-boxes',
                 color: 'info',
-                change: this.data.pecas_change || 0
+                change: kpis.pecas_change || 0
             }
         ];
 
@@ -176,7 +184,7 @@ class DashboardPage {
                         </h3>
                     </div>
                     <div class="card-body">
-                        <canvas id="os-status-chart" width="400" height="200"></canvas>
+                        <div id="os-status-chart" class="chart-container"></div>
                     </div>
                 </div>
 
@@ -189,7 +197,7 @@ class DashboardPage {
                         </h3>
                     </div>
                     <div class="card-body">
-                        <canvas id="maintenance-types-chart" width="400" height="200"></canvas>
+                        <div id="maintenance-types-chart" class="chart-container"></div>
                     </div>
                 </div>
             </div>
@@ -330,6 +338,18 @@ class DashboardPage {
                 // ... atualizar outros componentes
             }
 
+            // Atualizar gráficos
+            if (this.charts.osStatus) {
+                agCharts.AgChart.update(this.charts.osStatus, {
+                    data: this.data.graficos?.os_por_status || []
+                });
+            }
+            if (this.charts.maintenanceTypes) {
+                agCharts.AgChart.update(this.charts.maintenanceTypes, {
+                    data: this.data.graficos?.os_por_tipo || []
+                });
+            }
+
             Toast.success('Dashboard atualizado');
 
         } catch (error) {
@@ -360,38 +380,42 @@ class DashboardPage {
     }
 
     initializeCharts() {
-        // Implementar gráficos usando Chart.js ou biblioteca similar
-        // Por enquanto, apenas placeholder
         this.initializeOSStatusChart();
         this.initializeMaintenanceTypesChart();
     }
 
     initializeOSStatusChart() {
-        const canvas = document.getElementById('os-status-chart');
-        if (!canvas) return;
+        const container = document.getElementById('os-status-chart');
+        if (!container) return;
 
-        // Placeholder para gráfico de pizza
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#64748b';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Gráfico de OS por Status', canvas.width / 2, canvas.height / 2);
+        this.charts.osStatus = agCharts.AgChart.create({
+            container,
+            data: this.data.graficos?.os_por_status || [],
+            series: [{
+                type: 'pie',
+                angleKey: 'count',
+                legendItemKey: 'status'
+            }]
+        });
     }
 
     initializeMaintenanceTypesChart() {
-        const canvas = document.getElementById('maintenance-types-chart');
-        if (!canvas) return;
+        const container = document.getElementById('maintenance-types-chart');
+        if (!container) return;
 
-        // Placeholder para gráfico de barras
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#64748b';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Gráfico de Manutenções por Tipo', canvas.width / 2, canvas.height / 2);
+        this.charts.maintenanceTypes = agCharts.AgChart.create({
+            container,
+            data: this.data.graficos?.os_por_tipo || [],
+            series: [{
+                type: 'column',
+                xKey: 'tipo',
+                yKey: 'count'
+            }],
+            axes: [
+                { type: 'category', position: 'bottom' },
+                { type: 'number', position: 'left' }
+            ]
+        });
     }
 
     setupAutoRefresh() {
@@ -407,6 +431,14 @@ class DashboardPage {
             clearInterval(this.refreshInterval);
             this.refreshInterval = null;
         }
+
+        // Destruir gráficos
+        Object.values(this.charts).forEach(chart => {
+            if (chart) {
+                agCharts.AgChart.destroy(chart);
+            }
+        });
+        this.charts = {};
     }
 }
 
