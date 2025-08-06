@@ -69,6 +69,10 @@ def create_peca(current_user):
         if Peca.query.filter_by(codigo=data['codigo']).first():
             return jsonify({'error': 'Código da peça já existe'}), 400
         
+        quantidade_minima = data.get('quantidade_minima', data.get('min_estoque', 0))
+        quantidade_maxima = data.get('quantidade_maxima', data.get('max_estoque', 100))
+        valor_unitario = data.get('valor_unitario', data.get('preco_unitario'))
+
         peca = Peca(
             codigo=data['codigo'],
             nome=data['nome'],
@@ -76,9 +80,9 @@ def create_peca(current_user):
             descricao=data.get('descricao'),
             unidade=data['unidade'],
             quantidade=data.get('quantidade', 0),
-            min_estoque=data.get('min_estoque', 0),
-            max_estoque=data.get('max_estoque', 100),
-            preco_unitario=data.get('preco_unitario'),
+            min_estoque=quantidade_minima,
+            max_estoque=quantidade_maxima,
+            preco_unitario=valor_unitario,
             localizacao=data.get('localizacao'),
             fornecedor=data.get('fornecedor'),
             observacoes=data.get('observacoes')
@@ -118,12 +122,12 @@ def update_peca(current_user, peca_id):
             peca.unidade = data['unidade']
         if 'quantidade' in data:
             peca.quantidade = data['quantidade']
-        if 'min_estoque' in data:
-            peca.min_estoque = data['min_estoque']
-        if 'max_estoque' in data:
-            peca.max_estoque = data['max_estoque']
-        if 'preco_unitario' in data:
-            peca.preco_unitario = data['preco_unitario']
+        if 'quantidade_minima' in data or 'min_estoque' in data:
+            peca.min_estoque = data.get('quantidade_minima', data.get('min_estoque'))
+        if 'quantidade_maxima' in data or 'max_estoque' in data:
+            peca.max_estoque = data.get('quantidade_maxima', data.get('max_estoque'))
+        if 'valor_unitario' in data or 'preco_unitario' in data:
+            peca.preco_unitario = data.get('valor_unitario', data.get('preco_unitario'))
         if 'localizacao' in data:
             peca.localizacao = data['localizacao']
         if 'fornecedor' in data:

@@ -28,19 +28,32 @@ class Peca(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def to_dict(self):
+        """Representa o modelo como dicionário."""
+        status = (
+            'Zerado' if self.quantidade == 0
+            else 'Baixo' if self.quantidade <= self.min_estoque
+            else 'Disponível'
+        )
+
         return {
             'id': self.id,
             'codigo': self.codigo,
             'nome': self.nome,
             'grupo_item_id': self.grupo_item_id,
             'grupo_item': self.grupo_item_obj.nome if self.grupo_item_obj else None,
+            'grupo_nome': self.grupo_item_obj.nome if self.grupo_item_obj else None,
             'categoria': self.categoria,
             'descricao': self.descricao,
             'unidade': self.unidade,
             'quantidade': self.quantidade,
+            # Campos com nomes antigos mantidos para compatibilidade
             'min_estoque': self.min_estoque,
             'max_estoque': self.max_estoque,
             'preco_unitario': self.preco_unitario,
+            # Novos nomes padronizados
+            'quantidade_minima': self.min_estoque,
+            'quantidade_maxima': self.max_estoque,
+            'valor_unitario': self.preco_unitario,
             'ultimo_preco_avaliacao': self.ultimo_preco_avaliacao,
             'ultimo_preco_compra': self.ultimo_preco_compra,
             'data_registro': self.data_registro.isoformat() if self.data_registro else None,
@@ -53,6 +66,9 @@ class Peca(db.Model):
             'ultima_inventariacao_usuario': self.ultima_inventariacao_usuario,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'ultima_movimentacao': self.updated_at.isoformat() if self.updated_at else None,
+            # Status
+            'status': status,
             'status_estoque': 'baixo' if self.quantidade <= self.min_estoque else 'normal'
         }
 
