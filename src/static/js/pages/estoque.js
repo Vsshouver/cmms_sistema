@@ -34,7 +34,7 @@ class InventoryPage {
     async loadData() {
         try {
             const response = await API.inventory.getAll();
-            this.data = Array.isArray(response) ? response : (response.data || []);
+            this.data = response.pecas || response.data || [];
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             this.data = [];
