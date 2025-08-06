@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 
 # revision identifiers, used by Alembic.
@@ -26,7 +26,26 @@ def upgrade() -> None:
     if 'pneus' in inspector.get_table_names():
         columns = [col['name'] for col in inspector.get_columns('pneus')]
         if 'item_id' not in columns:
-            op.add_column('pneus', sa.Column('item_id', sa.Integer(), nullable=False))
+            op.add_column('pneus', sa.Column('item_id', sa.Integer(), nullable=True))
+
+            pneu_count = bind.execute(text("SELECT COUNT(*) FROM pneus")).scalar()
+            if pneu_count and pneu_count > 0:
+                default_item_id = bind.execute(
+                    text(
+                        """
+                        INSERT INTO itens (numero_item, descricao_item, grupo_itens)
+                        VALUES ('PNEU_MIGRACAO', 'Item gerado automaticamente para pneus existentes', 'pneus')
+                        RETURNING id
+                        """
+                    )
+                ).scalar()
+
+                bind.execute(
+                    text("UPDATE pneus SET item_id=:item_id WHERE item_id IS NULL"),
+                    {"item_id": default_item_id},
+                )
+
+            op.alter_column('pneus', 'item_id', existing_type=sa.Integer(), nullable=False)
             op.create_foreign_key('fk_pneus_item_id_itens', 'pneus', 'itens', ['item_id'], ['id'])
 
 

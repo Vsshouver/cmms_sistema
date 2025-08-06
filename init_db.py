@@ -19,6 +19,7 @@ from src.models.mecanico import Mecanico
 from src.models.ordem_servico import OrdemServico
 from src.models.peca import Peca
 from src.models.pneu import Pneu
+from src.models.item import Item
 from src.models.tipo_equipamento import TipoEquipamento
 from src.models.tipo_manutencao import TipoManutencao
 from src.models.grupo_item import GrupoItem
@@ -296,7 +297,28 @@ def criar_dados_exemplo():
             
             for peca in pecas:
                 db.session.add(peca)
-            
+
+            print("📦 Criando itens de pneus...")
+            itens_pneus = [
+                Item(
+                    numero_item='ITPN001',
+                    descricao_item='Pneu Michelin XDR3',
+                    grupo_itens='pneus',
+                    unidade_medida='un'
+                ),
+                Item(
+                    numero_item='ITPN002',
+                    descricao_item='Pneu Bridgestone R268',
+                    grupo_itens='pneus',
+                    unidade_medida='un'
+                )
+            ]
+
+            for item in itens_pneus:
+                db.session.add(item)
+
+            db.session.flush()  # Garantir que IDs dos itens sejam gerados
+
             print("🛞 Criando pneus...")
             # Criar pneus
             pneus = [
@@ -316,7 +338,8 @@ def criar_dados_exemplo():
                     km_atual=15200.0,
                     pressao_recomendada=120.0,
                     vida_util_estimada=80000.0,
-                    fornecedor='Michelin Brasil'
+                    fornecedor='Michelin Brasil',
+                    item_id=itens_pneus[0].id
                 ),
                 Pneu(
                     numero_serie='PN002-2024',
@@ -329,10 +352,11 @@ def criar_dados_exemplo():
                     valor_compra=2300.00,
                     pressao_recomendada=120.0,
                     vida_util_estimada=75000.0,
-                    fornecedor='Bridgestone Brasil'
+                    fornecedor='Bridgestone Brasil',
+                    item_id=itens_pneus[1].id
                 )
             ]
-            
+
             for pneu in pneus:
                 db.session.add(pneu)
             
