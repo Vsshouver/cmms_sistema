@@ -1833,6 +1833,19 @@ body {
     cursor: not-allowed;
 }
 
+/* === CHART CONTAINERS === */
+.chart-container {
+    width: 100%;
+    min-height: 300px;
+    margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        min-height: 250px;
+    }
+}
+
 /* === CHART ENHANCEMENTS === */
 .ag-theme-alpine .ag-chart-wrapper {
     border: 1px solid var(--gray-200);
