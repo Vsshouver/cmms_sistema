@@ -44,5 +44,6 @@ class ApiClient {
     }
 }
 
-const api = new ApiClient();
-export { api, API_BASE_URL };
+// Tornar disponíveis globalmente
+window.api = new ApiClient();
+window.API_BASE_URL = API_BASE_URL;
