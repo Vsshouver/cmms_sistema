@@ -1,6 +1,10 @@
 // Gerenciador de navegação
 (() => {
+<<<<<<< HEAD
 var useState = React.useState, useEffect = React.useEffect;
+=======
+const { useState, useEffect } = React;
+>>>>>>> 4e6505b08c67a825b5bec376a4dc6050a2784a72
 
 class NavigationManager {
     constructor() {

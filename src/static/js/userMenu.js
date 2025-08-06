@@ -1,5 +1,9 @@
 (() => {
+<<<<<<< HEAD
   var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
+=======
+  const { useState, useEffect, useRef } = React;
+>>>>>>> 4e6505b08c67a825b5bec376a4dc6050a2784a72
 
   function UserMenu() {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
