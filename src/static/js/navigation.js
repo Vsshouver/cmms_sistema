@@ -6,7 +6,7 @@ class NavigationManager {
         this.sidebar = null;
         this.mainContent = null;
         this.menuToggle = null;
-        this.sidebarState = 'open';
+        this.isSidebarOpen = true;
         
         this.init();
     }
@@ -55,40 +55,34 @@ class NavigationManager {
     }
 
     setupMenuToggle() {
-        if (this.menuToggle) {
-            this.menuToggle.addEventListener('click', () => {
-                if (window.innerWidth <= 1024) {
-                    this.sidebar.classList.toggle('open');
-                } else {
-                    switch (this.sidebarState) {
-                        case 'open':
-                            this.sidebar.classList.add('collapsed');
-                            this.mainContent.classList.add('collapsed');
-                            this.sidebarState = 'collapsed';
-                            break;
-                        case 'collapsed':
-                            this.sidebar.classList.remove('collapsed');
-                            this.mainContent.classList.remove('collapsed');
-                            this.sidebar.classList.add('closed');
-                            this.sidebarState = 'closed';
-                            break;
-                        default:
-                            this.sidebar.classList.remove('closed');
-                            this.sidebarState = 'open';
-                            break;
-                    }
-                }
-            });
-        }
+        if (!this.menuToggle) return;
 
-        // Fechar sidebar ao clicar fora (mobile)
+        this.menuToggle.addEventListener('click', () => {
+            this.isSidebarOpen = !this.isSidebarOpen;
+            this.updateSidebar();
+        });
+
+        // Fechar sidebar ao clicar fora
         document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 1024) {
-                if (!this.sidebar.contains(e.target) && !this.menuToggle.contains(e.target)) {
-                    this.sidebar.classList.remove('open');
-                }
+            if (
+                window.innerWidth <= 1024 &&
+                this.isSidebarOpen &&
+                !this.sidebar.contains(e.target) &&
+                !this.menuToggle.contains(e.target)
+            ) {
+                this.isSidebarOpen = false;
+                this.updateSidebar();
             }
         });
+    }
+
+    updateSidebar() {
+        if (window.innerWidth <= 1024) {
+            this.sidebar.classList.toggle('open', this.isSidebarOpen);
+        } else {
+            this.sidebar.classList.remove('open');
+            this.sidebar.classList.toggle('closed', !this.isSidebarOpen);
+        }
     }
 
     setupUserMenu() {
@@ -159,7 +153,8 @@ class NavigationManager {
 
             // Fechar sidebar no mobile
             if (window.innerWidth <= 1024) {
-                this.sidebar.classList.remove('open');
+                this.isSidebarOpen = false;
+                this.updateSidebar();
             }
 
         } catch (error) {
