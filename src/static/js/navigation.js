@@ -56,15 +56,20 @@ class NavigationManager {
     setupMenuToggle() {
         if (this.menuToggle) {
             this.menuToggle.addEventListener('click', () => {
-                this.sidebar.classList.toggle('show');
+                if (window.innerWidth <= 1024) {
+                    this.sidebar.classList.toggle('open');
+                } else {
+                    this.sidebar.classList.toggle('collapsed');
+                    this.mainContent.classList.toggle('collapsed');
+                }
             });
         }
 
         // Fechar sidebar ao clicar fora (mobile)
         document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 1024) {
                 if (!this.sidebar.contains(e.target) && !this.menuToggle.contains(e.target)) {
-                    this.sidebar.classList.remove('show');
+                    this.sidebar.classList.remove('open');
                 }
             }
         });
@@ -135,8 +140,8 @@ class NavigationManager {
             this.currentPage = pageName;
 
             // Fechar sidebar no mobile
-            if (window.innerWidth <= 768) {
-                this.sidebar.classList.remove('show');
+            if (window.innerWidth <= 1024) {
+                this.sidebar.classList.remove('open');
             }
 
         } catch (error) {
