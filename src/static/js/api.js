@@ -1,5 +1,6 @@
 // Configuração da API
-const API_BASE_URL = 'https://cmmssistema-production.up.railway.app/api';
+// Usa o mesmo protocolo da página atual para evitar erros de mixed content
+const API_BASE_URL = `${window.location.protocol}//cmmssistema-production.up.railway.app/api`;
 
 // Cliente HTTP para comunicação com a API
 class ApiClient {
