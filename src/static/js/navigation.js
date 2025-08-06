@@ -1,4 +1,5 @@
 // Gerenciador de navegação
+(() => {
 const { useState, useEffect } = React;
 
 class NavigationManager {
@@ -341,3 +342,4 @@ document.addEventListener('DOMContentLoaded', () => {
     root.render(React.createElement(NavGroupManager));
 });
 
+})();
