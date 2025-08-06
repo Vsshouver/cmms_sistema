@@ -355,6 +355,10 @@ body {
     z-index: 1001;
 }
 
+.user-dropdown.show {
+    display: block;
+}
+
 .user-dropdown a {
     display: flex;
     align-items: center;
