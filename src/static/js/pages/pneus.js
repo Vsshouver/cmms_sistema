@@ -79,6 +79,14 @@ const ADD_TIRE = async () => {
     const template = /*html*/ `
         <div class="row">
             <div class="form-group col-sm-6">
+                <label>Número de Série *</label>
+                <input type="text" class="form-control" name="numero_serie" required>
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Item *</label>
+                <select class="form-control" name="item_id" required></select>
+            </div>
+            <div class="form-group col-sm-6">
                 <label>Número de Fogo *</label>
                 <input type="text" class="form-control" name="numero_fogo" required>
             </div>
@@ -130,13 +138,26 @@ const ADD_TIRE = async () => {
     modalBody.innerHTML = template;
     modalTitle.textContent = "Novo Pneu";
 
+    const itemSelect = modalBody.querySelector('select[name="item_id"]');
+    try {
+        const resp = await fetch('/api/itens', { headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` } });
+        if (resp.ok) {
+            const itens = await resp.json();
+            const pneusItens = itens.filter(i => (i.grupo_itens || '').toLowerCase() === 'pneus');
+            itemSelect.innerHTML = '<option value="">Selecione</option>' + pneusItens.map(i => `<option value="${i.id}">${i.numero_item} - ${i.descricao_item}</option>`).join('');
+        }
+    } catch (err) {
+        console.error('Erro ao carregar itens:', err);
+    }
+
     $(modal).modal("show");
     
     $(buttons[0]).off("click").on("click", async () => {
         const formData = TIRES_FORMDATA(modalBody);
-        
-        if (!formData.numero_fogo || !formData.marca || !formData.modelo || 
-            !formData.medida || !formData.status || !formData.sulco_inicial || 
+        formData.item_id = parseInt(formData.item_id);
+
+        if (!formData.numero_serie || !formData.item_id || !formData.numero_fogo || !formData.marca || !formData.modelo ||
+            !formData.medida || !formData.status || !formData.sulco_inicial ||
             !formData.sulco_atual) {
             Utils.showToast("Preencha todos os campos obrigatórios", "error");
             return;
@@ -180,6 +201,14 @@ const EDIT_TIRE = async (params) => {
 
     const template = /*html*/ `
         <div class="row">
+            <div class="form-group col-sm-6">
+                <label>Número de Série *</label>
+                <input type="text" class="form-control" name="numero_serie" value="${rowData.numero_serie || ''}" required>
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Item *</label>
+                <select class="form-control" name="item_id" required></select>
+            </div>
             <div class="form-group col-sm-6">
                 <label>Número de Fogo *</label>
                 <input type="text" class="form-control" name="numero_fogo" value="${rowData.numero_fogo || ''}" required>
@@ -232,10 +261,24 @@ const EDIT_TIRE = async (params) => {
     modalBody.innerHTML = template;
     modalTitle.textContent = "Editar Pneu";
 
+    const itemSelect = modalBody.querySelector('select[name="item_id"]');
+    try {
+        const resp = await fetch('/api/itens', { headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` } });
+        if (resp.ok) {
+            const itens = await resp.json();
+            const pneusItens = itens.filter(i => (i.grupo_itens || '').toLowerCase() === 'pneus');
+            itemSelect.innerHTML = '<option value="">Selecione</option>' + pneusItens.map(i => `<option value="${i.id}">${i.numero_item} - ${i.descricao_item}</option>`).join('');
+            itemSelect.value = rowData.item_id || (rowData.item ? rowData.item.id : '');
+        }
+    } catch (err) {
+        console.error('Erro ao carregar itens:', err);
+    }
+
     $(modal).modal("show");
-    
+
     $(buttons[0]).off("click").on("click", async () => {
         const formData = TIRES_FORMDATA(modalBody);
+        formData.item_id = parseInt(formData.item_id);
 
         try {
             const response = await fetch(`/api/pneus/${rowData.id}`, {

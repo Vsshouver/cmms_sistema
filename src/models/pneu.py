@@ -14,6 +14,7 @@ class Pneu(db.Model):
     tipo = db.Column(db.String(20), nullable=False)  # novo, recapado
     status = db.Column(db.String(20), nullable=False, default='estoque')  # estoque, em_uso, descarte, recapagem
     equipamento_id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), nullable=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('itens.id'), nullable=False)
     posicao = db.Column(db.String(20), nullable=True)  # dianteiro_esquerdo, traseiro_direito, etc.
     data_compra = db.Column(db.Date, nullable=False)
     valor_compra = db.Column(db.Float, nullable=True)
@@ -30,6 +31,7 @@ class Pneu(db.Model):
     observacoes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    item = db.relationship('Item')
     
     def to_dict(self):
         km_rodados = 0
@@ -51,6 +53,7 @@ class Pneu(db.Model):
             'tipo': self.tipo,
             'status': self.status,
             'equipamento_id': self.equipamento_id,
+            'item_id': self.item_id,
             'posicao': self.posicao,
             'data_compra': self.data_compra.isoformat() if self.data_compra else None,
             'valor_compra': self.valor_compra,
@@ -67,6 +70,13 @@ class Pneu(db.Model):
             'data_descarte': self.data_descarte.isoformat() if self.data_descarte else None,
             'motivo_descarte': self.motivo_descarte,
             'observacoes': self.observacoes,
+            'item': {
+                'id': self.item.id,
+                'numero_item': self.item.numero_item,
+                'descricao_item': self.item.descricao_item,
+                'grupo_itens': self.item.grupo_itens,
+                'unidade_medida': self.item.unidade_medida
+            } if self.item else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

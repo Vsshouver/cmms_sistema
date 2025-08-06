@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from src.db import db
 from src.models.pneu import Pneu
 from src.models.equipamento import Equipamento
+from src.models.item import Item
 from src.utils.auth import token_required, supervisor_or_admin_required
 from datetime import datetime
 
@@ -77,6 +78,47 @@ def get_pneu(current_user, pneu_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@pneus_bp.route('/pneus/<int:pneu_id>', methods=['PUT'])
+@token_required
+@supervisor_or_admin_required
+def update_pneu(current_user, pneu_id):
+    try:
+        pneu = Pneu.query.get_or_404(pneu_id)
+        data = request.get_json() or {}
+
+        if 'numero_serie' in data and data['numero_serie'] != pneu.numero_serie:
+            if Pneu.query.filter_by(numero_serie=data['numero_serie']).first():
+                return jsonify({'error': 'Número de série já existe'}), 400
+            pneu.numero_serie = data['numero_serie']
+
+        if 'item_id' in data:
+            item = Item.query.get(data['item_id'])
+            if not item:
+                return jsonify({'error': 'Item não encontrado'}), 404
+            if item.grupo_itens and item.grupo_itens.lower() != 'pneus':
+                return jsonify({'error': 'Item não pertence ao grupo Pneus'}), 400
+            pneu.item_id = data['item_id']
+
+        for field in ['marca', 'modelo', 'medida', 'tipo', 'status', 'equipamento_id',
+                      'posicao', 'valor_compra', 'km_instalacao', 'km_atual',
+                      'pressao_recomendada', 'vida_util_estimada', 'fornecedor',
+                      'observacoes']:
+            if field in data:
+                setattr(pneu, field, data[field])
+
+        if 'data_compra' in data:
+            pneu.data_compra = datetime.strptime(data['data_compra'], '%Y-%m-%d').date()
+        if 'data_instalacao' in data:
+            pneu.data_instalacao = datetime.strptime(data['data_instalacao'], '%Y-%m-%d').date() if data['data_instalacao'] else None
+
+        pneu.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({'message': 'Pneu atualizado com sucesso', 'pneu': pneu.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @pneus_bp.route('/pneus', methods=['POST'])
 @token_required
 @supervisor_or_admin_required
@@ -85,7 +127,7 @@ def create_pneu(current_user):
         data = request.get_json()
         
         # Validações básicas
-        required_fields = ['numero_serie', 'marca', 'modelo', 'medida', 'tipo', 'data_compra']
+        required_fields = ['numero_serie', 'item_id', 'marca', 'modelo', 'medida', 'tipo', 'data_compra']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Campo {field} é obrigatório'}), 400
@@ -93,6 +135,13 @@ def create_pneu(current_user):
         # Verificar se número de série já existe
         if Pneu.query.filter_by(numero_serie=data['numero_serie']).first():
             return jsonify({'error': 'Número de série já existe'}), 400
+
+        # Validar item
+        item = Item.query.get(data['item_id'])
+        if not item:
+            return jsonify({'error': 'Item não encontrado'}), 404
+        if item.grupo_itens and item.grupo_itens.lower() != 'pneus':
+            return jsonify({'error': 'Item não pertence ao grupo Pneus'}), 400
         
         pneu = Pneu(
             numero_serie=data['numero_serie'],
@@ -101,11 +150,16 @@ def create_pneu(current_user):
             medida=data['medida'],
             tipo=data['tipo'],
             status=data.get('status', 'estoque'),
+            item_id=data['item_id'],
             equipamento_id=data.get('equipamento_id'),
             posicao=data.get('posicao'),
             data_compra=datetime.strptime(data['data_compra'], '%Y-%m-%d').date(),
             valor_compra=data.get('valor_compra'),
-            data_instalacao=datetime.strptime(data['data_instalacao'], '%Y-%m-%d').date() if data.get('data_instalacao') else None,
+            data_instalacao=(
+                datetime.strptime(data['data_instalacao'], '%Y-%m-%d').date()
+                if data.get('data_instalacao')
+                else None
+            ),
             km_instalacao=data.get('km_instalacao'),
             km_atual=data.get('km_atual'),
             pressao_recomendada=data.get('pressao_recomendada'),
