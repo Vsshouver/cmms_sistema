@@ -15,8 +15,8 @@ function UserMenu() {
   }, []);
 
   return React.createElement(
-    React.Fragment,
-    null,
+    'div',
+    { ref: menuRef },
     React.createElement(
       'button',
       {
@@ -35,20 +35,44 @@ function UserMenu() {
       { className: `user-dropdown${isUserMenuOpen ? ' show' : ''}` },
       React.createElement(
         'a',
-        { href: '#', id: 'user-profile' },
+        {
+          href: '#',
+          id: 'user-profile',
+          onClick: (e) => {
+            e.preventDefault();
+            window.navigation && window.navigation.showUserProfile();
+            setIsUserMenuOpen(false);
+          }
+        },
         React.createElement('i', { className: 'fas fa-user' }),
         ' Perfil'
       ),
       React.createElement(
         'a',
-        { href: '#', id: 'user-settings' },
+        {
+          href: '#',
+          id: 'user-settings',
+          onClick: (e) => {
+            e.preventDefault();
+            window.navigation && window.navigation.showUserSettings();
+            setIsUserMenuOpen(false);
+          }
+        },
         React.createElement('i', { className: 'fas fa-cog' }),
         ' Configurações'
       ),
       React.createElement('hr', null),
       React.createElement(
         'a',
-        { href: '#', id: 'logout' },
+        {
+          href: '#',
+          id: 'logout',
+          onClick: (e) => {
+            e.preventDefault();
+            window.navigation && window.navigation.handleLogout();
+            setIsUserMenuOpen(false);
+          }
+        },
         React.createElement('i', { className: 'fas fa-sign-out-alt' }),
         ' Sair'
       )
