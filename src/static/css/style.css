@@ -465,6 +465,14 @@ body {
     padding-left: 1rem;
 }
 
+.nav-group .nav-group-items {
+    display: none;
+}
+
+.nav-group.expanded .nav-group-items {
+    display: block;
+}
+
 /* === MAIN CONTENT === */
 .main-content {
     margin-left: var(--sidebar-width);
