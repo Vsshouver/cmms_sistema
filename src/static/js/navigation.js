@@ -101,9 +101,11 @@ class NavigationManager {
                 userDropdown.classList.toggle('show');
             });
 
-            // Fechar dropdown ao clicar fora
-            document.addEventListener('click', () => {
-                userDropdown.classList.remove('show');
+            // Fechar dropdown ao clicar fora do menu
+            document.addEventListener('click', (e) => {
+                if (!userDropdown.contains(e.target) && !userBtn.contains(e.target)) {
+                    userDropdown.classList.remove('show');
+                }
             });
 
             // Event listeners do dropdown

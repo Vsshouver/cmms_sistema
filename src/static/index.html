@@ -85,19 +85,7 @@
                     </button>
                 </div>
                 
-                <div class="user-menu">
-                    <button class="user-btn">
-                        <i class="fas fa-user-circle"></i>
-                        <span id="user-name">Usuário</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="user-dropdown">
-                        <a href="#" id="user-profile"><i class="fas fa-user"></i> Perfil</a>
-                        <a href="#" id="user-settings"><i class="fas fa-cog"></i> Configurações</a>
-                        <hr>
-                        <a href="#" id="logout"><i class="fas fa-sign-out-alt"></i> Sair</a>
-                    </div>
-                </div>
+                <div class="user-menu" id="user-menu-root"></div>
             </div>
         </header>
 
@@ -264,6 +252,9 @@
     <script src="/js/utils.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/navigation.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="/js/userMenu.js"></script>
     <script src="/js/components.js"></script>
     <script src="/js/pages/dashboard.js"></script>
     <script src="/js/pages/ordens-servico.js"></script>
