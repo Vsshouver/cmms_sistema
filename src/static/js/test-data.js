@@ -485,6 +485,75 @@ class TestData {
         ];
     }
 
+    static getMaintenanceTypes() {
+        return [
+            { id: 1, codigo: 'PM-001', nome: 'Preventiva', descricao: 'Manutenção preventiva padrão', cor_identificacao: '#4CAF50', ativo: true },
+            { id: 2, codigo: 'CM-001', nome: 'Corretiva', descricao: 'Correção de falhas', cor_identificacao: '#F44336', ativo: true }
+        ];
+    }
+
+    static getBacklogItems() {
+        return [
+            { id: 1, titulo: 'Vazamento hidráulico', categoria: 'hidraulica', categoria_display: 'Hidráulica', status: 'pendente', status_display: 'Pendente', prioridade: 'alta', prioridade_display: 'Alta', responsavel: 'João Silva', equipamento_id: 1 },
+            { id: 2, titulo: 'Falha elétrica', categoria: 'eletrica', categoria_display: 'Elétrica', status: 'em_execucao', status_display: 'Em Execução', prioridade: 'media', prioridade_display: 'Média', responsavel: 'Maria Santos', equipamento_id: 2 }
+        ];
+    }
+
+    static getPreventivePlans() {
+        return [
+            { id: 1, nome: 'Troca de óleo 250h', equipamento_id: 1, equipamento_nome: 'Escavadeira CAT 320D', tipo_manutencao_id: 1, tipo_manutencao_nome: 'Preventiva', prioridade: 'Alta', intervalo_dias: 90, ativo: true },
+            { id: 2, nome: 'Revisão geral anual', equipamento_id: 2, equipamento_nome: 'Caminhão Basculante Volvo', tipo_manutencao_id: 1, tipo_manutencao_nome: 'Preventiva', prioridade: 'Média', intervalo_dias: 365, ativo: true }
+        ];
+    }
+
+    static getMovements() {
+        return [
+            { id: 1, tipo: 'entrada', item: 'Óleo Motor 15W40', quantidade: 50, documento: 'NF-123', responsavel: 'João Almoxarife', data: '2024-01-10' },
+            { id: 2, tipo: 'saida', item: 'Filtro de Óleo CAT', quantidade: 2, documento: 'REQ-456', responsavel: 'Maria PCM', data: '2024-01-12' }
+        ];
+    }
+
+    static getEquipmentTypes() {
+        return [
+            { id: 1, nome: 'Escavadeira', descricao: 'Equipamentos para escavação', ativo: true },
+            { id: 2, nome: 'Caminhão', descricao: 'Veículos de transporte', ativo: true }
+        ];
+    }
+
+    static getOilAnalysis() {
+        return [
+            { id: 1, numero_amostra: 'A2024-001', equipamento_id: 1, equipamento_nome: 'Escavadeira CAT 320D', data_coleta: '2024-01-15', status: 'Em análise', resultado: null },
+            { id: 2, numero_amostra: 'A2024-002', equipamento_id: 2, equipamento_nome: 'Caminhão Basculante Volvo', data_coleta: '2024-01-12', status: 'Concluída', resultado: 'Normal' }
+        ];
+    }
+
+    static getDashboardStats() {
+        const equipamentos = this.getEquipments();
+        const os = this.getWorkOrders();
+        const stock = this.getStockItems();
+        return {
+            kpis: {
+                equipamentos_ativos: equipamentos.length,
+                os_abertas: os.filter(o => o.status !== 'concluida').length,
+                os_concluidas_mes: os.filter(o => o.status === 'concluida').length,
+                pecas_estoque: stock.reduce((sum, item) => sum + item.quantidade, 0)
+            },
+            graficos: {
+                os_por_status: [
+                    { status: 'aberta', count: os.filter(o => o.status === 'aberta').length },
+                    { status: 'em_execucao', count: os.filter(o => o.status === 'em_execucao').length },
+                    { status: 'concluida', count: os.filter(o => o.status === 'concluida').length }
+                ],
+                os_por_tipo: [
+                    { tipo: 'preventiva', count: os.filter(o => o.tipo === 'preventiva').length },
+                    { tipo: 'corretiva', count: os.filter(o => o.tipo === 'corretiva').length }
+                ]
+            },
+            alertas: [],
+            atividades_recentes: []
+        };
+    }
+
     // Método para simular API calls
     static simulateAPI() {
         // Simular delay de rede
@@ -690,6 +759,142 @@ class TestData {
                     console.log('Redefinindo senha do usuário:', id);
                     return Math.random().toString(36).slice(-8);
                 }
+            },
+            dashboard: {
+                getStats: async () => {
+                    await delay(300);
+                    return TestData.getDashboardStats();
+                }
+            },
+            maintenanceTypes: {
+                getAll: async () => {
+                    await delay(300);
+                    const tipos = TestData.getMaintenanceTypes();
+                    return { tipos_manutencao: tipos, data: tipos };
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando tipo de manutenção:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando tipo de manutenção:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(300);
+                    console.log('Excluindo tipo de manutenção:', id);
+                    return { success: true };
+                }
+            },
+            backlog: {
+                getAll: async () => {
+                    await delay(300);
+                    const items = TestData.getBacklogItems();
+                    return { backlog_items: items, data: items };
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando item de backlog:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando item de backlog:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(300);
+                    console.log('Excluindo item de backlog:', id);
+                    return { success: true };
+                }
+            },
+            preventivePlans: {
+                getAll: async () => {
+                    await delay(300);
+                    const planos = TestData.getPreventivePlans();
+                    return { planos_preventiva: planos, data: planos };
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando plano de preventiva:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando plano de preventiva:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(300);
+                    console.log('Excluindo plano de preventiva:', id);
+                    return { success: true };
+                }
+            },
+            movements: {
+                getAll: async () => {
+                    await delay(300);
+                    return TestData.getMovements();
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando movimentação:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando movimentação:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(300);
+                    console.log('Excluindo movimentação:', id);
+                    return { success: true };
+                }
+            },
+            equipmentTypes: {
+                getAll: async () => {
+                    await delay(300);
+                    return TestData.getEquipmentTypes();
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando tipo de equipamento:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando tipo de equipamento:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(300);
+                    console.log('Excluindo tipo de equipamento:', id);
+                    return { success: true };
+                }
+            },
+            oilAnalysis: {
+                getAll: async () => {
+                    await delay(300);
+                    const analises = TestData.getOilAnalysis();
+                    return { analises, data: analises };
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando análise de óleo:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando análise de óleo:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(300);
+                    console.log('Excluindo análise de óleo:', id);
+                    return { success: true };
+                }
             }
         };
 
@@ -753,6 +958,12 @@ class TestData {
         console.log('- Grupos de Itens:', this.getItemGroups().length);
         console.log('- Mecânicos:', this.getMechanics().length);
         console.log('- Usuários:', this.getUsers().length);
+        console.log('- Tipos de Manutenção:', this.getMaintenanceTypes().length);
+        console.log('- Itens de Backlog:', this.getBacklogItems().length);
+        console.log('- Planos de Preventiva:', this.getPreventivePlans().length);
+        console.log('- Movimentações:', this.getMovements().length);
+        console.log('- Tipos de Equipamento:', this.getEquipmentTypes().length);
+        console.log('- Análises de Óleo:', this.getOilAnalysis().length);
     }
 }
 
