@@ -520,6 +520,35 @@ class TestData {
         ];
     }
 
+    static getTires() {
+        return [
+            {
+                id: 1,
+                numero_serie: 'PN001',
+                numero_fogo: 'F001',
+                marca: 'Goodyear',
+                modelo: 'G1',
+                medida: '385/65R22.5',
+                status: 'estoque',
+                sulco_inicial: 15,
+                sulco_atual: 15,
+                item_id: 1
+            },
+            {
+                id: 2,
+                numero_serie: 'PN002',
+                numero_fogo: 'F002',
+                marca: 'Michelin',
+                modelo: 'X1',
+                medida: '295/80R22.5',
+                status: 'em_uso',
+                sulco_inicial: 18,
+                sulco_atual: 17,
+                item_id: 1
+            }
+        ];
+    }
+
     static getOilAnalysis() {
         return [
             { id: 1, numero_amostra: 'A2024-001', equipamento_id: 1, equipamento_nome: 'Escavadeira CAT 320D', data_coleta: '2024-01-15', status: 'Em análise', resultado: null },
@@ -639,9 +668,49 @@ class TestData {
                 }
             },
             tires: {
+                getAll: async () => {
+                    await delay(300);
+                    return TestData.getTires();
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando pneu:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando pneu:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(200);
+                    console.log('Excluindo pneu:', id);
+                    return { success: true };
+                },
                 getAlerts: async () => {
                     await delay(300);
                     return { total_alertas: 0, alertas: [] };
+                }
+            },
+            items: {
+                getAll: async () => {
+                    await delay(300);
+                    return TestData.getStockItems();
+                },
+                create: async (data) => {
+                    await delay(300);
+                    console.log('Criando item:', data);
+                    return { id: Date.now(), ...data };
+                },
+                update: async (id, data) => {
+                    await delay(300);
+                    console.log('Atualizando item:', id, data);
+                    return { id, ...data };
+                },
+                delete: async (id) => {
+                    await delay(200);
+                    console.log('Excluindo item:', id);
+                    return { success: true };
                 }
             },
             stock: {
@@ -962,6 +1031,7 @@ class TestData {
         console.log('- Itens de Backlog:', this.getBacklogItems().length);
         console.log('- Planos de Preventiva:', this.getPreventivePlans().length);
         console.log('- Movimentações:', this.getMovements().length);
+        console.log('- Pneus:', this.getTires().length);
         console.log('- Tipos de Equipamento:', this.getEquipmentTypes().length);
         console.log('- Análises de Óleo:', this.getOilAnalysis().length);
     }

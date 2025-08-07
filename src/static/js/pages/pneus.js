@@ -9,18 +9,8 @@ const SYNC_TIRES_GRID_DATA = async () => {
     tiresGridApi.showLoadingOverlay();
 
     try {
-        const response = await fetch("/api/pneus", {
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        tiresData = data.pneus || [];
+        const data = await API.tires.getAll();
+        tiresData = data.pneus || data.data || data || [];
         
         tiresGridApi.setGridOption("rowData", tiresData);
         updateTiresStats();
@@ -140,12 +130,10 @@ const ADD_TIRE = async () => {
 
     const itemSelect = modalBody.querySelector('select[name="item_id"]');
     try {
-        const resp = await fetch('/api/itens', { headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` } });
-        if (resp.ok) {
-            const itens = await resp.json();
-            const pneusItens = itens.filter(i => (i.grupo_itens || '').toLowerCase() === 'pneus');
-            itemSelect.innerHTML = '<option value="">Selecione</option>' + pneusItens.map(i => `<option value="${i.id}">${i.numero_item} - ${i.descricao_item}</option>`).join('');
-        }
+        const itensResp = await API.items.getAll();
+        const itens = itensResp.itens || itensResp.data || itensResp || [];
+        const pneusItens = itens.filter(i => (i.grupo_itens || '').toLowerCase() === 'pneus');
+        itemSelect.innerHTML = '<option value="">Selecione</option>' + pneusItens.map(i => `<option value="${i.id}">${i.numero_item} - ${i.descricao_item}</option>`).join('');
     } catch (err) {
         console.error('Erro ao carregar itens:', err);
     }
@@ -164,20 +152,7 @@ const ADD_TIRE = async () => {
         }
 
         try {
-            const response = await fetch("/api/pneus", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Erro ao criar pneu");
-            }
-
+            await API.tires.create(formData);
             await SYNC_TIRES_GRID_DATA();
             $(modal).modal("hide");
             Utils.showToast("Pneu criado com sucesso!", "success");
@@ -263,13 +238,11 @@ const EDIT_TIRE = async (params) => {
 
     const itemSelect = modalBody.querySelector('select[name="item_id"]');
     try {
-        const resp = await fetch('/api/itens', { headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` } });
-        if (resp.ok) {
-            const itens = await resp.json();
-            const pneusItens = itens.filter(i => (i.grupo_itens || '').toLowerCase() === 'pneus');
-            itemSelect.innerHTML = '<option value="">Selecione</option>' + pneusItens.map(i => `<option value="${i.id}">${i.numero_item} - ${i.descricao_item}</option>`).join('');
-            itemSelect.value = rowData.item_id || (rowData.item ? rowData.item.id : '');
-        }
+        const itensResp = await API.items.getAll();
+        const itens = itensResp.itens || itensResp.data || itensResp || [];
+        const pneusItens = itens.filter(i => (i.grupo_itens || '').toLowerCase() === 'pneus');
+        itemSelect.innerHTML = '<option value="">Selecione</option>' + pneusItens.map(i => `<option value="${i.id}">${i.numero_item} - ${i.descricao_item}</option>`).join('');
+        itemSelect.value = rowData.item_id || (rowData.item ? rowData.item.id : '');
     } catch (err) {
         console.error('Erro ao carregar itens:', err);
     }
@@ -281,20 +254,7 @@ const EDIT_TIRE = async (params) => {
         formData.item_id = parseInt(formData.item_id);
 
         try {
-            const response = await fetch(`/api/pneus/${rowData.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Erro ao atualizar pneu");
-            }
-
+            await API.tires.update(rowData.id, formData);
             await SYNC_TIRES_GRID_DATA();
             $(modal).modal("hide");
             Utils.showToast("Pneu atualizado com sucesso!", "success");
@@ -318,18 +278,7 @@ const DELETE_TIRE = async (params) => {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(`/api/pneus/${rowData.id}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Erro ao excluir pneu");
-        }
-
+        await API.tires.delete(rowData.id);
         params.api.applyTransaction({ remove: [rowData] });
         params.api.refreshCells({ force: true });
         updateTiresStats();

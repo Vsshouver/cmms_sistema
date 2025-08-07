@@ -10,18 +10,8 @@ const SYNC_EQUIPMENTS_GRID_DATA = async () => {
     equipmentsGridApi.showLoadingOverlay();
 
     try {
-        const response = await fetch('/api/equipamentos', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        equipmentsData = data.equipamentos || [];
+        const data = await API.equipments.getAll();
+        equipmentsData = data.equipamentos || data.data || data || [];
         
         equipmentsGridApi.setGridOption("rowData", equipmentsData);
         updateEquipmentsStats();
@@ -158,20 +148,7 @@ const ADD_EQUIPAMENTO = async () => {
         }
 
         try {
-            const response = await fetch('/api/equipamentos', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Erro ao criar equipamento');
-            }
-
+            await API.equipments.create(formData);
             await SYNC_EQUIPMENTS_GRID_DATA();
             $(modal).modal('hide');
             Utils.showToast('Equipamento criado com sucesso!', 'success');
@@ -268,20 +245,7 @@ const EDIT_EQUIPAMENTO = async (params) => {
         const formData = EQUIPMENTS_FORMDATA(modalBody);
 
         try {
-            const response = await fetch(`/api/equipamentos/${rowData.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Erro ao atualizar equipamento');
-            }
-
+            await API.equipments.update(rowData.id, formData);
             await SYNC_EQUIPMENTS_GRID_DATA();
             $(modal).modal('hide');
             Utils.showToast('Equipamento atualizado com sucesso!', 'success');
@@ -305,18 +269,7 @@ const DELETE_EQUIPAMENTO = async (params) => {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(`/api/equipamentos/${rowData.id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Erro ao excluir equipamento');
-        }
-
+        await API.equipments.delete(rowData.id);
         params.api.applyTransaction({ remove: [rowData] });
         params.api.refreshCells({ force: true });
         updateEquipmentsStats();
@@ -329,16 +282,8 @@ const DELETE_EQUIPAMENTO = async (params) => {
 
 const loadEquipmentTypes = async () => {
     try {
-        const response = await fetch('/api/tipos-equipamento', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            equipmentTypes = data.tipos_equipamento || [];
-        }
+        const data = await API.equipmentTypes.getAll();
+        equipmentTypes = data.tipos_equipamento || data.data || data || [];
     } catch (error) {
         console.error('Erro ao carregar tipos de equipamento:', error);
         equipmentTypes = [];
