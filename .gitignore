@@ -6,3 +6,4 @@ cmms.db
 src/database/app.db
 
 instance/*.db
+node_modules/

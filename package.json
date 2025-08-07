@@ -1,0 +1,17 @@
+{
+  "name": "cmms_sistema",
+  "version": "1.0.0",
+  "description": "Este é um Sistema de Gerenciamento de Manutenção Computadorizada (CMMS) desenvolvido para controle e gestão de equipamentos, ordens de serviço, estoque e manutenções.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i ./src/static/css/tailwind-input.css -o ./src/static/css/tailwind.css --minify"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "tailwindcss": "^3.4.4"
+  }
+}
