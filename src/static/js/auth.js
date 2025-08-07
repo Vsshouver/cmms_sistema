@@ -34,7 +34,7 @@ class AuthManager {
                 this.currentUser = user;
 
                 // Salvar token localmente para persistência
-                api.setToken(this.token);
+                API.setToken(this.token);
 
                 // Executar callbacks de login registrados
                 this.loginCallbacks.forEach(callback => callback(this.currentUser));
@@ -64,7 +64,7 @@ class AuthManager {
             this.currentUser = null;
 
             // Remover token
-            api.setToken(null);
+            API.setToken(null);
 
             // Executar callbacks de logout
             this.logoutCallbacks.forEach(callback => callback());
