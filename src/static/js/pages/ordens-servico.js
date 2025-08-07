@@ -12,18 +12,8 @@ const SYNC_WORK_ORDERS_GRID_DATA = async () => {
     workOrdersGridApi.showLoadingOverlay();
 
     try {
-        const response = await fetch("/api/ordens-servico", {
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        workOrdersData = data.ordens_servico || [];
+        const data = await API.workOrders.getAll();
+        workOrdersData = data.ordens_servico || data.data || data || [];
         
         workOrdersGridApi.setGridOption("rowData", workOrdersData);
         updateWorkOrdersStats();
@@ -141,20 +131,7 @@ const ADD_WORK_ORDER = async () => {
         }
 
         try {
-            const response = await fetch("/api/ordens-servico", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Erro ao criar ordem de serviço");
-            }
-
+            await API.workOrders.create(formData);
             await SYNC_WORK_ORDERS_GRID_DATA();
             modal.classList.add('hidden');
             Utils.showToast('Ordem de serviço criada com sucesso!', 'success');
@@ -257,20 +234,7 @@ const EDIT_WORK_ORDER = async (params) => {
         const formData = WORK_ORDERS_FORMDATA(modalBody);
 
         try {
-            const response = await fetch(`/api/ordens-servico/${rowData.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Erro ao atualizar ordem de serviço");
-            }
-
+            await API.workOrders.update(rowData.id, formData);
             await SYNC_WORK_ORDERS_GRID_DATA();
             modal.classList.add('hidden');
             Utils.showToast('Ordem de serviço atualizada com sucesso!', 'success');
@@ -294,18 +258,7 @@ const DELETE_WORK_ORDER = async (params) => {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(`/api/ordens-servico/${rowData.id}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Erro ao excluir ordem de serviço");
-        }
-
+        await API.workOrders.delete(rowData.id);
         params.api.applyTransaction({ remove: [rowData] });
         params.api.refreshCells({ force: true });
         updateWorkOrdersStats();
@@ -325,11 +278,7 @@ const VIEW_WORK_ORDER = async (params) => {
     const buttons = modal.querySelectorAll('.modal-footer button');
 
     try {
-        const response = await fetch(`/api/ordens-servico/${id}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (!response.ok) throw new Error('Erro ao carregar OS');
-        const data = await response.json();
+        const data = await API.workOrders.get(id);
 
         const template = /*html*/`
             <div class="space-y-2">
@@ -407,24 +356,15 @@ const PRINT_WORK_ORDER = (data, signature) => {
 
 const loadWorkOrdersRelatedData = async () => {
     try {
-        const [equipmentsResponse, mechanicsResponse, maintenanceTypesResponse] = await Promise.all([
-            fetch("/api/equipamentos", { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } }),
-            fetch("/api/mecanicos", { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } }),
-            fetch("/api/tipos-manutencao", { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } })
+        const [equipamentos, mecanicos, tipos] = await Promise.all([
+            API.equipments.getAll(),
+            API.mechanics.getAll(),
+            API.maintenanceTypes.getAll()
         ]);
-        
-        if (equipmentsResponse.ok) {
-            const data = await equipmentsResponse.json();
-            workOrdersEquipments = data.equipamentos || [];
-        }
-        if (mechanicsResponse.ok) {
-            const data = await mechanicsResponse.json();
-            workOrdersMechanics = data.mecanicos || [];
-        }
-        if (maintenanceTypesResponse.ok) {
-            const data = await maintenanceTypesResponse.json();
-            workOrdersMaintenanceTypes = data.tipos_manutencao || [];
-        }
+
+        workOrdersEquipments = equipamentos.equipamentos || equipamentos.data || equipamentos || [];
+        workOrdersMechanics = mecanicos.mecanicos || mecanicos.data || mecanicos || [];
+        workOrdersMaintenanceTypes = tipos.tipos_manutencao || tipos.data || tipos || [];
     } catch (error) {
         console.error("Erro ao carregar dados relacionados:", error);
         workOrdersEquipments = [];
@@ -625,9 +565,7 @@ const WORK_ORDERS_GRID_INIT = () => {
                     container.querySelector('.print-os').addEventListener('click', async (e) => {
                         e.stopPropagation();
                         try {
-                            const res = await fetch(`/api/ordens-servico/${params.node.data.id}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-                            if (!res.ok) throw new Error();
-                            const data = await res.json();
+                            const data = await API.workOrders.get(params.node.data.id);
                             PRINT_WORK_ORDER(data);
                         } catch {
                             Utils.showToast('Erro ao imprimir OS', 'error');

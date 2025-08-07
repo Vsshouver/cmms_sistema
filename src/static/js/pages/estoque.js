@@ -757,8 +757,8 @@ class InventoryItemModal {
 
     async loadItems() {
         try {
-            const response = await fetch('/api/itens');
-            const items = await response.json();
+            const resp = await API.items.getAll();
+            const items = resp.itens || resp.data || resp || [];
             const select = document.getElementById('item_id');
             if (!select) return;
 

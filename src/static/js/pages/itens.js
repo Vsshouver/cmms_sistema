@@ -1,7 +1,7 @@
 
 document.addEventListener("DOMContentLoaded", function () {
     // Usar a URL base configurada dinamicamente para evitar problemas de mixed content
-    const apiUrl = `${window.API_BASE_URL}/itens/`;
+    const apiUrl = `${window.API_BASE_URL}/itens/`; // mantido para compatibilidade, não utilizado diretamente
 
     const form = document.getElementById("item-form");
     const tabela = document.getElementById("tabela-itens");
@@ -25,9 +25,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function carregarItens() {
-        fetch(apiUrl)
-            .then(res => res.json())
-            .then(data => {
+        API.items.getAll()
+            .then(response => {
+                const data = response.itens || response.data || response || [];
                 tabela.innerHTML = "";
                 data.forEach(item => {
                     const row = document.createElement("tr");
@@ -59,16 +59,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 estoque_baixo: form.estoque_baixo.checked
             };
 
-            fetch(apiUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(dados)
-            })
-                .then(res => {
-                    if (res.ok) {
-                        form.reset();
-                        carregarItens();
-                    }
+            API.items.create(dados)
+                .then(() => {
+                    form.reset();
+                    carregarItens();
                 });
         });
     }

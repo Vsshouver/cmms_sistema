@@ -9,18 +9,8 @@ const SYNC_USERS_GRID_DATA = async () => {
     usersGridApi.showLoadingOverlay();
 
     try {
-        const response = await fetch("/api/usuarios", {
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        usersData = data.usuarios || [];
+        const data = await API.users.getAll();
+        usersData = data.usuarios || data.data || data || [];
         
         usersGridApi.setGridOption("rowData", usersData);
         updateUsersStats();
@@ -131,20 +121,7 @@ const ADD_USER = async () => {
         }
 
         try {
-            const response = await fetch("/api/usuarios", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Erro ao criar usuário");
-            }
-
+            await API.users.create(formData);
             await SYNC_USERS_GRID_DATA();
             $(modal).modal("hide");
             Utils.showToast("Usuário criado com sucesso!", "success");
@@ -212,20 +189,7 @@ const EDIT_USER = async (params) => {
         const formData = USERS_FORMDATA(modalBody);
 
         try {
-            const response = await fetch(`/api/usuarios/${rowData.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Erro ao atualizar usuário");
-            }
-
+            await API.users.update(rowData.id, formData);
             await SYNC_USERS_GRID_DATA();
             $(modal).modal("hide");
             Utils.showToast("Usuário atualizado com sucesso!", "success");
@@ -249,18 +213,7 @@ const DELETE_USER = async (params) => {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(`/api/usuarios/${rowData.id}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Erro ao excluir usuário");
-        }
-
+        await API.users.delete(rowData.id);
         params.api.applyTransaction({ remove: [rowData] });
         params.api.refreshCells({ force: true });
         updateUsersStats();
@@ -284,20 +237,8 @@ const RESET_PASSWORD = async (params) => {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(`/api/usuarios/${rowData.id}/reset-password`, {
-            method: "PUT",
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Erro ao redefinir senha");
-        }
-
-        const result = await response.json();
-        Utils.showToast(`Senha redefinida com sucesso! Nova senha: ${result.nova_senha}`, "success");
+        const result = await API.users.resetPassword(rowData.id);
+        Utils.showToast(`Senha redefinida com sucesso! Nova senha: ${result.nova_senha || result}`, "success");
     } catch (error) {
         console.error("Erro ao redefinir senha:", error);
         Utils.showToast(error.message, "error");

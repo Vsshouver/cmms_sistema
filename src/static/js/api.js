@@ -47,3 +47,73 @@ class ApiClient {
 // Tornar disponíveis globalmente
 window.api = new ApiClient();
 window.API_BASE_URL = API_BASE_URL;
+
+// Helper para operações CRUD básicas
+const createCRUD = (base) => ({
+    getAll: () => window.api.request(base),
+    get: (id) => window.api.request(`${base}/${id}`),
+    create: (data) => window.api.request(base, {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+    update: (id, data) => window.api.request(`${base}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    }),
+    delete: (id) => window.api.request(`${base}/${id}`, {
+        method: 'DELETE'
+    })
+});
+
+// Módulos da API
+const API = {
+    auth: {
+        login: (credentials) => window.api.request('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(credentials)
+        }),
+        logout: () => window.api.request('/auth/logout', { method: 'POST' }),
+        me: () => window.api.request('/auth/me')
+    },
+    equipments: createCRUD('/equipamentos'),
+    equipmentTypes: {
+        getAll: () => window.api.request('/tipos-equipamento')
+    },
+    workOrders: {
+        ...createCRUD('/ordens-servico'),
+        getMechanicAlerts: () => window.api.request('/ordens-servico/alertas')
+    },
+    mechanics: createCRUD('/mecanicos'),
+    maintenanceTypes: createCRUD('/tipos-manutencao'),
+    tires: {
+        ...createCRUD('/pneus'),
+        getAlerts: () => window.api.request('/pneus/alertas')
+    },
+    inventory: {
+        ...createCRUD('/estoque'),
+        movement: (id, data) => window.api.request(`/estoque/${id}/movimentacoes`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
+    },
+    itemGroups: createCRUD('/grupos-item'),
+    users: {
+        ...createCRUD('/usuarios'),
+        resetPassword: (id) => window.api.request(`/usuarios/${id}/reset-password`, {
+            method: 'POST'
+        })
+    },
+    dashboard: {
+        getStats: () => window.api.request('/dashboard/stats')
+    },
+    backlog: createCRUD('/backlog'),
+    preventivePlans: createCRUD('/preventivas'),
+    movements: createCRUD('/movimentacoes'),
+    oilAnalysis: createCRUD('/analise-oleo'),
+    items: createCRUD('/itens')
+};
+
+// Alias em português quando necessário
+API.equipamentos = API.equipments;
+
+window.API = API;
