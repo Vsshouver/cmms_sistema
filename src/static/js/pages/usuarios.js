@@ -638,7 +638,7 @@ class UsersPage {
                 </div>
                 <h3>Erro ao carregar usuários</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="navigation.navigateTo(\'usuarios\')">
+                <button class="btn btn-primary" onclick="appNavigation.navigateTo(\'usuarios\')">
                     <i class="fas fa-refresh"></i>
                     Tentar novamente
                 </button>

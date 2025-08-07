@@ -657,7 +657,7 @@ class EquipmentsPage {
                 </div>
                 <h3>Erro ao carregar equipamentos</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="navigation.navigateTo('equipamentos')">
+                <button class="btn btn-primary" onclick="appNavigation.navigateTo('equipamentos')">
                     <i class="fas fa-refresh"></i>
                     Tentar novamente
                 </button>

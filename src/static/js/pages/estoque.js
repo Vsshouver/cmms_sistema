@@ -71,7 +71,7 @@ class InventoryPage {
                 </div>
                 <h3>Erro ao carregar estoque</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="navigation.navigateTo('estoque')">
+                <button class="btn btn-primary" onclick="appNavigation.navigateTo('estoque')">
                     <i class="fas fa-refresh"></i>
                     Tentar novamente
                 </button>
@@ -387,7 +387,7 @@ class InventoryPage {
         // Botão de movimentações
         const movementBtn = container.querySelector('#movement-history');
         if (movementBtn) {
-            movementBtn.addEventListener('click', () => navigation.navigateTo('movimentacoes'));
+            movementBtn.addEventListener('click', () => appNavigation.navigateTo('movimentacoes'));
         }
 
         // Botão de nova peça

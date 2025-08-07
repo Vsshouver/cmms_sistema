@@ -108,8 +108,8 @@ class CMSApp {
             }
 
             // Inicializar gerenciador de navegação após autenticação
-            if (!window.navigation) {
-                window.navigation = new NavigationManager();
+            if (!window.appNavigation) {
+                window.appNavigation = new NavigationManager();
             }
 
             // Carregar notificações
@@ -203,7 +203,7 @@ class CMSApp {
         // Callback de logout
         auth.onLogout(() => {
             console.log('Logout realizado');
-            window.navigation = null;
+            window.appNavigation = null;
             this.showLogin();
         });
     }
@@ -238,7 +238,7 @@ class CMSApp {
         return {
             initialized: this.initialized,
             currentUser: auth.getCurrentUser(),
-            currentPage: navigation.getCurrentPage()
+            currentPage: window.appNavigation?.getCurrentPage()
         };
     }
 }

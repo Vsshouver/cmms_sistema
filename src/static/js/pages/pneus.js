@@ -679,7 +679,7 @@ class TiresPage {
                 </div>
                 <h3>Erro ao carregar pneus</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="navigation.navigateTo(\'pneus\')">
+                <button class="btn btn-primary" onclick="appNavigation.navigateTo(\'pneus\')">
                     <i class="fas fa-refresh"></i>
                     Tentar novamente
                 </button>
