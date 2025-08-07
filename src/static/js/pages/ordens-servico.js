@@ -790,7 +790,7 @@ class WorkOrdersPage {
                 </div>
                 <h3>Erro ao carregar ordens de serviço</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="navigation.navigateTo(\'ordens-servico\')">
+                <button class="btn btn-primary" onclick="appNavigation.navigateTo(\'ordens-servico\')">
                     <i class="fas fa-refresh"></i>
                     Tentar novamente
                 </button>

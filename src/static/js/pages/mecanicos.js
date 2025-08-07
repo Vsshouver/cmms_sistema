@@ -59,7 +59,7 @@ class MechanicsPage {
                 </div>
                 <h3>Erro ao carregar mecânicos</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="navigation.navigateTo('mecanicos')">
+                <button class="btn btn-primary" onclick="appNavigation.navigateTo('mecanicos')">
                     <i class="fas fa-refresh"></i>
                     Tentar novamente
                 </button>
@@ -444,7 +444,7 @@ class MechanicsPage {
 
     viewWorkOrders(id) {
         // Navegar para ordens de serviço filtradas por mecânico
-        navigation.navigateTo('ordens-servico', { mechanic_id: id });
+        appNavigation.navigateTo('ordens-servico', { mechanic_id: id });
     }
 
     editMechanic(id) {

@@ -67,7 +67,7 @@ class DashboardPage {
                 </div>
                 <h3>Erro ao carregar dashboard</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="navigation.navigateTo('dashboard')">
+                <button class="btn btn-primary" onclick="appNavigation.navigateTo('dashboard')">
                     <i class="fas fa-refresh"></i>
                     Tentar novamente
                 </button>
@@ -375,7 +375,7 @@ class DashboardPage {
         
         const route = routes[index];
         if (route) {
-            navigation.navigateTo(route);
+            appNavigation.navigateTo(route);
         }
     }
 
