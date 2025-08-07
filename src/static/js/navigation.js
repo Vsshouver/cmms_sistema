@@ -4,22 +4,24 @@ class NavigationManager {
     this.container = document.getElementById('main-content');
     this.menuToggle = document.getElementById('menu-toggle');
 
-    this.pages = {
-      'dashboard': window.DashboardPage,
-      'ordens-servico': window.WorkOrdersPage,
-      'preventivas': window.PreventivasPage,
-      'backlog': window.BacklogPage,
-      'equipamentos': window.EquipmentsPage,
-      'estoque': window.InventoryPage,
-      'pneus': window.TiresPage,
-      'mecanicos': window.MechanicsPage,
-      'usuarios': window.UsersPage,
-      'tipos-equipamento': window.EquipmentTypesPage,
-      'tipos-manutencao': window.MaintenanceTypesPage,
-      'grupos-item': window.ItemGroupsPage,
-      'movimentacoes': window.MovementsPage,
-      'analise-oleo': window.OilAnalysisPage,
-      'importacao': window.ImportPage
+    // Mapear nomes das páginas para seus construtores globais
+    // A resolução dos construtores é feita dinamicamente em `getPageClass`
+    this.pageMap = {
+      'dashboard': 'DashboardPage',
+      'ordens-servico': 'WorkOrdersPage',
+      'preventivas': 'PreventivasPage',
+      'backlog': 'BacklogPage',
+      'equipamentos': 'EquipmentsPage',
+      'estoque': 'InventoryPage',
+      'pneus': 'TiresPage',
+      'mecanicos': 'MechanicsPage',
+      'usuarios': 'UsersPage',
+      'tipos-equipamento': 'EquipmentTypesPage',
+      'tipos-manutencao': 'MaintenanceTypesPage',
+      'grupos-item': 'ItemGroupsPage',
+      'movimentacoes': 'MovementsPage',
+      'analise-oleo': 'OilAnalysisPage',
+      'importacao': 'ImportPage'
     };
 
     this.init();
@@ -71,6 +73,11 @@ class NavigationManager {
     });
   }
 
+  getPageClass(page) {
+    const className = this.pageMap[page];
+    return className ? window[className] : undefined;
+  }
+
   setActiveLink(link) {
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
     if (link) {
@@ -80,8 +87,7 @@ class NavigationManager {
 
   async navigateTo(page) {
     if (!this.container) return;
-
-    const PageClass = this.pages[page];
+    const PageClass = this.getPageClass(page);
     if (!PageClass) {
       console.warn(`Página desconhecida: ${page}`);
       this.container.innerHTML = '<p>Página não encontrada.</p>';
