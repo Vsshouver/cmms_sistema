@@ -50,6 +50,7 @@ def login():
 
     except Exception:
         logging.exception("Erro ao realizar login")
+        db.session.rollback()
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @auth_bp.route('/auth/validate', methods=['GET'])
@@ -99,5 +100,6 @@ def change_password(current_user):
 
     except Exception:
         logging.exception("Erro ao alterar senha")
+        db.session.rollback()
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
