@@ -91,6 +91,18 @@ alembic stamp head
   Depois disso, utilize `alembic upgrade head` ou rode novamente
   `python create_db.py` para aplicar novas migrações.
 
+## Configuração de CORS
+
+Por padrão a API não permite requisições de outras origens.
+Defina a variável de ambiente `FRONTEND_URL` com uma lista separada
+por vírgulas para liberar o acesso a origens específicas:
+
+```bash
+export FRONTEND_URL="https://app.exemplo.com,https://admin.exemplo.com"
+```
+
+Se `FRONTEND_URL` não for definida, nenhuma origem externa será aceita.
+
 ## Credenciais de Teste
 
 - **E-mail:** admin@mineracao.com

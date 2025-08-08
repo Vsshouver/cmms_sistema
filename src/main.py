@@ -40,9 +40,12 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key')
 app.config['SECRET_KEY'] = SECRET_KEY
 
-# Configurar CORS para permitir credenciais de qualquer origem
-FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
-CORS(app, supports_credentials=True, origins=[FRONTEND_URL] if FRONTEND_URL else "*")
+# Configurar CORS com origens permitidas definidas via variável de ambiente
+# Use uma lista separada por vírgulas em FRONTEND_URL para adicionar múltiplas origens
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
+allowed_origins = [url.strip() for url in FRONTEND_URL.split(",") if url.strip()]
+if allowed_origins:
+    CORS(app, supports_credentials=True, origins=allowed_origins)
 
 # Registrar blueprints
 app.register_blueprint(auth_bp, url_prefix='/api')
