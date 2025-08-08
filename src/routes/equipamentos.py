@@ -4,6 +4,7 @@ from src.models.equipamento import Equipamento
 from src.models.tipo_equipamento import TipoEquipamento
 from src.utils.auth import token_required, supervisor_or_admin_required
 from datetime import datetime
+import logging
 
 equipamentos_bp = Blueprint('equipamentos', __name__)
 
@@ -45,9 +46,9 @@ def get_equipamentos(current_user):
             'total': len(result)
         }), 200
         
-    except Exception as e:
-        print(f"Erro ao carregar equipamentos: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logging.exception("Erro ao carregar equipamentos")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @equipamentos_bp.route('/equipamentos/<int:equipamento_id>', methods=['GET'])
 @token_required
@@ -55,8 +56,9 @@ def get_equipamento(current_user, equipamento_id):
     try:
         equipamento = Equipamento.query.get_or_404(equipamento_id)
         return jsonify(equipamento.to_dict()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logging.exception("Erro ao carregar equipamento")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @equipamentos_bp.route('/equipamentos', methods=['POST'])
 @token_required
@@ -100,9 +102,10 @@ def create_equipamento(current_user):
             "equipamento": equipamento.to_dict()
         }), 201
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        logging.exception("Erro ao criar equipamento")
+        return jsonify({"error": 'Erro interno do servidor'}), 500
 @equipamentos_bp.route("/equipamentos/<int:equipamento_id>", methods=["PUT"])
 @token_required
 @supervisor_or_admin_required
@@ -139,9 +142,10 @@ def update_equipamento(current_user, equipamento_id):
             "equipamento": equipamento.to_dict()
         }), 200
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        logging.exception("Erro ao atualizar equipamento")
+        return jsonify({"error": 'Erro interno do servidor'}), 500
 
 @equipamentos_bp.route('/equipamentos/<int:equipamento_id>', methods=['DELETE'])
 @token_required
@@ -159,6 +163,7 @@ def delete_equipamento(current_user, equipamento_id):
         
         return jsonify({'message': 'Equipamento excluído com sucesso'}), 200
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        logging.exception("Erro ao excluir equipamento")
+        return jsonify({'error': 'Erro interno do servidor'}), 500

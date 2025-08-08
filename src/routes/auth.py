@@ -4,6 +4,7 @@ from src.db import db
 from src.models.usuario import Usuario
 from src.utils.auth import token_required, get_user_permissions, SECRET_KEY
 import jwt
+import logging
 from datetime import datetime, timedelta
 
 auth_bp = Blueprint('auth', __name__)
@@ -47,8 +48,9 @@ def login():
             'message': 'Login realizado com sucesso'
         }), 200
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logging.exception("Erro ao realizar login")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @auth_bp.route('/auth/validate', methods=['GET'])
 @token_required
@@ -95,6 +97,7 @@ def change_password(current_user):
 
         return jsonify({'message': 'Senha alterada com sucesso'}), 200
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logging.exception("Erro ao alterar senha")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
