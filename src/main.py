@@ -9,8 +9,6 @@ logging.basicConfig(level=logging.INFO)
 
 from flask import Flask, render_template, jsonify, send_from_directory
 from flask_cors import CORS
-from sqlalchemy import text
-from datetime import datetime
 
 # Importar modelos
 from src.db import db
@@ -102,7 +100,7 @@ def serve(path):
             return "index.html not found", 404
 
 # Healthcheck endpoint
-@app.route("/api/health")  # <-- ADICIONE ESTA LINHA
+@app.route("/api/health")
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"}), 200
@@ -132,30 +130,6 @@ def api_index():
         }
     })
 
-@app.route('/api/health')
-def health_check():
-    """Health check endpoint para monitoramento.
-
-    A consulta ao banco pode falhar caso a infraestrutura ainda não
-    esteja totalmente disponível. Em vez de retornar 503 e fazer o
-    container ser considerado indisponível, retornamos sempre 200 e
-    informamos o status da conexão no payload.
-    """
-    try:
-        # Verificar conexão com banco de dados
-        db.session.execute(text('SELECT 1'))
-        db_status = 'connected'
-    except Exception as e:
-        db_status = f'error: {e}'
-
-    logging.info("Status da conexão com o banco: %s", db_status)
-
-    return jsonify({
-        'status': 'ok',
-        'timestamp': datetime.utcnow().isoformat(),
-        'version': '4.0',
-        'database': db_status
-    }), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
