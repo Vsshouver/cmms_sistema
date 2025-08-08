@@ -43,9 +43,12 @@ python init_db.py
 
 ### 4. Execução da Aplicação
 
+A aplicação exige a variável de ambiente `JWT_SECRET_KEY` para geração de tokens JWT.
+
 ```bash
-# Configure a variável de ambiente (opcional)
-export DATABASE_URL='sqlite:///cmms.db'
+# Configure as variáveis de ambiente
+export JWT_SECRET_KEY='sua_chave_secreta'  # Obrigatório
+export DATABASE_URL='sqlite:///cmms.db'    # Opcional
 
 # Execute a aplicação
 python src/main.py

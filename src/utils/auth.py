@@ -8,7 +8,9 @@ from src.models.usuario import Usuario
 import jwt
 import os
 
-SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'supersecretkey')
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY environment variable is not set")
 
 def token_required(f):
     """Decorator para verificar se o token JWT é válido"""
