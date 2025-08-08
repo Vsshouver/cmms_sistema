@@ -1,14 +1,15 @@
+import logging
 import os
 import sys
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+logging.basicConfig(level=logging.INFO)
+
 from flask import Flask, render_template, jsonify, send_from_directory
 from flask_cors import CORS
 from sqlalchemy import text
 from datetime import datetime
-import os
-import sys
 
 # Importar modelos
 from src.db import db
@@ -62,6 +63,11 @@ app.register_blueprint(planos_preventiva_bp, url_prefix='/api')
 app.register_blueprint(backlog_bp, url_prefix='/api')
 
 # Configurar banco de dados PostgreSQL
+if "DATABASE_URL" in os.environ:
+    logging.info("Variável DATABASE_URL encontrada.")
+else:
+    logging.warning("Variável DATABASE_URL não encontrada.")
+
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
     raise RuntimeError("DATABASE_URL não configurada. Defina a variável de ambiente com a URL do PostgreSQL.")
@@ -134,6 +140,8 @@ def health_check():
     except Exception as e:
         db_status = f'error: {e}'
 
+    logging.info("Status da conexão com o banco: %s", db_status)
+
     return jsonify({
         'status': 'ok',
         'timestamp': datetime.utcnow().isoformat(),
@@ -151,10 +159,12 @@ if __name__ == '__main__':
 
         try:
             ensure_schema()
-        except Exception as e:
-            print(f"❌ Falha ao verificar esquema do banco: {e}")
-            raise
+        except Exception:
+            logging.exception("❌ Falha ao verificar esquema do banco")
 
-        criar_dados_exemplo()
+        try:
+            criar_dados_exemplo()
+        except Exception:
+            logging.exception("❌ Falha ao criar dados de exemplo")
 
     app.run(host='0.0.0.0', port=port, debug=False)
