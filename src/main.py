@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from urllib.parse import urlparse
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -71,7 +72,10 @@ else:
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
     raise RuntimeError("DATABASE_URL não configurada. Defina a variável de ambiente com a URL do PostgreSQL.")
-print(f"🐘 Conectando ao PostgreSQL: {database_url[:50]}...")
+
+parsed_url = urlparse(database_url)
+host = parsed_url.hostname or "(host desconhecido)"
+logging.info("🐘 Tentando conectar ao PostgreSQL em %s", host)
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
