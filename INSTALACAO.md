@@ -15,7 +15,7 @@
 cd cmms_sistema
 
 # Crie um ambiente virtual
-python3.11 -m venv venv
+python -m venv venv
 
 # Ative o ambiente virtual
 # Linux/Mac:

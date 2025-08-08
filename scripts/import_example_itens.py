@@ -1,9 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Importar itens de Example/itens.csv para a tabela pecas."""
 import os
 import sys
 import pandas as pd
 from flask import Flask
+
+if sys.version_info < (3, 8):
+    raise RuntimeError("Python 3.8+ is required to run this script.")
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -13,7 +16,9 @@ from src.models.grupo_item import GrupoItem
 from src.models.estoque_local import EstoqueLocal
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-DATABASE_URL = os.environ.get('DATABASE_URL', f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'cmms_local.db')}")
+INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
+os.makedirs(INSTANCE_DIR, exist_ok=True)
+DATABASE_URL = os.environ.get('DATABASE_URL', f"sqlite:///{os.path.join(INSTANCE_DIR, 'cmms_local.db')}")
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL

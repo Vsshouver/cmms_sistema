@@ -1,7 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import os
 import sys
+
+if sys.version_info < (3, 8):
+    raise RuntimeError("Python 3.8+ is required to run this script.")
 
 # Adicionar o diretório raiz ao path
 current_dir = os.path.dirname(os.path.abspath(__file__))

@@ -55,14 +55,14 @@ src/
 ### Opção 1: Servidor HTTP Simples (Recomendado para testes)
 ```bash
 cd src/static
-python3 -m http.server 8000
+python -m http.server 8000
 ```
 Acesse: http://localhost:8000
 
 ### Opção 2: Servidor Flask (Para funcionalidades completas)
 ```bash
 cd src
-python3 app.py
+python app.py
 ```
 Acesse: http://localhost:5000
 
