@@ -110,6 +110,7 @@ MAIL_PASSWORD = 'sua-senha'
 cmms_sistema/
 ├── src/
 │   ├── models/          # Modelos de dados
+│   │   ├── usuario.py             # Modelo de Usuario
 │   │   ├── plano_preventiva.py    # NOVO
 │   │   └── backlog_item.py        # NOVO
 │   ├── routes/          # APIs REST
