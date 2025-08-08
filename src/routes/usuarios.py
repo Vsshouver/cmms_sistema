@@ -5,6 +5,9 @@ from src.utils.auth import token_required, admin_required
 from datetime import datetime
 import logging
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 usuarios_bp = Blueprint('usuarios', __name__)
 
 @usuarios_bp.route('/usuarios', methods=['GET'])
@@ -37,7 +40,7 @@ def get_usuarios(current_user):
         }), 200
         
     except Exception:
-        logging.exception("Erro ao carregar usuários")
+        logger.exception("Erro ao carregar usuários")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/<int:usuario_id>', methods=['GET'])
@@ -48,7 +51,7 @@ def get_usuario(current_user, usuario_id):
         usuario = Usuario.query.get_or_404(usuario_id)
         return jsonify(usuario.to_dict()), 200
     except Exception:
-        logging.exception("Erro ao obter usuário")
+        logger.exception("Erro ao obter usuário")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios', methods=['POST'])
@@ -98,7 +101,7 @@ def create_usuario(current_user):
         
     except Exception:
         db.session.rollback()
-        logging.exception("Erro ao criar usuário")
+        logger.exception("Erro ao criar usuário")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/<int:usuario_id>', methods=['PUT'])
@@ -144,7 +147,7 @@ def update_usuario(current_user, usuario_id):
         
     except Exception:
         db.session.rollback()
-        logging.exception("Erro ao atualizar usuário")
+        logger.exception("Erro ao atualizar usuário")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/<int:usuario_id>', methods=['DELETE'])
@@ -164,7 +167,7 @@ def delete_usuario(current_user, usuario_id):
         
     except Exception:
         db.session.rollback()
-        logging.exception("Erro ao excluir usuário")
+        logger.exception("Erro ao excluir usuário")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/perfil', methods=['GET'])
@@ -173,7 +176,7 @@ def get_perfil(current_user):
     try:
         return jsonify(current_user.to_dict()), 200
     except Exception:
-        logging.exception("Erro ao obter perfil")
+        logger.exception("Erro ao obter perfil")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/perfil', methods=['PUT'])
@@ -208,7 +211,7 @@ def update_perfil(current_user):
         
     except Exception:
         db.session.rollback()
-        logging.exception("Erro ao atualizar perfil")
+        logger.exception("Erro ao atualizar perfil")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/niveis-acesso', methods=['GET'])
@@ -227,6 +230,6 @@ def get_niveis_acesso(current_user):
         return jsonify({'niveis_acesso': niveis}), 200
         
     except Exception:
-        logging.exception("Erro ao listar níveis de acesso")
+        logger.exception("Erro ao listar níveis de acesso")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 

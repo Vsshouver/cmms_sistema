@@ -6,6 +6,9 @@ from src.utils.auth import token_required, supervisor_or_admin_required
 from datetime import datetime
 import logging
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 equipamentos_bp = Blueprint('equipamentos', __name__)
 
 @equipamentos_bp.route('/equipamentos', methods=['GET'])
@@ -47,7 +50,7 @@ def get_equipamentos(current_user):
         }), 200
         
     except Exception:
-        logging.exception("Erro ao carregar equipamentos")
+        logger.exception("Erro ao carregar equipamentos")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @equipamentos_bp.route('/equipamentos/<int:equipamento_id>', methods=['GET'])
@@ -57,7 +60,7 @@ def get_equipamento(current_user, equipamento_id):
         equipamento = Equipamento.query.get_or_404(equipamento_id)
         return jsonify(equipamento.to_dict()), 200
     except Exception:
-        logging.exception("Erro ao carregar equipamento")
+        logger.exception("Erro ao carregar equipamento")
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @equipamentos_bp.route('/equipamentos', methods=['POST'])
@@ -104,7 +107,7 @@ def create_equipamento(current_user):
         
     except Exception:
         db.session.rollback()
-        logging.exception("Erro ao criar equipamento")
+        logger.exception("Erro ao criar equipamento")
         return jsonify({"error": 'Erro interno do servidor'}), 500
 @equipamentos_bp.route("/equipamentos/<int:equipamento_id>", methods=["PUT"])
 @token_required
@@ -144,7 +147,7 @@ def update_equipamento(current_user, equipamento_id):
         
     except Exception:
         db.session.rollback()
-        logging.exception("Erro ao atualizar equipamento")
+        logger.exception("Erro ao atualizar equipamento")
         return jsonify({"error": 'Erro interno do servidor'}), 500
 
 @equipamentos_bp.route('/equipamentos/<int:equipamento_id>', methods=['DELETE'])
@@ -165,5 +168,5 @@ def delete_equipamento(current_user, equipamento_id):
         
     except Exception:
         db.session.rollback()
-        logging.exception("Erro ao excluir equipamento")
+        logger.exception("Erro ao excluir equipamento")
         return jsonify({'error': 'Erro interno do servidor'}), 500

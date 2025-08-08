@@ -155,7 +155,7 @@ def health_check():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"🌐 Servidor CMMS rodando na porta {port}")
+    logging.info("🌐 Servidor CMMS rodando na porta %s", port)
 
     # Verificar esquema e popular dados de exemplo
     with app.app_context():

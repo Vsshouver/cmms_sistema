@@ -5,6 +5,10 @@ from src.models.equipamento import Equipamento
 from src.models.item import Item
 from src.utils.auth import token_required, supervisor_or_admin_required
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 pneus_bp = Blueprint('pneus', __name__)
 
@@ -59,7 +63,7 @@ def get_pneus(current_user):
         }), 200
         
     except Exception as e:
-        print(f"Erro ao carregar pneus: {str(e)}")
+        logger.exception("Erro ao carregar pneus")
         return jsonify({'error': str(e)}), 500
 
 @pneus_bp.route('/pneus/<int:pneu_id>', methods=['GET'])

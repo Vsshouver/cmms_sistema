@@ -9,6 +9,10 @@ from src.models.os_peca import OS_Peca
 from src.models.movimentacao_estoque import MovimentacaoEstoque
 from src.utils.auth import token_required, supervisor_or_admin_required, pcm_or_above_required, mecanico_or_above_required
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 ordens_servico_bp = Blueprint('ordens_servico', __name__)
 
@@ -94,7 +98,7 @@ def get_ordens_servico(current_user):
         }), 200
         
     except Exception as e:
-        print(f"Erro ao carregar ordens de serviço: {str(e)}")
+        logger.exception("Erro ao carregar ordens de serviço")
         return jsonify({'error': str(e)}), 500
 
 @ordens_servico_bp.route('/ordens-servico/<int:os_id>', methods=['GET'])
