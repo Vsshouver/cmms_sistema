@@ -1,0 +1,15 @@
+providers = ["python"]
+
+[phases.setup]
+# Instala apenas Python e pip
+nixPkgs = ["python312", "python312Packages.pip"]
+
+[phases.install]
+# Instala dependências do backend
+cmds = [
+  "pip install --no-cache-dir -r requirements.txt"
+]
+
+[start]
+# Sobe o Flask
+cmd = "python src/main.py"
