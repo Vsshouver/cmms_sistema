@@ -2,13 +2,11 @@ from flask import Blueprint, request, jsonify
 from werkzeug.security import check_password_hash
 from src.db import db
 from src.models.usuario import Usuario
-from src.utils.auth import token_required, get_user_permissions
+from src.utils.auth import token_required, get_user_permissions, SECRET_KEY
 import jwt
 from datetime import datetime, timedelta
-import os
 
 auth_bp = Blueprint('auth', __name__)
-SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'supersecretkey')
 
 @auth_bp.route('/auth/login', methods=['POST'])
 def login():
