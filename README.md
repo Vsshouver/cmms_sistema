@@ -36,6 +36,8 @@ Este é um Sistema de Gerenciamento de Manutenção Computadorizada (CMMS) desen
 
 ```
 src/
+├── models/
+│   └── usuario.py        # Modelo de Usuario
 ├── static/
 │   ├── css/
 │   │   └── style.css          # Estilos principais (completamente reformulado)
