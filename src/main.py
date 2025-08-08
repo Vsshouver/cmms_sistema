@@ -102,6 +102,7 @@ def serve(path):
             return "index.html not found", 404
 
 # Healthcheck endpoint
+@app.route("/api/health")  # <-- ADICIONE ESTA LINHA
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"}), 200
