@@ -3,6 +3,7 @@ from src.db import db
 from src.models.usuario import Usuario
 from src.utils.auth import token_required, admin_required
 from datetime import datetime
+import logging
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
@@ -35,9 +36,9 @@ def get_usuarios(current_user):
             'total': len(usuarios)
         }), 200
         
-    except Exception as e:
-        print(f"Erro ao carregar usuários: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logging.exception("Erro ao carregar usuários")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/<int:usuario_id>', methods=['GET'])
 @token_required
@@ -46,8 +47,9 @@ def get_usuario(current_user, usuario_id):
     try:
         usuario = Usuario.query.get_or_404(usuario_id)
         return jsonify(usuario.to_dict()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logging.exception("Erro ao obter usuário")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios', methods=['POST'])
 @token_required
@@ -94,9 +96,10 @@ def create_usuario(current_user):
             'usuario': usuario.to_dict()
         }), 201
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        logging.exception("Erro ao criar usuário")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/<int:usuario_id>', methods=['PUT'])
 @token_required
@@ -139,9 +142,10 @@ def update_usuario(current_user, usuario_id):
             'usuario': usuario.to_dict()
         }), 200
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        logging.exception("Erro ao atualizar usuário")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/<int:usuario_id>', methods=['DELETE'])
 @token_required
@@ -158,17 +162,19 @@ def delete_usuario(current_user, usuario_id):
         
         return jsonify({'message': 'Usuário excluído com sucesso'}), 200
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        logging.exception("Erro ao excluir usuário")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/perfil', methods=['GET'])
 @token_required
 def get_perfil(current_user):
     try:
         return jsonify(current_user.to_dict()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logging.exception("Erro ao obter perfil")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/perfil', methods=['PUT'])
 @token_required
@@ -200,9 +206,10 @@ def update_perfil(current_user):
             'usuario': current_user.to_dict()
         }), 200
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        logging.exception("Erro ao atualizar perfil")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @usuarios_bp.route('/usuarios/niveis-acesso', methods=['GET'])
 @token_required
@@ -219,6 +226,7 @@ def get_niveis_acesso(current_user):
         
         return jsonify({'niveis_acesso': niveis}), 200
         
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logging.exception("Erro ao listar níveis de acesso")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
